@@ -1,0 +1,23 @@
+{
+ "videos": 36,
+ "trainSeq": 31,
+ "testSeq": 5,
+ "boxes": 446908,
+ "tracks": 4559,
+ "frames": 23562,
+ "avgPerFrame": 18.96732026143791,
+ "maxPerFrame": 52,
+ "res": "\u2248950\u00d7600 px \u00b7 25 fps",
+ "fps": [
+  25
+ ],
+ "noSeqinfo": [
+  "BEE24-33",
+  "BEE24-35",
+  "BEE24-34",
+  "BEE24-36"
+ ],
+ "rawSeq": "BEE24-33",
+ "rawFrame": 2500,
+ "imgRatio": 0.531578947368421
+}

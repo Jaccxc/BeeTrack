@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+data/
+runs/
+*.pt
+*.mp4
+proposal/~$*
+# personal data / course material, kept local
+NOTES.md
+proposal/team.json
+*.pdf
+proposal/*.pptx
+

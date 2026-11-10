@@ -1,0 +1,10 @@
+# BeeTrack environment (Python 3.11). Install PyTorch first, matching your GPU:
+#   python -m venv .venv
+#   .venv\Scripts\python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+#   .venv\Scripts\python -m pip install -r requirements.txt
+# (CPU only: drop --index-url; everything runs, training is just slow.)
+ultralytics
+lap
+scipy
+opencv-python
+trackeval @ git+https://github.com/JonathonLuiten/TrackEval.git
