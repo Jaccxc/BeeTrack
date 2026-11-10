@@ -13,7 +13,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from .common import RUNS, frame_path, split_specs  # noqa: E402
-from .evaluate import BAND, load_tracks  # noqa: E402
+from .evaluate import BAND, ZONES, load_tracks  # noqa: E402
 
 FPS = 25
 
@@ -34,12 +34,26 @@ def crossing_events(rows, line_y, band):
     return np.array(ev).reshape(-1, 2)
 
 
+def zone_events(rows, poly):
+    """(last frame, +1 in / -1 out) per track, same rule as evaluate.zone_crossings."""
+    poly = np.asarray(poly, np.float32)
+    ev = []
+    for tid in np.unique(rows[:, 1]):
+        r = rows[rows[:, 1] == tid]
+        r = r[np.argsort(r[:, 0])]
+        a, b = [cv2.pointPolygonTest(poly, (float(r[i, 2] + r[i, 4] / 2), float(r[i, 3] + r[i, 5] / 2)), False) >= 0 for i in (0, -1)]
+        if a != b:
+            ev.append((r[-1, 0], 1 if b else -1))
+    return np.array(ev).reshape(-1, 2)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--split", default="test")
     ap.add_argument("--tracker", default="ours")
     ap.add_argument("--seq", default="BEE24-36")
     ap.add_argument("--bin", type=float, default=20, help="count bin in seconds")
+    ap.add_argument("--rule", default="zone", choices=["zone", "line"], help="entrance zone (main protocol) or banded mid-height line")
     a = ap.parse_args()
     ev, src, s0, s1 = next(s for s in split_specs(a.split) if s[0] == a.seq)
     gt = load_tracks(RUNS / "gt" / a.split / ev / "gt" / "gt.txt")
@@ -58,8 +72,8 @@ def main():
     for tid in np.unique(seg[:, 1]):
         r = seg[seg[:, 1] == tid]
         ax.plot(r[:, 2] + r[:, 4] / 2, r[:, 3] + r[:, 5] / 2, lw=1.2, color=cmap(int(tid) % 20))
-    ax.axhline(h / 2, color="w", lw=1.5, ls="--")
-    ax.axhspan(h / 2 - BAND * h, h / 2 + BAND * h, color="w", alpha=0.15)
+    zone = json.loads(ZONES.read_text())[ev]
+    ax.add_patch(plt.Polygon(zone, closed=True, fill=False, ec="w", lw=1.8, ls="--"))
     ax.set_axis_off()
     fig.savefig(f"{pre}_trajectories.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -80,7 +94,7 @@ def main():
     fig, ax = plt.subplots(figsize=(8, 3))
     res = {}
     for name, rows, style in (("GT", gt, "-"), (a.tracker, pr, "--")):
-        e = crossing_events(rows, h / 2, BAND * h)
+        e = zone_events(rows, zone) if a.rule == "zone" else crossing_events(rows, h / 2, BAND * h)
         cin = np.histogram(e[e[:, 1] > 0, 0], edges)[0]
         cout = np.histogram(e[e[:, 1] < 0, 0], edges)[0]
         t = edges[:-1] / FPS

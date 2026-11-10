@@ -139,8 +139,22 @@ def run_sequence(dets, n, tracker, step=1):
     a = tracker.args
     if getattr(a, "stitch", 0):
         rows = stitch(rows, a.stitch, getattr(a, "stitch_dist", 2.0))
+    if getattr(a, "min_len", 0) or getattr(a, "min_score", 0):
+        rows = drop_short(rows, getattr(a, "min_len", 0), getattr(a, "min_score", 0.0))
     gap = getattr(a, "interp", 0)
     return (interpolate(rows, gap) if gap else rows), secs
+
+
+def drop_short(rows, min_len, min_score):
+    """Remove tracks shorter than min_len boxes whose mean score is below min_score (min_score 0: length alone).
+    Offline post-processing (a live system would hold a track's output for min_len frames)."""
+    if not rows:
+        return rows
+    a = np.array(rows, dtype=np.float64)
+    ids, inv, cnt = np.unique(a[:, 1], return_inverse=True, return_counts=True)
+    mean = np.bincount(inv, weights=a[:, 6]) / cnt
+    bad = (cnt < min_len) & (mean < min_score if min_score else True)
+    return [r for r, b in zip(rows, bad[inv]) if not b]
 
 
 def stitch(rows, max_gap, max_dist):
@@ -208,8 +222,15 @@ def _check_stitch():
     assert [x[1] for x in r] == [1, 1, 1, 3], r
 
 
+def _check_drop_short():
+    r = [[1, 1, 0, 0, 1, 1, 0.3], [1, 2, 0, 0, 1, 1, 0.9], [2, 3, 0, 0, 1, 1, 0.3], [3, 3, 0, 0, 1, 1, 0.3]]
+    assert [x[1] for x in drop_short(r, 2, 0.5)] == [2, 3, 3]
+    assert [x[1] for x in drop_short(r, 2, 0)] == [3, 3]
+
+
 _check_interpolate()
 _check_stitch()
+_check_drop_short()
 
 
 def parse_set(items):

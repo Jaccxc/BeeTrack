@@ -38,6 +38,9 @@ GRIDS = {
     "stitch": [("ours", "ours", {}), ("bytetrack-tuned", "bytetrack", dict(new_track_thresh=0.5))]
               + [(f"ours-stitch{g}-d{d}", "ours", dict(stitch=g, stitch_dist=d)) for g in (10, 25, 50) for d in (1.0, 2.0, 4.0)]
               + [("bytetrack-tuned-stitch25-d2.0", "bytetrack", dict(new_track_thresh=0.5, stitch=25, stitch_dist=2.0))],
+    "zstitch": [(f"ours-stitch{g}-d{d}", "ours", dict(stitch=g, stitch_dist=d)) for g in (0, 5, 10, 20) for d in (2.0, 4.0, 6.0)],
+    "short": [("ours", "ours", {})] + [(f"ours-len{l}-s{s}", "ours", dict(min_len=l, min_score=s))
+                                       for l in (5, 10, 25, 50) for s in (0, 0.5, 0.6, 0.7)],
     "thresh": [(f"{t}_h{h}_n{n}_m{m}", t, dict(track_high_thresh=h, new_track_thresh=n, match_thresh=m))
                for t in ("bytetrack", "ours") for h in (0.25, 0.4, 0.5) for n in (0.25, 0.5, 0.6) for m in (0.8, 0.9)],
 }
@@ -51,10 +54,12 @@ def run_one(dets_tag, split, name, kind, over):
         write_mot(RUNS / "trackers" / split / tag / "data" / f"{ev}.txt", out)
     tot = trackeval_metrics(split, [tag])[tag]["COMBINED_SEQ"]
     c = count_metrics(split, [tag])[tag]
+    z = count_metrics(split, [tag], rule="zone")[tag]
     shutil.rmtree(RUNS / "trackers" / split / tag)
     return dict(name=name, tracker=kind, params={**(OURS if kind == "ours" else BYTETRACK), **over},
                 **{k: round(tot[k], 2) for k in ("HOTA", "DetA", "AssA", "MOTA", "IDF1")}, IDSW=tot["IDSW"],
-                count_err=sum(v["abs_err"] for v in c.values()), gt_crossings=sum(v["gt_in"] + v["gt_out"] for v in c.values()))
+                count_err=sum(v["abs_err"] for v in c.values()), gt_crossings=sum(v["gt_in"] + v["gt_out"] for v in c.values()),
+                zone_err=sum(v["abs_err"] for v in z.values()), zone_gt=sum(v["gt_in"] + v["gt_out"] for v in z.values()))
 
 
 def main():
@@ -69,9 +74,9 @@ def main():
     jobs = [(a.dets, a.split, name, kind, {**(base if kind == "ours" else {}), **over}) for name, kind, over in GRIDS[a.grid]]
     with Pool(a.jobs) as pool:
         table = pool.starmap(run_one, jobs)
-    print(f"{'setting':34s} {'HOTA':>6s} {'AssA':>6s} {'IDF1':>6s} {'MOTA':>6s} {'IDSW':>6s} {'count':>8s}")
+    print(f"{'setting':34s} {'HOTA':>6s} {'AssA':>6s} {'IDF1':>6s} {'MOTA':>6s} {'IDSW':>6s} {'count':>8s} {'zone':>8s}")
     for r in sorted(table, key=lambda r: -r["HOTA"]):
-        print(f"{r['name']:34s} {r['HOTA']:6.1f} {r['AssA']:6.1f} {r['IDF1']:6.1f} {r['MOTA']:6.1f} {r['IDSW']:6d} {r['count_err']:4d}/{r['gt_crossings']}")
+        print(f"{r['name']:34s} {r['HOTA']:6.1f} {r['AssA']:6.1f} {r['IDF1']:6.1f} {r['MOTA']:6.1f} {r['IDSW']:6d} {r['count_err']:4d}/{r['gt_crossings']} {r['zone_err']:4d}/{r['zone_gt']}")
     (RUNS / "eval" / a.split).mkdir(parents=True, exist_ok=True)
     (RUNS / "eval" / a.split / f"sweep_{a.grid}_{a.dets}.json").write_text(json.dumps(table, indent=1))
 

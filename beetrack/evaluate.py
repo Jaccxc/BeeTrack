@@ -4,10 +4,14 @@ tracker outputs are read from runs/trackers/<split>/<name>/data/<seq>.txt
 """
 import argparse
 import json
+from pathlib import Path
 
+import cv2
 import numpy as np
 
 from .common import RUNS, split_specs
+
+ZONES = Path(__file__).with_name("zones.json")
 
 for _k, _v in (("float", float), ("int", int), ("bool", bool)):   # TrackEval still uses aliases removed in numpy 1.24
     if not hasattr(np, _k):
@@ -72,21 +76,42 @@ def crossings(rows, line_y, band=0.0):
     return n_in, n_out
 
 
-def count_metrics(split, names, band=BAND):
-    """Absolute counting error per sequence, line at mid-height, hysteresis band = band x frame height."""
+def zone_crossings(rows, poly):
+    """Entrance-zone protocol (same for GT and predictions): a track whose first box centre is outside the polygon and
+    last centre inside is one 'in'; first inside and last outside is one 'out'. Tracks that start and end on the same side count 0."""
+    poly = np.asarray(poly, np.float32)
+    n_in = n_out = 0
+    rows = rows[np.lexsort((rows[:, 0], rows[:, 1]))]
+    for tid in np.unique(rows[:, 1]):
+        t = rows[rows[:, 1] == tid]
+        a, b = [cv2.pointPolygonTest(poly, (float(t[i, 2] + t[i, 4] / 2), float(t[i, 3] + t[i, 5] / 2)), False) >= 0 for i in (0, -1)]
+        n_in += int(b and not a)
+        n_out += int(a and not b)
+    return n_in, n_out
+
+
+def count_metrics(split, names, band=BAND, rule="line"):
+    """Absolute counting error per sequence. rule="line": line at mid-height, hysteresis band = band x frame height;
+    rule="zone": entrance polygon from zones.json."""
     out = {n: {} for n in names}
+    zones = json.loads(ZONES.read_text()) if rule == "zone" else None
     for ev, *_ in split_specs(split.split("_")[0]):   # test_step2 -> test sequences
         d = RUNS / "gt" / split / ev
         h = int(next(l for l in (d / "seqinfo.ini").read_text().split() if l.startswith("imHeight")).split("=")[1])
-        gi, go = crossings(load_tracks(d / "gt" / "gt.txt"), h / 2, band * h)
+        f = (lambda r: zone_crossings(r, zones[ev])) if zones else (lambda r: crossings(r, h / 2, band * h))
+        gi, go = f(load_tracks(d / "gt" / "gt.txt"))
         for n in names:
-            pi, po = crossings(load_tracks(RUNS / "trackers" / split / n / "data" / f"{ev}.txt"), h / 2, band * h)
+            pi, po = f(load_tracks(RUNS / "trackers" / split / n / "data" / f"{ev}.txt"))
             out[n][ev] = dict(gt_in=gi, gt_out=go, pred_in=pi, pred_out=po, abs_err=abs(pi - gi) + abs(po - go))
     return out
 
 
 assert crossings(np.array([[1, 1, 0, 60, 1, 0], [2, 1, 0, 49, 1, 0], [3, 1, 0, 52, 1, 0], [4, 1, 0, 40, 1, 0]]), 50, 5) == (1, 0)
 assert crossings(np.array([[1, 1, 0, 60, 1, 0], [2, 1, 0, 49, 1, 0], [3, 1, 0, 52, 1, 0], [4, 1, 0, 40, 1, 0]]), 50, 0) == (2, 1)
+_sq = [[0, 0], [10, 0], [10, 10], [0, 10]]
+assert zone_crossings(np.array([[1, 1, 20, 5, 0, 0], [2, 1, 5, 5, 0, 0]]), _sq) == (1, 0)   # outside -> inside
+assert zone_crossings(np.array([[1, 1, 5, 5, 0, 0], [2, 1, 20, 5, 0, 0]]), _sq) == (0, 1)   # inside -> outside
+assert zone_crossings(np.array([[1, 1, 20, 5, 0, 0], [2, 1, 5, 5, 0, 0], [3, 1, 20, 5, 0, 0]]), _sq) == (0, 0)   # visit and leave
 
 
 def main():
@@ -97,16 +122,21 @@ def main():
     m = trackeval_metrics(a.split, a.trackers)
     c = count_metrics(a.split, a.trackers)
     raw = count_metrics(a.split, a.trackers, band=0.0)   # plain-line rule, reported for comparison
+    z = count_metrics(a.split, a.trackers, rule="zone")
     for n in a.trackers:
         for ev, v in c[n].items():
-            m[n][ev].update(v, raw_gt=raw[n][ev]["gt_in"] + raw[n][ev]["gt_out"], raw_abs_err=raw[n][ev]["abs_err"])
+            m[n][ev].update(v, raw_gt=raw[n][ev]["gt_in"] + raw[n][ev]["gt_out"], raw_abs_err=raw[n][ev]["abs_err"],
+                         **{"zone_" + k: x for k, x in z[n][ev].items()})
         tot = m[n]["COMBINED_SEQ"]
         tot.update(gt_crossings=sum(v["gt_in"] + v["gt_out"] for v in c[n].values()),
                    count_abs_err=sum(v["abs_err"] for v in c[n].values()),
                    raw_gt_crossings=sum(v["gt_in"] + v["gt_out"] for v in raw[n].values()),
-                   raw_count_abs_err=sum(v["abs_err"] for v in raw[n].values()))
+                   raw_count_abs_err=sum(v["abs_err"] for v in raw[n].values()),
+                   zone_gt_crossings=sum(v["gt_in"] + v["gt_out"] for v in z[n].values()),
+                   zone_count_abs_err=sum(v["abs_err"] for v in z[n].values()))
         print(f"{n:28s} HOTA {tot['HOTA']:.1f}  IDF1 {tot['IDF1']:.1f}  MOTA {tot['MOTA']:.1f}  IDSW {tot['IDSW']}  "
-              f"count err {tot['count_abs_err']}/{tot['gt_crossings']} (plain line {tot['raw_count_abs_err']}/{tot['raw_gt_crossings']})")
+              f"count err {tot['count_abs_err']}/{tot['gt_crossings']} (plain line {tot['raw_count_abs_err']}/{tot['raw_gt_crossings']})  "
+              f"zone err {tot['zone_count_abs_err']}/{tot['zone_gt_crossings']}")
         (RUNS / "eval" / a.split).mkdir(parents=True, exist_ok=True)
         (RUNS / "eval" / a.split / f"{n}.json").write_text(json.dumps(m[n], indent=1))
 
