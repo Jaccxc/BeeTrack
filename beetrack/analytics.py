@@ -13,22 +13,24 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from .common import RUNS, frame_path, split_specs  # noqa: E402
-from .evaluate import load_tracks  # noqa: E402
+from .evaluate import BAND, load_tracks  # noqa: E402
 
 FPS = 25
 
 
-def crossing_events(rows, line_y):
-    """(frame, +1 in / -1 out) for every centre crossing of y = line_y, same rule as evaluate.crossings."""
+def crossing_events(rows, line_y, band):
+    """(frame, +1 in / -1 out) for every band crossing, same rule as evaluate.crossings."""
     ev = []
     rows = rows[np.lexsort((rows[:, 0], rows[:, 1]))]
     for tid in np.unique(rows[:, 1]):
         r = rows[rows[:, 1] == tid]
-        side = np.sign(r[:, 3] + r[:, 5] / 2 - line_y)
-        keep = side != 0
-        f, side = r[keep, 0], side[keep]
-        for i in np.flatnonzero(np.diff(side)):
-            ev.append((f[i + 1], 1 if side[i + 1] < 0 else -1))
+        cy = r[:, 3] + r[:, 5] / 2
+        side = 0
+        for f, y in zip(r[:, 0], cy):
+            s = 1 if y > line_y + band else -1 if y < line_y - band else side
+            if side and s != side:
+                ev.append((f, 1 if s < 0 else -1))
+            side = s
     return np.array(ev).reshape(-1, 2)
 
 
@@ -57,6 +59,7 @@ def main():
         r = seg[seg[:, 1] == tid]
         ax.plot(r[:, 2] + r[:, 4] / 2, r[:, 3] + r[:, 5] / 2, lw=1.2, color=cmap(int(tid) % 20))
     ax.axhline(h / 2, color="w", lw=1.5, ls="--")
+    ax.axhspan(h / 2 - BAND * h, h / 2 + BAND * h, color="w", alpha=0.15)
     ax.set_axis_off()
     fig.savefig(f"{pre}_trajectories.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -77,7 +80,7 @@ def main():
     fig, ax = plt.subplots(figsize=(8, 3))
     res = {}
     for name, rows, style in (("GT", gt, "-"), (a.tracker, pr, "--")):
-        e = crossing_events(rows, h / 2)
+        e = crossing_events(rows, h / 2, BAND * h)
         cin = np.histogram(e[e[:, 1] > 0, 0], edges)[0]
         cout = np.histogram(e[e[:, 1] < 0, 0], edges)[0]
         t = edges[:-1] / FPS

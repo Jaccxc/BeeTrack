@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BeeTrack Final Report</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="en">
+
+<section class="cover">
+  <div class="course">National Taipei University · Department of Electrical Engineering<br>Deep Learning for Image Analysis (M5261) · Fall 2026 · Final Project</div>
+  <div class="title">BeeTrack</div>
+  <div class="subtitle">Detecting, Tracking and Counting Honeybees at the Hive Entrance<br>with Motion-Adaptive Association</div>
+  <table>
+    <thead><tr><th class="l">Member</th><th>Student ID</th><th class="l">Main responsibility</th></tr></thead>
+    <tbody>
+      <tr><td class="l">{{NAME1}}</td><td>{{ID1}}</td><td class="l">Data and evaluation pipeline</td></tr>
+      <tr><td class="l">{{NAME2}}</td><td>{{ID2}}</td><td class="l">Detection model, Experiment 2</td></tr>
+      <tr><td class="l">{{NAME3}}</td><td>{{ID3}}</td><td class="l">Tracking and improvement, Experiment 1</td></tr>
+      <tr><td class="l">{{NAME4}}</td><td>{{ID4}}</td><td class="l">Counting, visualization, demo, report</td></tr>
+    </tbody>
+  </table>
+  <div class="meta">Project 1: Real-Time Multi-Object Detection and Tracking<br>Final presentation: 24 December 2026</div>
+</section>
+
+<!-- ============================================================ 1 -->
+<h2>Abstract</h2>
+<div class="abstract">
+<p>Entrance traffic, the number of bees leaving and returning to a hive, is a direct indicator of colony activity, but counting it by eye does not scale. We present BeeTrack, a video system that detects every honeybee at a hive entrance, assigns each bee a persistent identity, draws its trajectory and counts in/out crossings of a virtual line. A COCO-pretrained YOLO11-s detector is fine-tuned on the BEE24 dataset, and its detections are associated over time by a tracker built on ByteTrack. Bees are small, nearly identical and fast; we show with an oracle experiment that even perfect detections leave the default ByteTrack at HOTA 71.3 on our validation set, so association is a bottleneck in its own right. Our improvement, <i>motion-adaptive association</i>, replaces plain IoU with a buffered IoU whose search region grows with a track's speed and with the number of frames it has been lost, damps the velocity of lost tracks, raises the Kalman velocity process noise and keeps lost tracks longer. All parameters are tuned on validation data only; the five official BEE24 test videos (10,762 frames, 168,230 boxes) are used once. On the test set, motion-adaptive association changes HOTA from <span class="todo">TODO</span> to <span class="todo">TODO</span>, IDF1 from <span class="todo">TODO</span> to <span class="todo">TODO</span> and ID switches from <span class="todo">TODO</span> to <span class="todo">TODO</span>, with identical detections; the line-crossing count error falls from <span class="todo">TODO</span> to <span class="todo">TODO</span> of 753 ground-truth crossings. A second controlled experiment compares detector input sizes of 640 and 1280 pixels, and robustness is analysed under synthetic darkening, over-exposure, motion blur and sensor noise, under frame dropping and across crowd densities. The full pipeline runs at <span class="todo">TODO</span> FPS on an RTX 4060 Laptop GPU.</p>
+<p class="keywords"><b>Keywords:</b> multi-object tracking, honeybee monitoring, YOLO11, ByteTrack, buffered IoU, Kalman filter, HOTA, line-crossing counting</p>
+</div>
+
+<!-- ============================================================ 2 -->
+<h2>Introduction and Problem Definition</h2>
+<h3>Motivation</h3>
+<p>Beekeepers and pollination researchers watch hive entrances because foraging traffic responds quickly to weather, food availability, pesticides and disease. A video camera at the entrance is cheap, but turning the video into numbers is not: a few minutes of footage contains thousands of short flights, and manual counting is slow and error-prone. An automatic system that tracks each bee and counts how many enter and leave would make continuous, objective monitoring possible.</p>
+<h3>Why the problem is hard</h3>
+<p>Tracking bees is harder than tracking pedestrians, the setting most multi-object trackers were designed for. A bee box is only about 46 × 50 pixels in a 950 × 600 frame; dozens of bees look practically identical, so appearance cues help little; and bees accelerate, turn and land within a few frames. A tracker that predicts each object with a constant-velocity Kalman filter and matches by box overlap often finds that the predicted box of a fast bee does not overlap its next detection at all. The track is then lost, re-started under a new identity or, worse, swapped with a neighbour. The entrance itself is the most crowded region, exactly where counting takes place.</p>
+<h3>Objectives, inputs and outputs</h3>
+<p>The system addresses Project 1 of the course (real-time multi-object detection and tracking). Its input is a hive-entrance video (a video file or a folder of frames). Its outputs are, for every frame, the bounding box and track ID of every bee; a trajectory and heading for each ID; cumulative in/out counts at a horizontal line; the measured processing speed; an annotated video; and a CSV file of all tracks. The objectives are:</p>
+<ol>
+<li>a fine-tuned deep detector for bees (requirement R1);</li>
+<li>an online tracker that maintains identities through missed detections and short occlusions, plus trajectory and counting analytics (R2);</li>
+<li>a justified improvement to association that is measured against the default ByteTrack on the same detections (R3);</li>
+<li>two controlled experiments, tracker association and detector input size (R4), with HOTA, IDF1, MOTA, ID switches, count error and FPS, and robustness analysis under at least three conditions (R5);</li>
+<li>a reproducible demo application that processes a video end to end (R6).</li>
+</ol>
+<h3>Contributions</h3>
+<ul>
+<li>A leakage-free evaluation protocol for BEE24 with a validation set that contains long, dense segments, and TrackEval ground truth that repairs duplicate IDs in the official annotations.</li>
+<li>Motion-adaptive association, a small set of changes inside ByteTrack, each switchable for ablation, that targets the specific failure of small fast objects.</li>
+<li>An oracle analysis that separates association errors from detection errors, and a robustness study under image corruptions, frame dropping and crowd density.</li>
+<li>A documented line-crossing counting protocol applied identically to ground truth and predictions, and a demo that produces an annotated video with live counts and FPS.</li>
+</ul>
+
+<!-- ============================================================ 3 -->
+<h2>Related Work</h2>
+<p><b>Object detection.</b> Single-stage detectors of the YOLO family [1] predict boxes densely in one forward pass and are the usual choice for real-time tracking-by-detection. We use YOLO11 [2], the current Ultralytics release, in its small variant. Transformer detectors such as RT-DETR [3] reach similar speed but need more memory and training time than our 8 GB laptop GPU comfortably allows.</p>
+<p><b>Tracking by detection.</b> SORT [4] links detections with a constant-velocity Kalman filter [5] and IoU-based Hungarian matching [6]. DeepSORT [7] adds a re-identification embedding, which is of little use when all targets look alike. ByteTrack [8] keeps low-confidence detections and matches them in a second stage, recovering partially occluded objects; it is the default tracker in Ultralytics and our baseline. BoT-SORT [9] adds camera-motion compensation and appearance; the BEE24 camera is static, so neither applies directly. OC-SORT [10] re-estimates the Kalman state from observations after a track is lost, addressing the drift of non-linear motion.</p>
+<p><b>Irregular motion.</b> DanceTrack [11] showed that trackers tuned on MOT17 [12] and MOT20 [13] degrade when targets have uniform appearance and diverse motion, which is exactly the bee setting. C-BIoU [14] enlarges both the track and detection boxes before computing IoU so that fast objects with non-overlapping boxes can still be matched, and cascades two buffer sizes. Our method adopts the buffered IoU idea and makes the buffer depend on each track's state (speed and time lost) instead of using fixed cascades.</p>
+<p><b>Insect tracking.</b> Bozek et al. [15] tracked densely packed bees inside a hive with a segmentation network and temporal linking. The BEE24 dataset [16] was released with TOPICTrack, which runs motion and appearance association in parallel; the authors report HOTA 46.6, IDF1 59.7 and MOTA 66.7 on the BEE24 test set. These figures come from a different detector and training protocol, so we cite them only as context, not as a controlled comparison.</p>
+<p><b>Evaluation.</b> CLEAR MOT metrics [17] (MOTA, ID switches) are dominated by detection quality, IDF1 [18] measures identity consistency, and HOTA [19] balances detection (DetA) and association (AssA) accuracy. We compute all of them with the reference TrackEval implementation [20]. Synthetic corruptions follow the spirit of the common-corruption benchmarks of Hendrycks and Dietterich [21].</p>
+
+<!-- ============================================================ 4 -->
+<h2>Dataset and Preprocessing</h2>
+<h3>Source and annotations</h3>
+<p>BEE24 [16] contains 36 hive-entrance videos at 25 fps (about 950 × 600 px; one sequence is 810 × 430) with 446,908 boxes, 4,559 bee identities and on average 19.0 bees per frame (maximum 52). Every box carries a track ID in MOTChallenge format (frame, id, x, y, w, h), which supports identity-based tracking metrics as required by Section 7B of the guidelines. The data are a public download of 2.3 GB without registration. The dataset page states no licence, so we use the data only for this course and cite the paper. The videos show insects only; no people are recorded.</p>
+<h3>Splits and leakage control</h3>
+<p>The official split has 31 training and 5 test videos. The test set (BEE24-12, -13, -16, -34, -36; 10,762 frames, 168,230 boxes) is never used for training, model selection or parameter tuning; it is evaluated once per final configuration. From the training videos we build a validation set for detector early stopping and all tracker tuning (Table 1).</p>
+<p>The proposal planned to hold out whole training sequences as validation. During implementation we found that the short training sequences (75 to 258 frames) contain far fewer bees per frame than the two long test videos, which are 5,000 frames each and include the densest segments. A validation set without long dense segments would tune the tracker for the wrong regime. We therefore hold out four whole short sequences (BEE24-10, -15, -24, -28) <i>and</i> the last 1,000 frames of the two long training videos BEE24-33 and -35. A 50-frame gap that belongs to neither split separates these tails from the training frames, so neighbouring near-identical frames cannot leak across the boundary. <code>prep.py</code> asserts that no frame belongs to two splits.</p>
+<p class="tcap"><b>Table 1.</b> Data split used in all experiments.</p>
+<table>
+<thead><tr><th class="l">Split</th><th class="l">Sequences</th><th>Frames</th><th>Detector images</th><th>Boxes</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td class="l">Train</td><td class="l">27 official training videos (heads of -33, -35)</td><td>10,060</td><td>3,740</td><td>221,393</td><td>detector fine-tuning</td></tr>
+<tr><td class="l">Validation</td><td class="l">BEE24-10, -15, -24, -28; last 1,000 frames of -33, -35</td><td>2,640</td><td>840</td><td>54,724</td><td>early stopping, all tuning, ablation</td></tr>
+<tr><td class="l">Test</td><td class="l">BEE24-12, -13, -16, -34, -36 (official)</td><td>10,762</td><td>1,762</td><td>168,230</td><td>final evaluation only</td></tr>
+</tbody>
+</table>
+<h3>Preprocessing</h3>
+<ul>
+<li><b>Detector labels.</b> Each box is clipped to the image, boxes narrower or shorter than one pixel are dropped, and the result is written as a one-class YOLO label (<code>0 cx cy w h</code>, normalised). Frames without bees get an empty label file and act as negatives.</li>
+<li><b>Frame stride.</b> Consecutive frames of a 25 fps video are nearly identical. Long videos (≥ 1,000 frames) contribute every 5th frame to the training images (every 10th to the validation and test images used only for mAP); short videos contribute every frame. This gives 3,740 training, 840 validation and 1,762 test detector images.</li>
+<li><b>Evaluation ground truth.</b> For TrackEval, every validation and test sequence is written as a MOTChallenge folder with <code>gt.txt</code> (confidence, class and visibility set to 1) and <code>seqinfo.ini</code>. Validation tails are renumbered to start at frame 1.</li>
+<li><b>Annotation repair.</b> In BEE24-14, -15, -33 and -35 (all official training videos) the same ID is given to two bees in the same frame in 993 rows. TrackEval rejects such files. In the evaluation ground truth the extra occurrence keeps its box and receives a fresh ID; this affects only validation sequences. The test sequences contain no such rows.</li>
+<li><b>Frame-drop ground truth.</b> For the robustness study, test ground truth is also written with only every <i>k</i>-th frame (<i>k</i> = 2, 3, 5), renumbered consecutively, using exactly the rule applied to the tracker input.</li>
+</ul>
+<p class="tcap"><b>Table 2.</b> Test and validation sequences (computed from the ground truth). Crossings use the counting protocol of Section 6.5.</p>
+<table>
+<thead><tr><th class="l">Sequence</th><th>Split</th><th>Size (px)</th><th>Frames</th><th>Boxes</th><th>Bees / frame (mean / max)</th><th>IDs</th><th>GT in / out</th></tr></thead>
+<tbody>
+<tr><td class="l">BEE24-12</td><td>test</td><td>810 × 430</td><td>250</td><td>1,973</td><td>7.9 / 9</td><td>19</td><td>6 / 5</td></tr>
+<tr><td class="l">BEE24-13</td><td>test</td><td>950 × 600</td><td>258</td><td>6,462</td><td>25.0 / 28</td><td>54</td><td>19 / 17</td></tr>
+<tr><td class="l">BEE24-16</td><td>test</td><td>950 × 600</td><td>254</td><td>3,770</td><td>14.8 / 23</td><td>80</td><td>48 / 57</td></tr>
+<tr><td class="l">BEE24-34</td><td>test</td><td>950 × 470</td><td>5,000</td><td>103,465</td><td>20.7 / 31</td><td>1,143</td><td>168 / 145</td></tr>
+<tr><td class="l">BEE24-36</td><td>test</td><td>950 × 548</td><td>5,000</td><td>52,560</td><td>10.5 / 17</td><td>163</td><td>157 / 131</td></tr>
+<tr class="sep"><td class="l">BEE24-10 / -15 / -24 / -28</td><td>val</td><td>950 × 590–600</td><td>640</td><td>7,584</td><td>9.9–13.5</td><td>193</td><td>65 / 59</td></tr>
+<tr><td class="l">BEE24-33 tail</td><td>val</td><td>950 × 505</td><td>1,000</td><td>37,311</td><td>37.3 / 45</td><td>326</td><td>61 / 58</td></tr>
+<tr><td class="l">BEE24-35 tail</td><td>val</td><td>920 × 720</td><td>1,000</td><td>9,829</td><td>9.8 / 14</td><td>67</td><td>24 / 31</td></tr>
+</tbody>
+</table>
+<figure><img src="../proposal/img/gt_traj.jpg" alt="ground-truth trajectories" onerror="this.outerHTML='<div class=ph>proposal/img/gt_traj.jpg</div>'"><figcaption><b>Figure 1.</b> Ground-truth trajectories of a BEE24 training sequence with the counting line (annotations, not model output).</figcaption></figure>
+
+<!-- ============================================================ 5 -->
+<h2>Complete System Architecture</h2>
+<p>BeeTrack is a tracking-by-detection pipeline with five stages (Figure 2). The same modules serve two purposes: an offline evaluation path that caches detections and scores many tracker settings on identical inputs, and an online demo path that runs detection and tracking frame by frame on any video.</p>
+<div class="arch">
+  <div class="blk"><b>Input</b>hive-entrance video or frame folder<br>(25 fps)</div><div class="ar">→</div>
+  <div class="blk"><b>Detection</b>YOLO11-s fine-tuned<br>640 / 1280 input, FP16<br>boxes + scores ≥ 0.05</div><div class="ar">→</div>
+  <div class="blk hl"><b>Tracking</b>Kalman prediction<br>buffered-IoU 1st stage<br>low-score 2nd stage<br>lost-track buffer</div><div class="ar">→</div>
+  <div class="blk"><b>Analytics</b>trajectories + heading<br>line-crossing counter<br>heatmap, track lengths</div><div class="ar">→</div>
+  <div class="blk"><b>Output</b>annotated video<br>tracks CSV<br>counts, FPS log</div>
+</div>
+<div class="archnote">Offline path: <code>prep → train → detect (cache) → track → evaluate / sweep → analytics</code> · Online path: <code>demo</code> (detect + track per frame). Highlighted: our improvement.</div>
+<p class="tcap" style="margin-top:0"><b>Figure 2.</b> System block diagram and data flow.</p>
+<p><b>Data flow.</b> <code>prep.py</code> turns the raw annotations into YOLO labels, image lists and TrackEval ground truth. <code>train.py</code> fine-tunes the detector. <code>detect.py</code> runs the detector once on every validation or test frame and stores the boxes (<code>frame, x1, y1, x2, y2, score</code>) in a NumPy cache, optionally after a synthetic image corruption. <code>track.py</code> feeds the cached boxes, frame by frame, to either tracker and writes MOTChallenge result files. <code>evaluate.py</code> computes HOTA, CLEAR and Identity metrics with TrackEval and the line-crossing count error; <code>sweep.py</code> runs whole grids of tracker settings on validation data. <code>analytics.py</code> produces trajectory, heatmap, count and track-length figures, and <code>demo.py</code> runs the online path and writes an annotated video and a CSV.</p>
+<p><b>Why cache detections.</b> Experiment 1 must change only the tracker. Running the detector once and replaying the identical boxes to every tracker setting removes any run-to-run variation in detection (FP16 non-determinism, pre-processing), makes the comparison exactly controlled and lets a sweep of dozens of settings finish in minutes on the CPU.</p>
+
+<!-- ============================================================ 6 -->
+<h2>Methodology and Algorithms</h2>
+<h3>Detector</h3>
+<p>YOLO11-s is a single-stage, anchor-free detector with a CSP-style backbone, a feature pyramid neck and a decoupled head that predicts class scores and box distributions at three strides (8, 16, 32). A bee of about 46 px occupies roughly six cells at stride 8 for a 640 px input, enough for the finest head but leaving little margin for the smaller bees; doubling the input to 1280 px doubles that resolution at a fourfold cost in computation, which Experiment 2 measures. We keep detections down to a confidence of 0.05, because ByteTrack's second stage deliberately uses low-score boxes.</p>
+<h3>Baseline tracker: ByteTrack</h3>
+<p>Each track has a Kalman state <i>x</i> = (<i>c<sub>x</sub></i>, <i>c<sub>y</sub></i>, <i>a</i>, <i>h</i>, <i>ċ<sub>x</sub></i>, <i>ċ<sub>y</sub></i>, <i>ȧ</i>, <i>ḣ</i>) (centre, aspect ratio, height and their velocities) with a constant-velocity transition. Process and measurement noise are proportional to the box height <i>h</i>; the velocity standard deviation is σ<sub>v</sub> = <i>w</i><sub>v</sub>·<i>h</i> with <i>w</i><sub>v</sub> = 1/160. At every frame:</p>
+<ol>
+<li>All tracks (active and lost) are predicted one frame ahead.</li>
+<li>Detections with score ≥ 0.25 are matched to the tracks with the cost <i>C</i> = 1 − IoU·<i>s</i> (IoU fused with detection score <i>s</i>) and the Hungarian algorithm, rejecting pairs with cost &gt; 0.8.</li>
+<li>Remaining active tracks are matched to low-score detections (0.1 ≤ <i>s</i> &lt; 0.25) with plain IoU, rejecting cost &gt; 0.5.</li>
+<li>Unconfirmed new tracks are matched to the remaining high-score detections; unmatched detections with <i>s</i> ≥ 0.25 start new tracks.</li>
+<li>Tracks unmatched for more than <code>track_buffer</code> = 30 frames (1.2 s) are removed; until then they are "lost" and can be re-activated.</li>
+</ol>
+<h3>Proposed improvement: motion-adaptive association</h3>
+<p>The failure we target is geometric: for a fast bee the predicted box and the next detection do not overlap, IoU is 0 and no threshold can match them. We make four changes inside ByteTrack; Section 9 gives the justification and the ablation that tests each.</p>
+<p><b>(a) Buffered IoU with an adaptive buffer.</b> Before computing IoU, a box (<i>x</i><sub>1</sub>, <i>y</i><sub>1</sub>, <i>x</i><sub>2</sub>, <i>y</i><sub>2</sub>) of width <i>w</i> and height <i>h</i> is enlarged by a ratio <i>r</i> on every side:</p>
+<div class="eq"><div class="m">B<sub><i>r</i></sub> = (<i>x</i><sub>1</sub> − <i>rw</i>, &nbsp;<i>y</i><sub>1</sub> − <i>rh</i>, &nbsp;<i>x</i><sub>2</sub> + <i>rw</i>, &nbsp;<i>y</i><sub>2</sub> + <i>rh</i>)</div><div class="n">(1)</div></div>
+<p>Detections use the fixed base buffer <i>b</i>. A track <i>i</i> uses a buffer that grows with the number of frames ℓ<sub><i>i</i></sub> since its last match and with its speed measured in box heights per frame:</p>
+<div class="eq"><div class="m"><i>r<sub>i</sub></i> = <i>b</i> + <i>g</i> · min(ℓ<sub><i>i</i></sub>, 10) + <i>k</i> · min(<span class="frac"><span>‖(<i>ċ<sub>x</sub></i>, <i>ċ<sub>y</sub></i>)‖</span><span><i>h<sub>i</sub></i></span></span>, 1)</div><div class="n">(2)</div></div>
+<div class="eq"><div class="m"><i>C<sub>ij</sub></i> = 1 − IoU(B<sub><i>r<sub>i</sub></i></sub>(track<sub><i>i</i></sub>), B<sub><i>b</i></sub>(det<sub><i>j</i></sub>)) · <i>s<sub>j</sub></i></div><div class="n">(3)</div></div>
+<p>This cost replaces the plain IoU cost in the first (high-score) association and in the unconfirmed-track association; the second, low-score stage keeps plain IoU so that weak detections are only accepted when they genuinely overlap. A stationary, freshly matched bee therefore uses a small buffer, while a bee that is moving fast or has been missing for several frames is searched for in a wider region.</p>
+<p><b>(b) Velocity damping for lost tracks.</b> While a track is lost its velocity is multiplied by δ before each prediction, <i>v</i> ← δ·<i>v</i>, so a hidden bee does not drift away along a stale velocity; the region of equation (2) grows instead.</p>
+<p><b>(c) Larger velocity process noise.</b> The velocity weight <i>w</i><sub>v</sub> is raised from 1/160 to <i>q</i><sub>v</sub>, letting the filter follow sudden accelerations and turns faster.</p>
+<p><b>(d) Longer lost-track buffer.</b> <code>track_buffer</code> is raised from 30 to 60 frames (2.4 s) so that bees that pause behind others or land briefly can be re-activated with their old ID.</p>
+<p class="tcap"><b>Table 3.</b> Tracker parameters. "Ours" values are the defaults in <code>track.py</code>; final values are selected on validation data (Section 10.3).</p>
+<table>
+<thead><tr><th class="l">Parameter</th><th>ByteTrack (baseline)</th><th>Ours</th><th class="l">Meaning</th></tr></thead>
+<tbody>
+<tr><td class="l">track_high / low / new thresh</td><td>0.25 / 0.1 / 0.25</td><td>0.25 / 0.1 / 0.25</td><td class="l">score thresholds of the two stages, new-track threshold</td></tr>
+<tr><td class="l">match_thresh, fuse_score</td><td>0.8, on</td><td>0.8, on</td><td class="l">max first-stage cost; IoU × score fusion</td></tr>
+<tr><td class="l">track_buffer</td><td>30</td><td>60 <span class="todo">TODO confirm</span></td><td class="l">frames a lost track is kept</td></tr>
+<tr><td class="l">buffer <i>b</i></td><td>0</td><td>0.3 <span class="todo">TODO confirm</span></td><td class="l">base box enlargement</td></tr>
+<tr><td class="l">grow <i>g</i></td><td>0</td><td>0.1 <span class="todo">TODO confirm</span></td><td class="l">extra buffer per lost frame (≤ 10 frames)</td></tr>
+<tr><td class="l">speed <i>k</i></td><td>0</td><td>0.5 <span class="todo">TODO confirm</span></td><td class="l">extra buffer per box height / frame of speed</td></tr>
+<tr><td class="l">damp δ</td><td>1</td><td>0.9 <span class="todo">TODO confirm</span></td><td class="l">lost-track velocity decay per frame</td></tr>
+<tr><td class="l">q_vel <i>w</i><sub>v</sub></td><td>1/160</td><td>1/80 <span class="todo">TODO confirm</span></td><td class="l">Kalman velocity process-noise weight</td></tr>
+</tbody>
+</table>
+<h3>Trajectory analytics</h3>
+<p>From the tracker output we draw per-ID trajectories (box centres over the first 60 s), an occupancy heatmap of box centres over the whole sequence, in/out counts per 20-s bin compared with ground truth, the distribution of track lengths (fragmentation shows up as an excess of short tracks) and the median speed of tracks longer than five frames. In the demo each ID carries a one-second trail whose direction gives its heading.</p>
+<h3>Counting protocol</h3>
+<p>BEE24 has no count labels, so we define counts from trajectories with one rule applied identically to ground-truth and predicted tracks. A horizontal line is placed at mid-height, <i>y</i> = <i>H</i>/2. For each track, the sign of <i>c<sub>y</sub></i> − <i>H</i>/2 is taken over its frames in temporal order, frames exactly on the line are ignored, and every change of sign is one crossing: upward (towards smaller <i>y</i>) is counted as <i>in</i>, downward as <i>out</i>. The count error of a tracker on a set of sequences <i>S</i> is</p>
+<div class="eq"><div class="m"><i>E</i> = Σ<sub><i>s</i>∈<i>S</i></sub> ( |<i>Î<sub>s</sub></i> − <i>I<sub>s</sub></i>| + |<i>Ô<sub>s</sub></i> − <i>O<sub>s</sub></i>| )</div><div class="n">(4)</div></div>
+<p>where <i>I</i>, <i>O</i> are ground-truth in/out counts and <i>Î</i>, <i>Ô</i> the predicted ones. We report <i>E</i> against the total number of ground-truth crossings (753 on the test set). The rule is deliberately simple: an ID switch at the line or a track that is lost and restarted on the other side can drop or duplicate a crossing, so count error is sensitive to exactly the association errors we try to remove. A mid-height line is a protocol choice for comparability across sequences; the demo lets the user place the line at any height.</p>
+
+<!-- ============================================================ 7 -->
+<h2>Implementation Details</h2>
+<p class="tcap"><b>Table 4.</b> Software, hardware and fixed settings.</p>
+<table>
+<thead><tr><th class="l">Item</th><th class="l">Setting</th></tr></thead>
+<tbody>
+<tr><td class="l">Hardware</td><td class="l">NVIDIA RTX 4060 Laptop GPU, 8 GB</td></tr>
+<tr><td class="l">Software</td><td class="l">Python 3.11 (uv environment, <code>uv.lock</code>), PyTorch 2.11.0 + CUDA 12.8, Ultralytics 8.4.208, TrackEval (git 12c8791), OpenCV, NumPy, Matplotlib</td></tr>
+<tr><td class="l">Pretrained weights</td><td class="l">Ultralytics <code>yolo11s.pt</code> (COCO), AGPL-3.0</td></tr>
+<tr><td class="l">Training</td><td class="l">one class "bee"; budget 50 epochs, early-stopping patience 15 on validation fitness; seed 0, deterministic mode; batch 16 at 640 px, 4 at 1280 px (memory limit); mosaic 1.0 (off for the last 10 epochs), horizontal flip 0.5, no vertical flip; other Ultralytics defaults</td></tr>
+<tr><td class="l">Inference</td><td class="l">FP16, confidence ≥ 0.05, NMS IoU 0.7, at most 300 boxes per frame, input size equal to the training size</td></tr>
+<tr><td class="l">Tracking</td><td class="l">Ultralytics <code>BYTETracker</code>; ours subclasses it and overrides only <code>get_dists</code>, <code>multi_predict</code> and <code>get_kalmanfilter</code> (about 40 lines)</td></tr>
+<tr><td class="l">Evaluation</td><td class="l">TrackEval <code>MotChallenge2DBox</code>, one class, no preprocessing (all GT boxes are valid bees), HOTA averaged over localisation thresholds α = 0.05 … 0.95, CLEAR and Identity at IoU 0.5</td></tr>
+<tr><td class="l">Timing</td><td class="l">CUDA-synchronised wall clock; detector time includes image decoding and excludes the first 10 frames (warm-up); tracker time measured separately per frame</td></tr>
+</tbody>
+</table>
+<p>The repository is organised as a Python package <code>beetrack</code> with one module per pipeline step, each run as <code>uv run python -m beetrack.&lt;module&gt;</code> from the repository root; every output goes under <code>runs/</code>. Every tracker run writes a <code>timing.json</code> with the full parameter set, and every sweep writes its table to JSON, so each number in this report can be traced to a file.</p>
+
+<!-- ============================================================ 8 -->
+<h2>Baseline System</h2>
+<p>The baseline is the standard pipeline a practitioner would build first: the fine-tuned YOLO11-s detector at 640 px followed by Ultralytics ByteTrack with its default configuration (Table 3). A COCO model without fine-tuning cannot serve as a baseline because COCO has no bee class.</p>
+<p><b>Detector training.</b> With a 50-epoch budget the 640 px model early-stopped after 22 epochs (0.32 h), the best checkpoint reaching mAP@0.5 = 0.946 and mAP@0.5:0.95 = 0.513 on the validation images. The gap between the two numbers indicates that bees are found reliably but localised loosely, which is expected for small objects with blurred wings. Test-set detection results are in Table 5.</p>
+<p class="tcap"><b>Table 5.</b> Detection results of YOLO11-s at 640 px.</p>
+<table>
+<thead><tr><th class="l">Split</th><th>Precision</th><th>Recall</th><th>mAP@0.5</th><th>mAP@0.5:0.95</th></tr></thead>
+<tbody>
+<tr><td class="l">Validation</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td>0.946</td><td>0.513</td></tr>
+<tr><td class="l">Test</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+</tbody>
+</table>
+<figure><img src="../runs/detect/y11s_640/results.png" alt="training curves" onerror="this.outerHTML='<div class=ph>TODO · runs/detect/y11s_640/results.png</div>'"><figcaption><b>Figure 3.</b> Training and validation curves of the 640 px detector.</figcaption></figure>
+<p><b>Oracle analysis.</b> To see how much of the tracking error is caused by association rather than detection, we replace the detector with the ground-truth boxes (score 1) on the validation set. Default ByteTrack then reaches only HOTA 71.3 and IDF1 76.0 with 431 ID switches, even though every bee is detected perfectly in every frame. The remaining errors are purely association failures, mostly on fast bees whose consecutive boxes do not overlap. This result motivates improving the tracker rather than only the detector.</p>
+<p class="tcap"><b>Table 6.</b> Oracle detections (ground-truth boxes) on the validation set.</p>
+<table>
+<thead><tr><th class="l">Tracker</th><th>HOTA</th><th>AssA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th></tr></thead>
+<tbody>
+<tr><td class="l">ByteTrack (default)</td><td>71.3</td><td><span class="todo">TODO</span></td><td>76.0</td><td><span class="todo">TODO</span></td><td>431</td></tr>
+<tr><td class="l">Ours</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============================================================ 9 -->
+<h2>Proposed Technical Improvement</h2>
+<p><b>Observed problem.</b> The oracle experiment shows that association fails even with perfect boxes. With a median box of about 46 px, a bee that moves more than one box width per frame produces boxes with zero overlap; the constant-velocity Kalman prediction helps only if the bee keeps its velocity, which bees often do not. Once IoU is zero, ByteTrack cannot match at any threshold, the track becomes lost and the next detection starts a new ID, which reduces IDF1 and AssA and breaks crossings.</p>
+<p><b>Why these changes.</b> Each change addresses one part of that failure and adds no learned parameters, so it keeps the tracker real-time and explainable:</p>
+<ul>
+<li><i>Buffered IoU</i> restores a non-zero, still overlap-based similarity for nearby boxes, as C-BIoU [14] proposed. Using IoU of enlarged boxes rather than centre distance keeps the cost scale-invariant and compatible with ByteTrack's thresholds.</li>
+<li><i>Adaptive buffer</i>: a fixed large buffer would also merge neighbouring slow bees at the crowded entrance. Making the buffer grow only for fast tracks and for tracks that have been lost spends the extra search area where position uncertainty is actually higher, which is what the Kalman covariance would predict.</li>
+<li><i>Velocity damping</i>: a lost bee has usually stopped, landed or turned; extrapolating its last velocity for 60 frames would carry the prediction far from where it reappears.</li>
+<li><i>Higher velocity process noise</i>: bees accelerate harder relative to their size than pedestrians, so the filter should trust the most recent measurements more.</li>
+<li><i>Longer buffer</i>: bees that are hidden behind others for one to two seconds can keep their ID.</li>
+</ul>
+<p><b>Deviation from the proposal.</b> The proposal described raising the process noise for tracks that are turning. In the implementation the per-track adaptation is carried by the buffer (speed and lost-time terms), while the process noise uses one higher fixed weight; this kept the Kalman filter unchanged and every component separately switchable. The proposal also mentioned size-normalised centre distance; buffered IoU of enlarged boxes was used instead because it is scale-normalised by construction.</p>
+<p><b>Success criterion</b> (fixed in the proposal): higher HOTA and IDF1 and fewer ID switches than ByteTrack on the same test set with the same detections. Each component is ablated on the validation set by switching it back to ByteTrack's value while keeping the others (Table 10).</p>
+
+<!-- ============================================================ 10 -->
+<h2>Experimental Setup</h2>
+<h3>Fairness rules</h3>
+<ul>
+<li>Baseline and improved methods are evaluated on the same held-out test set; test labels are never used to tune hyperparameters, choose checkpoints or select tracker settings.</li>
+<li>One principal factor changes per experiment. Experiment 1 changes only the tracker (identical cached detections); Experiment 2 changes only the detector input size (identical tracker and training budget).</li>
+<li>Hardware, seed (0), preprocessing, model version, training budget and evaluation settings are fixed and listed in Table 4; each experiment reports objective, controlled settings, results, interpretation and failure cases.</li>
+</ul>
+<h3>Metrics</h3>
+<p>Detection: precision, recall, mAP@0.5 and mAP@0.5:0.95. Tracking: HOTA with its detection and association components, IDF1, MOTA, ID switches (IDSW), false positives and false negatives. HOTA at threshold α is the geometric mean of detection and association accuracy and is averaged over α:</p>
+<div class="eq"><div class="m">HOTA<sub>α</sub> = √( DetA<sub>α</sub> · AssA<sub>α</sub> ), &nbsp;&nbsp; HOTA = <span class="frac"><span>1</span><span>19</span></span> Σ<sub>α ∈ {0.05, …, 0.95}</sub> HOTA<sub>α</sub></div><div class="n">(5)</div></div>
+<p>Counting: the count error <i>E</i> of equation (4). Speed: detector milliseconds per frame, tracker milliseconds per frame and end-to-end FPS = 1000 / (detector ms + tracker ms).</p>
+<h3>Tuning protocol (validation only)</h3>
+<p><code>sweep.py</code> runs grids of tracker settings on the cached validation detections and ranks them by HOTA. Grids: <i>buffer</i> (<i>b</i> ∈ {0.1, 0.2, 0.3, 0.5} × <i>g</i> ∈ {0, 0.1} × <i>k</i> ∈ {0, 0.5, 1}; 24 settings), <i>motion</i> (δ ∈ {0.8, 0.9, 1} × 1/<i>q</i><sub>v</sub> ∈ {40, 80, 160} × track_buffer ∈ {30, 60, 90}; 27 settings), <i>thresh</i> (score and match thresholds for both trackers; 36 settings) and <i>ablation</i> (7 settings). The selected values are frozen before the test set is evaluated. Selected configuration: <span class="todo">TODO</span>.</p>
+<h3>Robustness conditions</h3>
+<ul>
+<li><b>Synthetic image corruptions</b>, applied only to test frames before detection, one at a time: <i>dark</i> (intensity × 0.4, dusk or under-exposure), <i>bright</i> (× 1.6 + 20, clipped; direct sun), <i>blur</i> (9-px horizontal motion-blur kernel), <i>noise</i> (Gaussian, σ = 15, fixed seed). The detector is not retrained.</li>
+<li><b>Frame dropping</b>: only every <i>k</i>-th frame (<i>k</i> = 2, 3, 5, i.e. 12.5, 8.3 and 5 fps) is given to the tracker and evaluated, simulating faster motion per processed frame or a slower camera.</li>
+<li><b>Crowd density</b>: results per test sequence, which range from 7.9 to 25.0 bees per frame (Table 2).</li>
+</ul>
+<p>The proposal also listed lighting and shadow by scene group; BEE24 provides no scene labels, so lighting is studied with the synthetic dark and bright conditions instead.</p>
+
+<!-- ============================================================ 11 -->
+<h2>Quantitative Results</h2>
+<p>Table 7 gives the main test-set result of the complete system, with the 640 px detector and the validation-selected settings of our tracker.</p>
+<p class="tcap"><b>Table 7.</b> Test set (5 official BEE24 test videos), identical 640 px detections.</p>
+<table class="wide">
+<thead><tr><th class="l">Tracker</th><th>HOTA ↑</th><th>DetA ↑</th><th>AssA ↑</th><th>IDF1 ↑</th><th>MOTA ↑</th><th>IDSW ↓</th><th>FP ↓</th><th>FN ↓</th><th>Count err ↓ (/753)</th><th>Tracker ms ↓</th></tr></thead>
+<tbody>
+<tr><td class="l">ByteTrack (default)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr class="best"><td class="l">Ours (motion-adaptive)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr class="sep"><td class="l">TOPICTrack [16] (reference, different detector)</td><td>46.6</td><td>–</td><td>–</td><td>59.7</td><td>66.7</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+</tbody>
+</table>
+<p class="tcap"><b>Table 8.</b> Processing speed on the RTX 4060 Laptop GPU (mean over the test set).</p>
+<table>
+<thead><tr><th class="l">Configuration</th><th>Detector ms / frame</th><th>Tracker ms / frame</th><th>End-to-end FPS</th><th>Demo FPS (live)</th></tr></thead>
+<tbody>
+<tr><td class="l">640 px + ByteTrack</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">640 px + ours</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">1280 px + ours</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+</tbody>
+</table>
+<p class="tcap"><b>Table 9.</b> Line-crossing counts per test sequence (in / out), 640 px detections.</p>
+<table>
+<thead><tr><th class="l">Sequence</th><th>Ground truth</th><th>ByteTrack</th><th>Ours</th><th>Error ByteTrack</th><th>Error ours</th></tr></thead>
+<tbody>
+<tr><td class="l">BEE24-12</td><td>6 / 5</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">BEE24-13</td><td>19 / 17</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">BEE24-16</td><td>48 / 57</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">BEE24-34</td><td>168 / 145</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">BEE24-36</td><td>157 / 131</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr class="sep"><td class="l"><b>Total</b></td><td>398 / 355</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+</tbody>
+</table>
+<p><b>Interpretation.</b> <span class="todo">TODO</span> (expected discussion: which metrics change most; whether gains come from AssA rather than DetA, as the method only changes association; how count error follows IDSW and fragmentation; tracker overhead relative to detector time).</p>
+<figure class="half"><img src="../runs/figs/BEE24-36_ours_trajectories.png" alt="trajectories" onerror="this.outerHTML='<div class=ph>TODO · runs/figs/BEE24-36_ours_trajectories.png</div>'"><figcaption><b>Figure 4.</b> Predicted trajectories, BEE24-36, first 60 s (ours); dashed line = counting line.</figcaption></figure><figure class="half"><img src="../runs/figs/BEE24-36_ours_heatmap.png" alt="heatmap" onerror="this.outerHTML='<div class=ph>TODO · runs/figs/BEE24-36_ours_heatmap.png</div>'"><figcaption><b>Figure 5.</b> Occupancy heatmap of predicted box centres, BEE24-36.</figcaption></figure>
+<figure class="half"><img src="../runs/figs/BEE24-36_ours_counts.png" alt="counts" onerror="this.outerHTML='<div class=ph>TODO · runs/figs/BEE24-36_ours_counts.png</div>'"><figcaption><b>Figure 6.</b> In/out crossings per 20 s, ground truth vs. ours, BEE24-36.</figcaption></figure><figure class="half"><img src="../runs/figs/BEE24-36_ours_lengths.png" alt="track lengths" onerror="this.outerHTML='<div class=ph>TODO · runs/figs/BEE24-36_ours_lengths.png</div>'"><figcaption><b>Figure 7.</b> Track-length distribution, ground truth vs. ours, BEE24-36.</figcaption></figure>
+
+<!-- ============================================================ 12 -->
+<h2>Controlled Experiments</h2>
+<h3>Experiment 1: association method</h3>
+<p><b>Objective.</b> Measure whether motion-adaptive association improves identity preservation over default ByteTrack, and which component is responsible.</p>
+<p><b>Controlled settings.</b> Identical cached detections (YOLO11-s, 640 px, same weights), identical score thresholds, same sequences and evaluation code. Only the association changes. Test results are in Table 7; the ablation below is on validation data, where tuning is allowed.</p>
+<p class="tcap"><b>Table 10.</b> Ablation on the validation set (640 px detections). Each row switches one component of ours back to ByteTrack's value.</p>
+<table class="wide">
+<thead><tr><th class="l">Setting</th><th class="l">Change from ours</th><th>HOTA</th><th>AssA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th><th>Count err (/298)</th></tr></thead>
+<tbody>
+<tr><td class="l">ByteTrack</td><td class="l">all components off</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr class="best"><td class="l">Ours</td><td class="l">–</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr class="sep"><td class="l">− buffer</td><td class="l"><i>b</i> = <i>g</i> = <i>k</i> = 0 (plain IoU)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">− adaptive</td><td class="l"><i>g</i> = <i>k</i> = 0 (fixed buffer)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">− damping</td><td class="l">δ = 1</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">− process noise</td><td class="l"><i>q</i><sub>v</sub> = 1/160</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">− long buffer</td><td class="l">track_buffer = 30</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+</tbody>
+</table>
+<p><b>Interpretation.</b> <span class="todo">TODO</span></p>
+<p><b>Failure cases.</b> <span class="todo">TODO</span> (cases where ours is worse than ByteTrack, e.g. merges of neighbouring bees caused by a large buffer at the crowded entrance).</p>
+
+<h3>Experiment 2: detector input size</h3>
+<p><b>Objective.</b> Test whether a higher input resolution improves detection of small bees enough to improve tracking, and at what speed cost.</p>
+<p><b>Controlled settings.</b> Same architecture (YOLO11-s), same COCO initialisation, same training images, augmentation, seed, 50-epoch budget and patience; same tracker (ours, validation-selected settings) and same test set. Only the input size changes (640 vs. 1280 px). The batch size must drop from 16 to 4 at 1280 px to fit in 8 GB; this is an unavoidable side effect of the factor under study and is reported.</p>
+<p class="tcap"><b>Table 11.</b> Experiment 2: detector input size.</p>
+<table class="wide">
+<thead><tr><th class="l">Input</th><th>Batch</th><th>Epochs (stop)</th><th>Train h</th><th>Val mAP@0.5</th><th>Val mAP@.5:.95</th><th>Test mAP@0.5</th><th>Test mAP@.5:.95</th><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>Count err</th><th>FPS</th></tr></thead>
+<tbody>
+<tr><td class="l">640</td><td>16</td><td>22</td><td>0.32</td><td>0.946</td><td>0.513</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">1280</td><td>4</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+</tbody>
+</table>
+<p><b>Interpretation.</b> <span class="todo">TODO</span></p>
+<p><b>Failure cases.</b> <span class="todo">TODO</span></p>
+
+<!-- ============================================================ 13 -->
+<h2>Robustness and Failure Analysis</h2>
+<h3>Image corruptions</h3>
+<p class="tcap"><b>Table 12.</b> Test set under synthetic corruptions (640 px detector, not retrained).</p>
+<table class="wide">
+<thead><tr><th class="l" rowspan="2">Condition</th><th colspan="4">ByteTrack</th><th colspan="4">Ours</th></tr>
+<tr><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>Count err</th><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>Count err</th></tr></thead>
+<tbody>
+<tr><td class="l">clean</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">dark (× 0.4)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">bright (× 1.6 + 20)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">motion blur (9 px)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">noise (σ = 15)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+</tbody>
+</table>
+<h3>Frame dropping</h3>
+<p class="tcap"><b>Table 13.</b> Test set when only every <i>k</i>-th frame is processed (count error against the GT crossings of the subsampled sequence).</p>
+<table class="wide">
+<thead><tr><th class="l" rowspan="2">Step <i>k</i> (fps)</th><th colspan="4">ByteTrack</th><th colspan="4">Ours</th></tr>
+<tr><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>Count err</th><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>Count err</th></tr></thead>
+<tbody>
+<tr><td class="l">1 (25)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">2 (12.5)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">3 (8.3)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">5 (5)</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+</tbody>
+</table>
+<h3>Crowd density</h3>
+<p class="tcap"><b>Table 14.</b> Results per test sequence, sorted by density (640 px detections).</p>
+<table class="wide">
+<thead><tr><th class="l" rowspan="2">Sequence</th><th rowspan="2">Bees / frame</th><th colspan="3">ByteTrack</th><th colspan="3">Ours</th></tr>
+<tr><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>HOTA</th><th>IDF1</th><th>IDSW</th></tr></thead>
+<tbody>
+<tr><td class="l">BEE24-12</td><td>7.9</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">BEE24-36</td><td>10.5</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">BEE24-16</td><td>14.8</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">BEE24-34</td><td>20.7</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">BEE24-13</td><td>25.0</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+</tbody>
+</table>
+<p><b>Interpretation.</b> <span class="todo">TODO</span></p>
+<h3>Failure analysis</h3>
+<p>We inspect the frames where the two trackers disagree and where count errors occur, using the annotated demo video and the track-length histograms. Failures are grouped into the categories below; each is illustrated with a cropped frame sequence.</p>
+<ul>
+<li><b>Fast take-off and landing</b>: displacement larger than even the enlarged search region, causing fragmentation. Observed: <span class="todo">TODO</span></li>
+<li><b>Crowded entrance</b>: neighbouring bees with overlapping enlarged boxes, risking ID swaps. Observed: <span class="todo">TODO</span></li>
+<li><b>Jitter at the counting line</b>: a bee hovering on the line produces several crossings in both GT and prediction; an ID switch at the line removes or duplicates one. Observed: <span class="todo">TODO</span></li>
+<li><b>Frame borders</b>: bees entering or leaving the image are detected only partially. Observed: <span class="todo">TODO</span></li>
+<li><b>False positives</b> from shadows or hive texture, especially under corruption. Observed: <span class="todo">TODO</span></li>
+</ul>
+<figure><div class="ph">TODO · failure-case crops (e.g. runs/figs/failure_*.png): ByteTrack vs. ours on the same frames</div><figcaption><b>Figure 8.</b> Representative failure cases.</figcaption></figure>
+
+<!-- ============================================================ 14 -->
+<h2>Application and Demonstration</h2>
+<p>The working application is <code>beetrack.demo</code>. It accepts a video file or a folder of frames, runs the fine-tuned detector and the selected tracker frame by frame, and writes an annotated MP4 video and a CSV file of all tracks (frame, ID, box, score). The overlay shows, for every bee, its box and ID in a colour derived from the ID and a one-second trail indicating its heading; the counting line; and a status line with live in/out counts, the number of bees currently tracked, the tracker name and the processing FPS, measured over detection plus tracking with a 30-frame rolling window. The counting line height and the tracker (ours or ByteTrack) are command-line options, so the same video can be shown with both trackers side by side.</p>
+<p>Typical use: <code>uv run python -m beetrack.demo --source data/BEE24/test/BEE24-36/img1 --tracker ours</code>. The environment is pinned by <code>uv.lock</code>, so every team member can reproduce it with <code>uv sync</code>. The demo was also run on input not used anywhere in development: <span class="todo">TODO</span> (e.g. an unseen hive video, labelled as qualitative evidence because it has no ground truth).</p>
+<figure><img src="../runs/demo/BEE24-36_ours.jpg" alt="demo frame" onerror="this.outerHTML='<div class=ph>TODO · demo screenshot (runs/demo/BEE24-36_ours.jpg)</div>'"><figcaption><b>Figure 9.</b> Demo output on BEE24-36: boxes, IDs, trails, counting line, in/out counts and FPS.</figcaption></figure>
+
+<!-- ============================================================ 15 -->
+<h2>Limitations and Future Work</h2>
+<ul>
+<li><b>Single dataset and site.</b> All results are on BEE24. Cameras, hive types and lighting elsewhere may differ; a short annotated clip from a new site would be needed to confirm generalisation.</li>
+<li><b>Synthetic robustness.</b> Darkening, over-exposure, blur and noise are simple global image changes. Real dusk, rain or shadows of moving leaves are spatially varying and correlated over time.</li>
+<li><b>Counting protocol.</b> Counts are derived from ground-truth trajectories at a mid-height line, not from labels of actual hive entries; a bee that crosses the line without entering the hive is still counted. The protocol is suitable for comparing trackers, not for absolute colony statistics.</li>
+<li><b>Hand-designed motion model.</b> The buffer and noise parameters are tuned on six validation segments. A learned motion model, or observation-centric re-update as in OC-SORT [10], could adapt to each bee's flight.</li>
+<li><b>No appearance cue.</b> Bees look alike, but small differences in pose and pollen loads might still help short-term re-identification after occlusions.</li>
+<li><b>Hardware.</b> Speed is measured on one laptop GPU; edge deployment (e.g. ONNX or TensorRT on a Jetson at the hive) was not attempted.</li>
+</ul>
+<p>Future work: learned or interacting-multiple-model motion for take-off and landing; region-based counting at the actual entrance slot; longer-term deployment with a camera of our own; and quantised edge inference.</p>
+
+<!-- ============================================================ 16 -->
+<h2>Conclusion</h2>
+<p>BeeTrack is a complete, reproducible system that turns hive-entrance video into bee identities, trajectories and in/out counts. An oracle experiment showed that association, not only detection, limits tracking of small fast bees. Motion-adaptive association, which matches enlarged boxes whose size follows each track's speed and time lost and adjusts the motion model of lost tracks, changes test HOTA by <span class="todo">TODO</span>, IDF1 by <span class="todo">TODO</span> and ID switches by <span class="todo">TODO</span> relative to ByteTrack on identical detections, and reduces the counting error from <span class="todo">TODO</span> to <span class="todo">TODO</span>. Experiment 2 showed <span class="todo">TODO</span> for the 1280 px input. The system runs at <span class="todo">TODO</span> FPS on a laptop GPU. All tuning used validation data only, and the test set was evaluated once per final configuration.</p>
+
+<!-- ============================================================ disclosure / contributions -->
+<h2 class="nonum">External Model, Dataset and AI-Use Disclosure</h2>
+<ul>
+<li><b>Pretrained model.</b> Ultralytics YOLO11-s with COCO weights (<code>yolo11s.pt</code>), AGPL-3.0. We fine-tuned it on BEE24; no other pretrained weights were used. The baseline tracker is Ultralytics' ByteTrack implementation; our tracker subclasses it.</li>
+<li><b>Dataset.</b> BEE24 [16], downloaded from the authors' public page; no licence is stated, so it is used for coursework only and cited. No people appear in the data.</li>
+<li><b>Evaluation code.</b> TrackEval [20] (git 12c8791), unmodified; a NumPy compatibility shim restores aliases removed in NumPy 1.24.</li>
+<li><b>AI assistance.</b> Claude (Anthropic), an AI assistant, was used to help write and debug code, design and run experiments, and draft and edit this report and the slides. All design decisions, code and results were reviewed by the team; every number in this report comes from files produced by our code, and every member can explain the code.</li>
+</ul>
+
+<h2 class="nonum">Individual Contribution Statement</h2>
+<table class="wide">
+<thead><tr><th class="l">Member</th><th class="l">Technical responsibilities and completed work</th><th>Share</th></tr></thead>
+<tbody>
+<tr><td class="l">{{NAME1}}<br>{{ID1}}</td><td class="l">Data and evaluation pipeline: dataset download and inspection, train/validation/test split with leakage checks, YOLO labels, TrackEval ground truth and duplicate-ID repair, counting protocol, <code>evaluate.py</code>, frame-drop ground truth. <span class="todo">TODO member to confirm</span></td><td>25%</td></tr>
+<tr><td class="l">{{NAME2}}<br>{{ID2}}</td><td class="l">Detection model and Experiment 2: YOLO11-s fine-tuning at 640 and 1280 px, detection metrics, detection cache and synthetic corruptions (<code>train.py</code>, <code>detect.py</code>), speed measurement. <span class="todo">TODO member to confirm</span></td><td>25%</td></tr>
+<tr><td class="l">{{NAME3}}<br>{{ID3}}</td><td class="l">Tracking, improvement and Experiment 1: ByteTrack baseline, motion-adaptive association (<code>track.py</code>), oracle study, validation sweeps and ablation (<code>sweep.py</code>), failure analysis. <span class="todo">TODO member to confirm</span></td><td>25%</td></tr>
+<tr><td class="l">{{NAME4}}<br>{{ID4}}</td><td class="l">Counting, visualization, demo application and report integration: trajectory and count analytics (<code>analytics.py</code>), demo application and video (<code>demo.py</code>), figures, report and slide integration. <span class="todo">TODO member to confirm</span></td><td>25%</td></tr>
+</tbody>
+</table>
+
+<h2 class="newpage">References</h2>
+<ol class="refs">
+<li>J. Redmon, S. Divvala, R. Girshick and A. Farhadi, "You Only Look Once: Unified, real-time object detection," in <i>Proc. CVPR</i>, 2016.</li>
+<li>G. Jocher and J. Qiu, "Ultralytics YOLO11," 2024. [Online]. https://github.com/ultralytics/ultralytics</li>
+<li>Y. Zhao et al., "DETRs beat YOLOs on real-time object detection," in <i>Proc. CVPR</i>, 2024.</li>
+<li>A. Bewley, Z. Ge, L. Ott, F. Ramos and B. Upcroft, "Simple online and realtime tracking," in <i>Proc. ICIP</i>, 2016.</li>
+<li>R. E. Kalman, "A new approach to linear filtering and prediction problems," <i>J. Basic Engineering</i>, vol. 82, no. 1, 1960.</li>
+<li>H. W. Kuhn, "The Hungarian method for the assignment problem," <i>Naval Research Logistics Quarterly</i>, vol. 2, 1955.</li>
+<li>N. Wojke, A. Bewley and D. Paulus, "Simple online and realtime tracking with a deep association metric," in <i>Proc. ICIP</i>, 2017.</li>
+<li>Y. Zhang et al., "ByteTrack: Multi-object tracking by associating every detection box," in <i>Proc. ECCV</i>, 2022.</li>
+<li>N. Aharon, R. Orfaig and B.-Z. Bobrovsky, "BoT-SORT: Robust associations multi-pedestrian tracking," arXiv:2206.14651, 2022.</li>
+<li>J. Cao, J. Pang, X. Weng, R. Khirodkar and K. Kitani, "Observation-centric SORT: Rethinking SORT for robust multi-object tracking," in <i>Proc. CVPR</i>, 2023.</li>
+<li>P. Sun et al., "DanceTrack: Multi-object tracking in uniform appearance and diverse motion," in <i>Proc. CVPR</i>, 2022.</li>
+<li>A. Milan, L. Leal-Taixé, I. Reid, S. Roth and K. Schindler, "MOT16: A benchmark for multi-object tracking," arXiv:1603.00831, 2016.</li>
+<li>P. Dendorfer et al., "MOT20: A benchmark for multi object tracking in crowded scenes," arXiv:2003.09003, 2020.</li>
+<li>F. Yang, S. Odashima, S. Masui and S. Jiang, "Hard to track objects with irregular motions and similar appearances? Make it easier by buffering the matching space," in <i>Proc. WACV</i>, 2023.</li>
+<li>K. Bozek, L. Hebert, A. S. Mikheyev and G. J. Stephens, "Towards dense object tracking in a 2D honeybee hive," in <i>Proc. CVPR</i>, 2018.</li>
+<li>X. Cao et al., "TOPIC: A parallel association paradigm for multi-object tracking under complex motions and diverse scenes," <i>IEEE Trans. Image Processing</i>, 2025. (BEE24 dataset.)</li>
+<li>K. Bernardin and R. Stiefelhagen, "Evaluating multiple object tracking performance: The CLEAR MOT metrics," <i>EURASIP J. Image and Video Processing</i>, 2008.</li>
+<li>E. Ristani, F. Solera, R. Zou, R. Cucchiara and C. Tomasi, "Performance measures and a data set for multi-target, multi-camera tracking," in <i>Proc. ECCV Workshops</i>, 2016.</li>
+<li>J. Luiten et al., "HOTA: A higher order metric for evaluating multi-object tracking," <i>Int. J. Computer Vision</i>, vol. 129, 2021.</li>
+<li>J. Luiten and A. Hoffhues, "TrackEval," 2020. [Online]. https://github.com/JonathonLuiten/TrackEval</li>
+<li>D. Hendrycks and T. Dietterich, "Benchmarking neural network robustness to common corruptions and perturbations," in <i>Proc. ICLR</i>, 2019.</li>
+</ol>
+
+</body>
+</html>

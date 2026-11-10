@@ -29,7 +29,9 @@ from .common import RUNS, split_specs, write_mot
 
 BYTETRACK = dict(track_high_thresh=0.25, track_low_thresh=0.1, new_track_thresh=0.25, track_buffer=30,
                  match_thresh=0.8, fuse_score=True)                 # ultralytics/cfg/trackers/bytetrack.yaml
-OURS = dict(BYTETRACK, track_buffer=60, buffer=0.3, grow=0.1, speed=0.5, damp=0.9, q_vel=1 / 80)
+# tuned on val only (runs/eval/val/sweep_*.json); second-stage BIoU and interpolation did not help, so they stay off
+OURS = dict(BYTETRACK, new_track_thresh=0.5, track_buffer=60, buffer=0.1, grow=0.1, speed=0.5, damp=0.8, q_vel=1 / 80, second=False)
+# interp (any tracker): fill gaps <= interp frames inside a track by linear interpolation (offline post-processing)
 
 
 class Dets:
@@ -70,7 +72,8 @@ class BeeTracker(BYTETracker):
         kf._std_weight_velocity = self.args.q_vel
         return kf
 
-    def get_dists(self, tracks, detections):
+    def biou_dists(self, tracks, detections):
+        """1 - buffered IoU; the track's buffer grows with its speed and with the frames it has been lost."""
         if not tracks or not detections:
             return np.zeros((len(tracks), len(detections)), np.float32)
         a = np.array([t.xyxy for t in tracks])
@@ -78,8 +81,24 @@ class BeeTracker(BYTETracker):
         lost = np.array([self.frame_id - t.end_frame - 1 for t in tracks], np.float32).clip(0, 10)
         v = np.array([np.hypot(*t.mean[4:6]) / max(t.mean[3], 1.0) for t in tracks])   # speed in box heights / frame
         r = self.args.buffer + self.args.grow * lost + self.args.speed * np.minimum(v, 1.0)
-        dists = 1 - iou_matrix(enlarge(a, r), enlarge(b, np.full(len(b), self.args.buffer)))
-        return matching.fuse_score(dists, detections) if self.args.fuse_score else dists
+        return 1 - iou_matrix(enlarge(a, r), enlarge(b, np.full(len(b), self.args.buffer)))
+
+    def get_dists(self, tracks, detections):
+        dists = self.biou_dists(tracks, detections)
+        return matching.fuse_score(dists, detections) if self.args.fuse_score and dists.size else dists
+
+    def _second_association(self, strack_pool, u_track, detections_second, activated, refind, lost):
+        """ByteTrack's low-score stage, with buffered IoU instead of plain IoU when args.second is on."""
+        if not self.args.second:
+            return super()._second_association(strack_pool, u_track, detections_second, activated, refind, lost)
+        r_tracked = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
+        u = list(range(len(r_tracked)))
+        if r_tracked and detections_second:
+            matches, u, _ = matching.linear_assignment(self.biou_dists(r_tracked, detections_second), thresh=0.5)
+            self._apply_matches(matches, r_tracked, detections_second, activated, refind)
+        for it in u:
+            r_tracked[it].mark_lost()
+            lost.append(r_tracked[it])
 
     def multi_predict(self, tracks):
         for t in tracks:
@@ -117,7 +136,80 @@ def run_sequence(dets, n, tracker, step=1):
         out = tracker.update(d)
         secs += time.perf_counter() - t0
         rows += [[k, tid, x1, y1, x2 - x1, y2 - y1, s] for x1, y1, x2, y2, tid, s in out]
-    return rows, secs
+    a = tracker.args
+    if getattr(a, "stitch", 0):
+        rows = stitch(rows, a.stitch, getattr(a, "stitch_dist", 2.0))
+    gap = getattr(a, "interp", 0)
+    return (interpolate(rows, gap) if gap else rows), secs
+
+
+def stitch(rows, max_gap, max_dist):
+    """Tracklet stitching: a track that starts <= max_gap frames after another one ended, within max_dist box
+    heights of that track's last centre, continues its ID (greedy, closest first). Needs max_gap frames of delay."""
+    if not rows:
+        return rows
+    a = np.array(rows, dtype=np.float64)
+    ends, starts = {}, {}
+    for tid in np.unique(a[:, 1]):
+        t = a[a[:, 1] == tid]
+        e, s = t[t[:, 0].argmax()], t[t[:, 0].argmin()]
+        ends[tid] = (e[0], e[2] + e[4] / 2, e[3] + e[5] / 2, e[5])
+        starts[tid] = (s[0], s[2] + s[4] / 2, s[3] + s[5] / 2)
+    cand = []
+    for i, (fe, xe, ye, he) in ends.items():
+        for j, (fs, xs, ys) in starts.items():
+            if i != j and 0 < fs - fe <= max_gap:
+                d = np.hypot(xs - xe, ys - ye) / max(he, 1.0)
+                if d <= max_dist:
+                    cand.append((d, i, j))
+    parent, used_end, used_start = {}, set(), set()
+    for d, i, j in sorted(cand):
+        if i not in used_end and j not in used_start:
+            parent[j] = i
+            used_end.add(i)
+            used_start.add(j)
+
+    def root(t):
+        while t in parent:
+            t = parent[t]
+        return t
+    for r in rows:
+        r[1] = root(r[1])
+    return rows
+
+
+def interpolate(rows, max_gap):
+    """Linearly fill missing frames (gap <= max_gap) between two boxes of the same track."""
+    if not rows:
+        return rows
+    a = np.array(rows, dtype=np.float64)
+    extra = []
+    for tid in np.unique(a[:, 1]):
+        t = a[a[:, 1] == tid]
+        t = t[np.argsort(t[:, 0])]
+        for p, q in zip(t[:-1], t[1:]):
+            g = int(q[0] - p[0])
+            if 1 < g <= max_gap + 1:
+                for j in range(1, g):
+                    w = j / g
+                    extra.append([p[0] + j, tid, *(p[2:6] * (1 - w) + q[2:6] * w), min(p[6], q[6])])
+    return rows + extra
+
+
+def _check_interpolate():
+    r = interpolate([[1, 7, 0, 0, 10, 10, 0.9], [4, 7, 30, 0, 10, 10, 0.8]], 5)
+    assert [x[2] for x in r[2:]] == [10.0, 20.0] and len(r) == 4, r
+    assert len(interpolate([[1, 7, 0, 0, 1, 1, 1], [9, 7, 0, 0, 1, 1, 1]], 5)) == 2   # gap too long: untouched
+
+
+
+def _check_stitch():
+    r = stitch([[1, 1, 0, 0, 10, 10, 1], [2, 1, 5, 0, 10, 10, 1], [5, 2, 12, 0, 10, 10, 1], [5, 3, 500, 0, 10, 10, 1]], 10, 2.0)
+    assert [x[1] for x in r] == [1, 1, 1, 3], r
+
+
+_check_interpolate()
+_check_stitch()
 
 
 def parse_set(items):

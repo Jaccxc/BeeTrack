@@ -1,0 +1,3 @@
+# built PDFs contain team names/IDs from proposal/team.json
+*.pdf
+_build_*.html

@@ -1,0 +1,80 @@
+/* BeeTrack report: shared print stylesheet (A4). EN uses Cambria/Calibri, ZH uses Microsoft JhengHei. */
+@page { size: A4; margin: 20mm 18mm 20mm 18mm; }
+
+:root { --ink: #1d1d1f; --mute: #5b5b60; --rule: #c9c9ce; --soft: #f3f3f5; --accent: #9a5b00; }
+html { font-size: 10pt; }
+body { margin: 0; color: var(--ink); background: #fff; line-height: 1.45; text-align: justify; hyphens: auto; }
+body.en { font-family: Cambria, "Times New Roman", serif; }
+body.en h1, body.en h2, body.en h3, body.en .title, body.en table, body.en figcaption, body.en .arch { font-family: Calibri, "Segoe UI", sans-serif; }
+body.zh { font-family: "Microsoft JhengHei", "Microsoft JhengHei UI", sans-serif; line-height: 1.7; text-align: left; }
+
+/* title page */
+.cover { height: 250mm; display: flex; flex-direction: column; justify-content: center; text-align: center; break-after: page; }
+.cover .course { color: var(--mute); font-size: 11pt; letter-spacing: .04em; }
+.cover .title { font-size: 30pt; font-weight: 700; margin: 6mm 0 2mm; }
+.cover .subtitle { font-size: 15pt; margin-bottom: 14mm; }
+.cover table { margin: 0 auto; min-width: 60%; }
+.cover .meta { margin-top: 12mm; color: var(--mute); }
+
+/* numbered chapters */
+body { counter-reset: h2; }
+h2 { counter-increment: h2; counter-reset: h3; font-size: 15pt; margin: 9mm 0 3mm; padding-bottom: 1.5mm; border-bottom: 1.5px solid var(--ink); break-after: avoid; }
+h2::before { content: counter(h2) ".\2002"; color: var(--accent); }
+h2.nonum { counter-increment: none; }
+h2.nonum::before { content: none; }
+h3 { counter-increment: h3; font-size: 12pt; margin: 5mm 0 2mm; break-after: avoid; }
+h3::before { content: counter(h2) "." counter(h3) "\2002"; color: var(--accent); }
+h4 { font-size: 10.5pt; margin: 3mm 0 1mm; break-after: avoid; }
+.newpage { break-before: page; }
+p { margin: 0 0 2.4mm; orphans: 3; widows: 3; }
+ul, ol { margin: 0 0 2.4mm; padding-left: 6mm; }
+li { margin-bottom: 1mm; }
+code, .mono { font-family: Consolas, "Courier New", monospace; font-size: 9pt; }
+
+/* abstract / keywords */
+.abstract { background: var(--soft); padding: 4mm 5mm; border-left: 3px solid var(--accent); }
+.keywords { color: var(--mute); margin-top: 2mm; }
+
+/* tables: light rules, booktabs style */
+table { border-collapse: collapse; margin: 2mm auto 1.5mm; font-size: 9pt; break-inside: avoid; }
+th, td { padding: 1.1mm 2.4mm; text-align: center; vertical-align: top; }
+td.l, th.l { text-align: left; }
+thead th { border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--ink); font-weight: 700; }
+tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); }
+tr.sep td { border-top: 1px solid var(--rule); }
+tr.best td { font-weight: 700; }
+.tcap { font-size: 9pt; text-align: center; margin: 3mm 0 1mm; break-after: avoid; }
+.tcap b, figcaption b { color: var(--accent); }
+.wide { width: 100%; }
+
+/* figures */
+figure { margin: 3mm 0; text-align: center; break-inside: avoid; }
+figure img { max-width: 100%; max-height: 72mm; }
+figure.half { display: inline-block; width: 48%; vertical-align: top; margin: 2mm 0.8%; }
+figcaption { font-size: 9pt; color: var(--mute); margin-top: 1.5mm; text-align: center; }
+.ph { border: 1.5px dashed var(--rule); background: var(--soft); color: var(--mute); height: 42mm; display: flex; align-items: center; justify-content: center; font-size: 9pt; padding: 0 4mm; }
+
+/* placeholders for values not measured yet */
+.todo { background: #ffe9a8; color: #6b4a00; font-weight: 700; padding: 0 1mm; border-radius: 1mm; font-family: Calibri, "Microsoft JhengHei", sans-serif; font-size: 8.5pt; }
+
+/* equations */
+.eq { display: flex; align-items: center; margin: 2.5mm 0; break-inside: avoid; }
+.eq .m { flex: 1; text-align: center; font-family: Cambria, "Cambria Math", "Times New Roman", serif; font-size: 11pt; }
+.eq .n { width: 10mm; text-align: right; color: var(--mute); }
+.frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-size: 90%; }
+.frac > span:first-child { border-bottom: 1px solid currentColor; padding: 0 1mm; }
+
+/* architecture block diagram */
+.arch { display: flex; align-items: stretch; gap: 1.5mm; margin: 3mm 0 1mm; font-size: 8.5pt; break-inside: avoid; }
+.arch .blk { flex: 1; border: 1px solid var(--ink); border-radius: 1.5mm; padding: 2mm; text-align: center; }
+.arch .blk b { display: block; margin-bottom: 1mm; font-size: 9.5pt; }
+.arch .blk.hl { border: 2px solid var(--accent); background: #fff6e8; }
+.arch .ar { align-self: center; color: var(--mute); font-size: 12pt; }
+.archnote { font-size: 8.5pt; color: var(--mute); text-align: center; margin-bottom: 2mm; }
+
+/* boxed notes and references */
+.note { border: 1px solid var(--rule); padding: 2.5mm 4mm; margin: 2.5mm 0; font-size: 9.5pt; break-inside: avoid; }
+ol.refs { font-size: 9pt; padding-left: 7mm; }
+ol.refs li { margin-bottom: 1.4mm; }
+
+@media screen { body { max-width: 180mm; margin: 10mm auto; } .cover { height: auto; min-height: 220mm; } }
