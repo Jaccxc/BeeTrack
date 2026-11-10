@@ -1,5 +1,5 @@
 """Fine-tune a COCO-pretrained YOLO11-s on BEE24 (one class: bee).
-run: .venv\\Scripts\\python -m beetrack.train --imgsz 640     (and --imgsz 1280 for Experiment 2)
+run: uv run python -m beetrack.train --imgsz 640     (and --imgsz 1280 for Experiment 2)
 weights end up in runs/detect/y11s_<imgsz>/weights/best.pt
 """
 import argparse

@@ -1,5 +1,5 @@
 """Tracking metrics (TrackEval: HOTA, CLEAR/MOTA, Identity/IDF1) and line-crossing count error.
-run: .venv\\Scripts\\python -m beetrack.evaluate --split test --trackers bytetrack ours
+run: uv run python -m beetrack.evaluate --split test --trackers bytetrack ours
 tracker outputs are read from runs/trackers/<split>/<name>/data/<seq>.txt
 """
 import argparse

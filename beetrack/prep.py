@@ -1,5 +1,5 @@
 """Prepare BEE24 for training and evaluation.
-run: .venv\\Scripts\\python -m beetrack.prep      (from courses/dlia/final_project)
+run: uv run python -m beetrack.prep      (from the repository root)
 
 - YOLO labels: one .txt next to every training image (Ultralytics looks there when the path has no 'images' folder)
 - runs/data/{train,val}.txt image lists (frame stride on long videos) and runs/data/bee24.yaml

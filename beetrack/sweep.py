@@ -1,5 +1,5 @@
 """Run many tracker settings on cached detections and print one metrics table (tuning and ablation, val only).
-run: .venv\\Scripts\\python -m beetrack.sweep --dets y11s_640 --split val --grid ablation
+run: uv run python -m beetrack.sweep --dets y11s_640 --split val --grid ablation
 writes runs/eval/<split>/sweep_<grid>_<dets>.json
 """
 import argparse

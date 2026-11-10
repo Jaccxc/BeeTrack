@@ -1,5 +1,5 @@
 """BeeTrack demo: hive-entrance video in, annotated video + tracks CSV out.
-run: .venv\\Scripts\\python -m beetrack.demo --source <video file or image folder> [--tracker ours|bytetrack] [--out runs/demo]
+run: uv run python -m beetrack.demo --source <video file or image folder> [--tracker ours|bytetrack] [--out runs/demo]
 draws boxes, IDs, 1-second trails, the counting line, live in/out counts and the measured FPS.
 """
 import argparse

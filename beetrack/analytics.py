@@ -1,5 +1,5 @@
 """Trajectory and counting analytics from tracker output (Section 7A): figures for the report.
-run: .venv\\Scripts\\python -m beetrack.analytics --split test --tracker ours --seq BEE24-36
+run: uv run python -m beetrack.analytics --split test --tracker ours --seq BEE24-36
 writes runs/figs/<seq>_<tracker>_{trajectories,heatmap,counts,lengths}.png and <seq>_<tracker>_analytics.json
 """
 import argparse

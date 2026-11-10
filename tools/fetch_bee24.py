@@ -1,5 +1,5 @@
 """Download BEE24.zip (2.2 GB, Google Drive) into data/ and unzip it.
-run: poetry run python courses/dlia/final_project/tools/fetch_bee24.py
+run: uv run python tools/fetch_bee24.py
 Source: https://holmescao.github.io/datasets/BEE24 (Cao et al., IEEE TIP 2025)."""
 import html, pathlib, re, urllib.parse, urllib.request, zipfile
 

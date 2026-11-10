@@ -1,6 +1,6 @@
 """Run the detector once on every frame of the val/test sequences and cache the boxes, so every tracker
 setting is compared on identical detections (Experiment 1 changes only the tracker).
-run: .venv\\Scripts\\python -m beetrack.detect --weights runs/detect/y11s_640/weights/best.pt --imgsz 640 --split test
+run: uv run python -m beetrack.detect --weights runs/detect/y11s_640/weights/best.pt --imgsz 640 --split test
 writes runs/dets/<tag>/<split>/<seq>.npy  rows: frame, x1, y1, x2, y2, score   (+ <seq>.json with timing)
 """
 import argparse

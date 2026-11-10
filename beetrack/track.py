@@ -1,7 +1,7 @@
 """Trackers: Ultralytics ByteTrack (baseline) and BeeTracker (ours, motion-adaptive association).
 run on cached detections (fair comparison: the detector output is identical for every tracker):
-  .venv\\Scripts\\python -m beetrack.track --dets y11s_640 --split val --tracker bytetrack
-  .venv\\Scripts\\python -m beetrack.track --dets y11s_640 --split val --tracker ours --set buffer=0.3 track_buffer=60 --name ours_b03
+  uv run python -m beetrack.track --dets y11s_640 --split val --tracker bytetrack
+  uv run python -m beetrack.track --dets y11s_640 --split val --tracker ours --set buffer=0.3 track_buffer=60 --name ours_b03
 writes runs/trackers/<split>/<name>/data/<seq>.txt (MOTChallenge) + <name>/timing.json
 
 BeeTracker changes three things inside ByteTrack, each switchable for the ablation:

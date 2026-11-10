@@ -8,16 +8,14 @@ Detecting, tracking and counting honeybees at the hive entrance — DLIA (M5261)
 - **Analytics**: trajectories, occupancy heatmap, in/out counting at a virtual line
 - **Data**: [BEE24](https://holmescao.github.io/datasets/BEE24) (36 videos, MOT-format boxes with track IDs)
 
-## Setup (Python 3.11, NVIDIA GPU)
+## Setup ([uv](https://docs.astral.sh/uv/), Python 3.11)
 
 ```bash
-python -m venv .venv
-.venv\Scripts\python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
-.venv\Scripts\python -m pip install -r requirements.txt
-.venv\Scripts\python tools/fetch_bee24.py          # downloads BEE24 to data/BEE24 (2.3 GB)
+uv sync                               # creates .venv from uv.lock; CUDA 12.8 PyTorch on Windows/Linux, PyPI build on macOS
+uv run python tools/fetch_bee24.py    # downloads BEE24 to data/BEE24 (2.3 GB)
 ```
 
-On Linux/macOS use `.venv/bin/python`. All commands run from the repository root.
+Run every command below as `uv run python -m ...` from the repository root.
 
 ## Pipeline
 

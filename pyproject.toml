@@ -1,0 +1,27 @@
+[project]
+name = "beetrack"
+version = "0.1.0"
+description = "Detecting, tracking and counting honeybees at the hive entrance (DLIA final project)"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "torch==2.11.0",
+    "torchvision==0.26.0",
+    "ultralytics==8.4.208",
+    "lap",
+    "scipy",
+    "opencv-python",
+    "matplotlib",
+    "trackeval",
+]
+
+# CUDA 12.8 wheels on Windows/Linux; macOS gets the regular PyPI build (CPU / MPS)
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'win32' or sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cu128", marker = "sys_platform == 'win32' or sys_platform == 'linux'" }]
+trackeval = { git = "https://github.com/JonathonLuiten/TrackEval.git" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
