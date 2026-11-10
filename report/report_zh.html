@@ -15,10 +15,10 @@
   <table>
     <thead><tr><th class="l">組員</th><th>學號</th><th class="l">主要負責</th></tr></thead>
     <tbody>
-      <tr><td class="l">{{NAME1}}</td><td>{{ID1}}</td><td class="l">資料與評估流程</td></tr>
-      <tr><td class="l">{{NAME2}}</td><td>{{ID2}}</td><td class="l">偵測模型、實驗二</td></tr>
-      <tr><td class="l">{{NAME3}}</td><td>{{ID3}}</td><td class="l">追蹤與改進、實驗一</td></tr>
-      <tr><td class="l">{{NAME4}}</td><td>{{ID4}}</td><td class="l">計數、視覺化、Demo、報告整合</td></tr>
+      <tr><td class="l">{{NAME1}}</td><td>{{ID1}}</td><td class="l">資料與評估</td></tr>
+      <tr><td class="l">{{NAME2}}</td><td>{{ID2}}</td><td class="l">偵測、實驗二</td></tr>
+      <tr><td class="l">{{NAME3}}</td><td>{{ID3}}</td><td class="l">追蹤、改進、實驗一</td></tr>
+      <tr><td class="l">{{NAME4}}</td><td>{{ID4}}</td><td class="l">計數、視覺化、Demo、報告</td></tr>
     </tbody>
   </table>
   <div class="meta">Project 1：即時多目標偵測與追蹤<br>期末發表：2026 年 12 月 24 日</div>
@@ -27,8 +27,8 @@
 <!-- ============================================================ 1 -->
 <h2>摘要</h2>
 <div class="abstract">
-<p>蜂巢出入口的流量，也就是出巢與回巢的蜜蜂數量，能直接反映蜂群的活動力，但靠人眼計數無法長期進行。本文提出 BeeTrack：一套從蜂巢口影片中偵測每一隻蜜蜂、為每隻蜜蜂維持固定 ID、繪出軌跡，並計算穿越虛擬計數線之進出數量的系統。偵測器採用 COCO 預訓練的 YOLO11-s，以 BEE24 資料集微調；追蹤器以 ByteTrack 為基礎。蜜蜂體型小、外觀幾乎相同且飛行快速，我們以 oracle 實驗證明：即使偵測完全正確，預設的 ByteTrack 在驗證集上也只有 HOTA 71.3，關聯本身就是瓶頸。我們提出的改進「運動自適應關聯」以緩衝 IoU 取代一般 IoU，且搜尋範圍會隨軌跡速度與跟丟的影格數放大；同時讓跟丟軌跡的速度逐格衰減、提高 Kalman filter 的速度 process noise，並延長跟丟軌跡的保留時間。所有參數只在驗證資料上調整，BEE24 官方的 5 支測試影片（10,762 格、168,230 個框）只用於最終評估。在相同偵測結果下，測試集 HOTA 由 <span class="todo">TODO</span> 變為 <span class="todo">TODO</span>，IDF1 由 <span class="todo">TODO</span> 變為 <span class="todo">TODO</span>，ID 換錯次數由 <span class="todo">TODO</span> 變為 <span class="todo">TODO</span>；在 753 次真值穿越中，計數誤差由 <span class="todo">TODO</span> 降至 <span class="todo">TODO</span>。第二組對照實驗比較偵測器輸入 640 與 1280 像素；穩健性分析涵蓋人工變暗、過曝、動態模糊與感測器雜訊、跳格處理，以及不同擁擠程度。整套系統在 RTX 4060 筆電 GPU 上的處理速度為 <span class="todo">TODO</span> FPS。</p>
-<p class="keywords"><b>關鍵詞：</b>多目標追蹤、蜜蜂監測、YOLO11、ByteTrack、緩衝 IoU、Kalman filter、HOTA、穿越線計數</p>
+<p>蜂巢出入口的流量，也就是出巢與回巢的蜜蜂數量，能直接反映蜂群的活動力，但靠人眼計數無法長期進行。本文提出 BeeTrack：一套從蜂巢口影片中偵測每一隻蜜蜂、為每隻蜜蜂維持固定 ID、繪出軌跡，並計算進出「巢口區域」之蜜蜂數量的系統。偵測器採用 COCO 預訓練的 YOLO11-s，以 BEE24 資料集微調；追蹤器 BeeTracker 以 ByteTrack 為基礎，加入「運動自適應關聯」：緩衝 IoU 的搜尋邊界會隨軌跡速度與跟丟的影格數放大、跟丟軌跡的速度逐格衰減、提高 Kalman 速度雜訊，並延長跟丟軌跡的保留時間。所有參數只在驗證資料上調整，BEE24 官方的 5 支測試影片（10,762 格、168,230 個框）每個設定只跑一次。在相同偵測結果下，相較於預設 ByteTrack，BeeTracker 把測試集 HOTA 由 40.2 提升到 45.2、IDF1 由 48.1 提升到 55.7、MOTA 由 15.0 提升到 46.7，ID 換錯由 2,186 次降到 1,314 次。與使用相同開新軌跡門檻的 ByteTrack 相比，HOTA 相同（45.2），但 MOTA（+3.5）、ID 換錯（−5%）與計數誤差較佳。以巢口區域取代畫面中線來計數，使本方法在測試集上的相對計數誤差由 83% 降到 35%（341 次真值進出中誤差 119）；即使用真值框仍有 29%，可見剩下的誤差主要來自擁擠巢口的軌跡斷裂。1280 像素偵測器提升了 HOTA（48.0）與 MOTA（60.3），但沒有改善計數。在掉幀處理下本方法退化最緩和（每 5 格取 1 格時，比調整後的 ByteTrack 高 2.1 HOTA、ID 換錯少 37%），且在四種人工影像劣化下都維持最低的區域計數誤差。整套流程在 RTX 4060 筆電 GPU 上離線（含影像解碼）約 54 FPS，即時 demo 為 66 FPS。</p>
+<p class="keywords"><b>關鍵詞：</b>多目標追蹤、蜜蜂監測、YOLO11、ByteTrack、緩衝 IoU、Kalman filter、HOTA、巢口計數</p>
 </div>
 
 <!-- ============================================================ 2 -->
@@ -38,11 +38,11 @@
 <h3>問題的困難之處</h3>
 <p>多數多目標追蹤器是為行人設計的，蜜蜂比行人難追得多。在 950 × 600 的畫面中，一個蜜蜂框大約只有 46 × 50 像素；數十隻蜜蜂外觀幾乎無法區分，外觀特徵的幫助有限；而且蜜蜂會在幾格之內加速、轉向或降落。以等速 Kalman filter 預測位置、再用框的重疊來配對的追蹤器，常會遇到快速蜜蜂的預測框與下一格偵測框完全不重疊的情形，於是軌跡跟丟、以新的 ID 重新開始，甚至和旁邊的蜜蜂對調 ID。偏偏蜂巢口正是最擁擠、也正是要計數的區域。</p>
 <h3>目標、輸入與輸出</h3>
-<p>本系統對應課程的 Project 1（即時多目標偵測與追蹤）。輸入為蜂巢口影片（影片檔或影格資料夾）；輸出為每一格中每隻蜜蜂的框與追蹤 ID、每個 ID 的軌跡與方向、水平計數線上的累計進出數量、實測處理速度、標註後的影片，以及所有軌跡的 CSV 檔。具體目標如下：</p>
+<p>本系統對應課程的 Project 1（即時多目標偵測與追蹤）。輸入為蜂巢口影片（影片檔或影格資料夾）；輸出為每一格中每隻蜜蜂的框與追蹤 ID、每個 ID 的軌跡與方向、巢口的累計進出數量、實測處理速度、標註後的影片，以及所有軌跡的 CSV 檔。具體目標如下：</p>
 <ol>
 <li>微調一個能偵測蜜蜂的深度學習偵測器（R1）；</li>
 <li>建立線上追蹤器，在漏偵測與短暫遮擋下仍能維持 ID，並提供軌跡與計數分析（R2）；</li>
-<li>提出有理由的關聯改進，在相同偵測結果下與預設 ByteTrack 比較（R3）；</li>
+<li>提出有理由的關聯改進，在相同偵測結果下與 ByteTrack 比較（R3）；</li>
 <li>完成兩組對照實驗：關聯方法與偵測器輸入大小（R4），以 HOTA、IDF1、MOTA、ID 換錯、計數誤差與 FPS 量化評估，並分析至少三種困難條件（R5）；</li>
 <li>提供可重現、能端到端處理影片的 demo 程式（R6）。</li>
 </ol>
@@ -50,8 +50,8 @@
 <ul>
 <li>為 BEE24 建立無資料洩漏的評估流程：驗證集包含長時間的擁擠片段，並修正官方標註中重複 ID 的問題，產生 TrackEval 可用的真值。</li>
 <li>提出運動自適應關聯：在 ByteTrack 內部做少量修改，每一項都能單獨關閉做消融實驗，專門處理小而快速物體的失敗模式。</li>
-<li>以 oracle 分析區分關聯錯誤與偵測錯誤，並在影像劣化、跳格與擁擠程度三類條件下做穩健性研究。</li>
-<li>訂定明確的穿越線計數規則，真值與預測套用同一規則；demo 可輸出含即時計數與 FPS 的標註影片。</li>
+<li>訂定巢口區域計數規則，真值與預測套用同一規則，對在線附近徘徊的蜜蜂遠不敏感；並以 oracle 分析證明剩下的計數誤差來自軌跡斷裂，而非偵測。</li>
+<li>在影像劣化、掉幀與擁擠程度三類條件下做穩健性研究；誠實報告沒有幫助的嘗試（主結果中的軌跡縫合、短軌跡過濾、第二階段緩衝、內插）；demo 可輸出含即時計數與 FPS 的標註影片。</li>
 </ul>
 
 <!-- ============================================================ 3 -->
@@ -84,38 +84,38 @@
 <li><b>取樣間隔：</b>25 fps 影片的相鄰影格幾乎相同。長影片（≥ 1,000 格）每 5 格取 1 格作為訓練影像（驗證與測試影像每 10 格取 1 格，僅用來算 mAP）；短影片每格都用。最後得到訓練 3,740 張、驗證 840 張、測試 1,762 張偵測器影像。</li>
 <li><b>評估用真值：</b>每段驗證與測試序列都寫成 TrackEval 讀取的 MOTChallenge 資料夾：<code>gt.txt</code>（confidence、class、visibility 皆設為 1）與 <code>seqinfo.ini</code>。驗證集尾段的影格編號重新從 1 開始。</li>
 <li><b>標註修正：</b>BEE24-14、-15、-33、-35（皆為官方訓練影片）共有 993 列在同一格中把同一個 ID 給了兩隻蜜蜂，TrackEval 不接受這種檔案。評估真值中，多出來的那一筆保留原本的框、改給一個新的 ID；這只影響驗證序列，測試序列沒有這種情形。</li>
-<li><b>跳格真值：</b>穩健性實驗所需的測試真值，另外以每 <i>k</i> 格取 1 格（<i>k</i> = 2、3、5）並重新連續編號寫出，規則與追蹤器輸入完全相同。</li>
+<li><b>掉幀真值：</b>穩健性實驗所需的測試真值，另外以每 <i>k</i> 格取 1 格（<i>k</i> = 2、3、5）並重新連續編號寫出，規則與追蹤器輸入完全相同。</li>
 </ul>
-<p class="tcap"><b>表 2.</b> 測試與驗證序列統計（由真值計算）。穿越次數依第 6.5 節的計數規則。</p>
+<p class="tcap"><b>表 2.</b> 測試與驗證序列統計（由真值計算）。真值進／出依第 6.6 節的巢口區域規則。</p>
 <table>
-<thead><tr><th class="l">序列</th><th>切分</th><th>尺寸（px）</th><th>影格</th><th>框數</th><th>每格蜜蜂（平均／最多）</th><th>ID 數</th><th>真值 進／出</th></tr></thead>
+<thead><tr><th class="l">序列</th><th>切分</th><th>尺寸（px）</th><th>影格</th><th>框數</th><th>每格蜜蜂（平均／最多）</th><th>ID 數</th><th>真值 進／出（區域）</th></tr></thead>
 <tbody>
-<tr><td class="l">BEE24-12</td><td>測試</td><td>810 × 430</td><td>250</td><td>1,973</td><td>7.9 / 9</td><td>19</td><td>6 / 5</td></tr>
-<tr><td class="l">BEE24-13</td><td>測試</td><td>950 × 600</td><td>258</td><td>6,462</td><td>25.0 / 28</td><td>54</td><td>19 / 17</td></tr>
-<tr><td class="l">BEE24-16</td><td>測試</td><td>950 × 600</td><td>254</td><td>3,770</td><td>14.8 / 23</td><td>80</td><td>48 / 57</td></tr>
-<tr><td class="l">BEE24-34</td><td>測試</td><td>950 × 470</td><td>5,000</td><td>103,465</td><td>20.7 / 31</td><td>1,143</td><td>168 / 145</td></tr>
-<tr><td class="l">BEE24-36</td><td>測試</td><td>950 × 548</td><td>5,000</td><td>52,560</td><td>10.5 / 17</td><td>163</td><td>157 / 131</td></tr>
-<tr class="sep"><td class="l">BEE24-10／-15／-24／-28</td><td>驗證</td><td>950 × 590–600</td><td>640</td><td>7,584</td><td>9.9–13.5</td><td>193</td><td>65 / 59</td></tr>
-<tr><td class="l">BEE24-33 尾段</td><td>驗證</td><td>950 × 505</td><td>1,000</td><td>37,311</td><td>37.3 / 45</td><td>326</td><td>61 / 58</td></tr>
-<tr><td class="l">BEE24-35 尾段</td><td>驗證</td><td>920 × 720</td><td>1,000</td><td>9,829</td><td>9.8 / 14</td><td>67</td><td>24 / 31</td></tr>
+<tr><td class="l">BEE24-12</td><td>測試</td><td>810 × 430</td><td>250</td><td>1,973</td><td>7.9 / 9</td><td>19</td><td>1 / 3</td></tr>
+<tr><td class="l">BEE24-13</td><td>測試</td><td>950 × 600</td><td>258</td><td>6,462</td><td>25.0 / 28</td><td>54</td><td>10 / 11</td></tr>
+<tr><td class="l">BEE24-16</td><td>測試</td><td>950 × 600</td><td>254</td><td>3,770</td><td>14.8 / 23</td><td>80</td><td>26 / 37</td></tr>
+<tr><td class="l">BEE24-34</td><td>測試</td><td>950 × 470</td><td>5,000</td><td>103,465</td><td>20.7 / 31</td><td>1,143</td><td>84 / 88</td></tr>
+<tr><td class="l">BEE24-36</td><td>測試</td><td>950 × 548</td><td>5,000</td><td>52,560</td><td>10.5 / 17</td><td>163</td><td>49 / 32</td></tr>
+<tr class="sep"><td class="l">BEE24-10／-15／-24／-28</td><td>驗證</td><td>950 × 590–600</td><td>640</td><td>7,584</td><td>9.9–13.5</td><td>193</td><td>41 / 45</td></tr>
+<tr><td class="l">BEE24-33 尾段</td><td>驗證</td><td>950 × 505</td><td>1,000</td><td>37,311</td><td>37.3 / 45</td><td>326</td><td>29 / 21</td></tr>
+<tr><td class="l">BEE24-35 尾段</td><td>驗證</td><td>920 × 720</td><td>1,000</td><td>9,829</td><td>9.8 / 14</td><td>67</td><td>20 / 17</td></tr>
 </tbody>
 </table>
-<figure><img src="../proposal/img/gt_traj.jpg" alt="真值軌跡" onerror="this.outerHTML='<div class=ph>proposal/img/gt_traj.jpg</div>'"><figcaption><b>圖 1.</b> BEE24 訓練序列的真值軌跡與計數線（資料集標註，不是模型輸出）。</figcaption></figure>
+<p>測試集共有 341 次真值區域進出（進 170、出 171），驗證集 173 次（進 90、出 83）。</p>
 
 <!-- ============================================================ 5 -->
 <h2>完整系統架構</h2>
-<p>BeeTrack 是五個階段組成的 tracking-by-detection 流程（圖 2）。同一組模組有兩種用法：離線評估路徑先快取偵測結果，再讓各種追蹤設定在完全相同的輸入上評分；線上 demo 路徑則對任意影片逐格執行偵測與追蹤。</p>
+<p>BeeTrack 是五個階段組成的 tracking-by-detection 流程（圖 1）。同一組模組有兩種用法：離線評估路徑先快取偵測結果，再讓各種追蹤設定在完全相同的輸入上評分；線上 demo 路徑則對任意影片逐格執行偵測與追蹤。</p>
 <div class="arch">
   <div class="blk"><b>輸入</b>蜂巢口影片或影格資料夾<br>（25 fps）</div><div class="ar">→</div>
   <div class="blk"><b>偵測</b>YOLO11-s 微調<br>輸入 640／1280，FP16<br>框＋分數 ≥ 0.05</div><div class="ar">→</div>
-  <div class="blk hl"><b>追蹤</b>Kalman 預測<br>緩衝 IoU 第一階段<br>低分框第二階段<br>跟丟軌跡暫存</div><div class="ar">→</div>
-  <div class="blk"><b>分析</b>軌跡＋方向<br>穿越線計數<br>熱度圖、軌跡長度</div><div class="ar">→</div>
+  <div class="blk hl"><b>追蹤</b>Kalman 預測<br>自適應緩衝 IoU 第一階段<br>低分框第二階段<br>跟丟軌跡暫存</div><div class="ar">→</div>
+  <div class="blk"><b>分析</b>軌跡＋方向<br>巢口區域計數<br>熱度圖、軌跡長度</div><div class="ar">→</div>
   <div class="blk"><b>輸出</b>標註影片<br>軌跡 CSV<br>計數、FPS 紀錄</div>
 </div>
-<div class="archnote">離線路徑：<code>prep → train → detect（快取）→ track → evaluate / sweep → analytics</code>　線上路徑：<code>demo</code>（逐格偵測＋追蹤）。框起處為本文改進。</div>
-<p class="tcap" style="margin-top:0"><b>圖 2.</b> 系統方塊圖與資料流。</p>
-<p><b>資料流。</b><code>prep.py</code> 把原始標註轉成 YOLO 標籤、影像清單與 TrackEval 真值；<code>train.py</code> 微調偵測器；<code>detect.py</code> 對每一格驗證或測試影像只跑一次偵測器（可先加上人工劣化），把框（<code>frame, x1, y1, x2, y2, score</code>）存成 NumPy 快取；<code>track.py</code> 逐格把快取的框餵給任一追蹤器，輸出 MOTChallenge 格式的結果；<code>evaluate.py</code> 以 TrackEval 計算 HOTA、CLEAR、Identity 指標與穿越線計數誤差；<code>sweep.py</code> 在驗證資料上一次跑完整組追蹤設定；<code>analytics.py</code> 產生軌跡、熱度圖、計數與軌跡長度圖；<code>demo.py</code> 走線上路徑，輸出標註影片與 CSV。</p>
-<p><b>為什麼要快取偵測結果。</b>實驗一只能改變追蹤器。偵測器只跑一次、再把一模一樣的框重播給每一種追蹤設定，就能排除偵測端每次執行的差異（FP16 的非決定性、前處理），讓比較完全受控；而且數十種設定的掃描在 CPU 上幾分鐘就能跑完。</p>
+<div class="archnote">離線路徑：<code>prep → train → detect（快取）→ track → evaluate / sweep → analytics、failures</code>　線上路徑：<code>demo</code>（逐格偵測＋追蹤）。框起處為本文改進。</div>
+<p class="tcap" style="margin-top:0"><b>圖 1.</b> 系統方塊圖與資料流。</p>
+<p><b>資料流。</b><code>prep.py</code> 把原始標註轉成 YOLO 標籤、影像清單與 TrackEval 真值；<code>train.py</code> 微調偵測器；<code>detect.py</code> 對每一格驗證或測試影像只跑一次偵測器（可先加上人工劣化），把框（<code>frame, x1, y1, x2, y2, score</code>）存成 NumPy 快取；<code>track.py</code> 逐格把快取的框餵給任一追蹤器，輸出 MOTChallenge 格式的結果；<code>evaluate.py</code> 以 TrackEval 計算 HOTA、CLEAR、Identity 指標，以及三種計數規則的計數誤差；<code>sweep.py</code> 在驗證資料上一次跑完整組追蹤設定；<code>analytics.py</code> 產生軌跡、熱度圖、計數與軌跡長度圖，<code>failures.py</code> 產生失敗案例圖；<code>demo.py</code> 走線上路徑，輸出標註影片與 CSV。</p>
+<p><b>為什麼要快取偵測結果。</b>實驗一只能改變追蹤器。偵測器只跑一次（信心分數 0.05、NMS IoU 0.7、FP16），再把一模一樣的框重播給每一種追蹤設定，就能排除偵測端每次執行的差異，讓比較完全受控；而且數十種設定的掃描在 CPU 上幾分鐘就能跑完。</p>
 
 <!-- ============================================================ 6 -->
 <h2>方法與演算法</h2>
@@ -127,40 +127,48 @@
 <li>所有軌跡（追蹤中與跟丟中）先預測下一格的位置。</li>
 <li>分數 ≥ 0.25 的偵測框與軌跡配對，代價為 <i>C</i> = 1 − IoU·<i>s</i>（IoU 與偵測分數 <i>s</i> 融合），以匈牙利演算法求解，代價 &gt; 0.8 的配對不採用。</li>
 <li>剩下的追蹤中軌跡再與低分框（0.1 ≤ <i>s</i> &lt; 0.25）以一般 IoU 配對，代價 &gt; 0.5 者不採用。</li>
-<li>尚未確認的新軌跡與剩下的高分框配對；仍未配對、且 <i>s</i> ≥ 0.25 的偵測框開新軌跡。</li>
+<li>尚未確認的新軌跡與剩下的高分框配對；仍未配對、且 <i>s</i> ≥ <code>new_track_thresh</code> 的偵測框開新軌跡。</li>
 <li>超過 <code>track_buffer</code> = 30 格（1.2 秒）沒有配對的軌跡被移除；在此之前屬於「跟丟」狀態，仍可重新啟用。</li>
 </ol>
+<p>我們報告兩個版本：Ultralytics 預設值（<code>bytetrack.yaml</code>，開新軌跡門檻 0.25），以及 <b>ByteTrack-tuned</b>：只把 <code>new_track_thresh</code> 改為 0.5。這是本方法也使用的唯一門檻變更，因此 ByteTrack-tuned 能把「關聯修改」的效果與「門檻調整」的效果分開。</p>
 <h3>本文改進：運動自適應關聯</h3>
-<p>我們要解決的是幾何上的失敗：快速蜜蜂的預測框與下一格的偵測框沒有重疊，IoU 為 0，任何門檻都配不上。我們在 ByteTrack 內部做了四項修改；設計理由與逐項消融見第 9 章。</p>
-<p><b>(a) 自適應緩衝 IoU。</b>計算 IoU 之前，寬 <i>w</i>、高 <i>h</i> 的框 (<i>x</i><sub>1</sub>, <i>y</i><sub>1</sub>, <i>x</i><sub>2</sub>, <i>y</i><sub>2</sub>) 四邊各放大比例 <i>r</i>：</p>
+<p>我們要解決的是幾何上的失敗：快速蜜蜂的預測框與下一格的偵測框沒有重疊，IoU 為 0，任何門檻都配不上。我們在 ByteTrack 內部做了四項修改（<code>track.py</code> 中的 <code>BeeTracker</code> 類別）；設計理由與逐項消融見第 9 章。</p>
+<p><b>(a) 自適應邊界的緩衝 IoU。</b>計算 IoU 之前，寬 <i>w</i>、高 <i>h</i> 的框 (<i>x</i><sub>1</sub>, <i>y</i><sub>1</sub>, <i>x</i><sub>2</sub>, <i>y</i><sub>2</sub>) 四邊各放大比例 <i>r</i>：</p>
 <div class="eq"><div class="m">B<sub><i>r</i></sub> = (<i>x</i><sub>1</sub> − <i>rw</i>, &nbsp;<i>y</i><sub>1</sub> − <i>rh</i>, &nbsp;<i>x</i><sub>2</sub> + <i>rw</i>, &nbsp;<i>y</i><sub>2</sub> + <i>rh</i>)</div><div class="n">(1)</div></div>
-<p>偵測框使用固定的基本緩衝 <i>b</i>；軌跡 <i>i</i> 的緩衝則隨距上次配對的影格數 ℓ<sub><i>i</i></sub>，以及以「框高／格」為單位的速度而增加：</p>
-<div class="eq"><div class="m"><i>r<sub>i</sub></i> = <i>b</i> + <i>g</i> · min(ℓ<sub><i>i</i></sub>, 10) + <i>k</i> · min(<span class="frac"><span>‖(<i>ċ<sub>x</sub></i>, <i>ċ<sub>y</sub></i>)‖</span><span><i>h<sub>i</sub></i></span></span>, 1)</div><div class="n">(2)</div></div>
+<p>偵測框使用固定的基本邊界 <i>b</i>；軌跡 <i>i</i> 的邊界則隨距上次配對的影格數 ℓ<sub><i>i</i></sub>，以及以「框高／格」為單位的速度而增加：</p>
+<div class="eq"><div class="m"><i>r<sub>i</sub></i> = <i>b</i> + <i>g</i> · min(ℓ<sub><i>i</i></sub>, 10) + <i>k</i> · min(<span class="frac"><span>‖(<i>ċ<sub>x</sub></i>, <i>ċ<sub>y</sub></i>)‖</span><span><i>h<sub>i</sub></i></span></span>, 1), &nbsp;&nbsp; <i>b</i> = 0.1, <i>g</i> = 0.1, <i>k</i> = 0.5</div><div class="n">(2)</div></div>
 <div class="eq"><div class="m"><i>C<sub>ij</sub></i> = 1 − IoU(B<sub><i>r<sub>i</sub></i></sub>(track<sub><i>i</i></sub>), B<sub><i>b</i></sub>(det<sub><i>j</i></sub>)) · <i>s<sub>j</sub></i></div><div class="n">(3)</div></div>
-<p>此代價取代第一階段（高分框）與未確認軌跡配對中的一般 IoU；第二階段（低分框）仍維持一般 IoU，只有真的重疊時才接受弱偵測。因此靜止且剛配對上的蜜蜂只用小緩衝，而快速移動或已經消失好幾格的蜜蜂，則在較大的範圍內搜尋。</p>
-<p><b>(b) 跟丟軌跡的速度衰減。</b>軌跡處於跟丟狀態時，每次預測前把速度乘上 δ（<i>v</i> ← δ·<i>v</i>），避免看不見的蜜蜂沿著過時的速度一路飄走；搜尋範圍改由式 (2) 擴大。</p>
-<p><b>(c) 提高速度 process noise。</b>把速度權重 <i>w</i><sub>v</sub> 從 1/160 提高為 <i>q</i><sub>v</sub>，讓濾波器更快跟上突然的加速與轉向。</p>
-<p><b>(d) 延長跟丟軌跡保留時間。</b><code>track_buffer</code> 從 30 格延長為 60 格（2.4 秒），讓短暫躲在其他蜜蜂後方或短暫降落的蜜蜂能以原 ID 重新啟用。</p>
-<p class="tcap"><b>表 3.</b> 追蹤器參數。「本文」欄為 <code>track.py</code> 的預設值，最終值由驗證資料選定（第 10.3 節）。</p>
+<p>此代價取代第一階段（高分框）與未確認軌跡配對中的一般 IoU；第二階段（低分框）仍維持一般 IoU，只有真的重疊時才接受弱偵測。因此靜止且剛配對上的蜜蜂只用小邊界，而快速移動或已經消失好幾格的蜜蜂，則在較大的範圍內搜尋。</p>
+<p><b>(b) 跟丟軌跡的速度衰減。</b>軌跡處於跟丟狀態時，每次預測前把速度乘上 δ = 0.8（<i>v</i> ← δ·<i>v</i>），避免看不見的蜜蜂沿著過時的速度一路飄走；搜尋範圍改由式 (2) 擴大。</p>
+<p><b>(c) 提高速度 process noise。</b>把速度權重 <i>w</i><sub>v</sub> 從 1/160 提高為 1/80，讓濾波器更快跟上突然的加速與轉向。</p>
+<p><b>(d) 延長跟丟軌跡保留時間。</b><code>track_buffer</code> 從 30 格延長為 60 格（2.4 秒），讓短暫躲在其他蜜蜂後方或短暫降落的蜜蜂能以原 ID 重新啟用。消融顯示這項修改在驗證資料上沒有影響（表 10）。</p>
+<p class="tcap"><b>表 3.</b> 追蹤器參數（<code>track.py</code> 預設值，由驗證資料選定）。</p>
 <table>
-<thead><tr><th class="l">參數</th><th>ByteTrack（baseline）</th><th>本文</th><th class="l">意義</th></tr></thead>
+<thead><tr><th class="l">參數</th><th>ByteTrack</th><th>ByteTrack-tuned</th><th>本文</th><th class="l">意義</th></tr></thead>
 <tbody>
-<tr><td class="l">track_high / low / new thresh</td><td>0.25 / 0.1 / 0.25</td><td>0.25 / 0.1 / 0.25</td><td class="l">兩階段的分數門檻、開新軌跡門檻</td></tr>
-<tr><td class="l">match_thresh、fuse_score</td><td>0.8、開</td><td>0.8、開</td><td class="l">第一階段最大代價；IoU × 分數融合</td></tr>
-<tr><td class="l">track_buffer</td><td>30</td><td>60 <span class="todo">TODO 確認</span></td><td class="l">跟丟軌跡保留的影格數</td></tr>
-<tr><td class="l">buffer <i>b</i></td><td>0</td><td>0.3 <span class="todo">TODO 確認</span></td><td class="l">基本放大比例</td></tr>
-<tr><td class="l">grow <i>g</i></td><td>0</td><td>0.1 <span class="todo">TODO 確認</span></td><td class="l">每跟丟一格增加的緩衝（最多 10 格）</td></tr>
-<tr><td class="l">speed <i>k</i></td><td>0</td><td>0.5 <span class="todo">TODO 確認</span></td><td class="l">每「框高／格」速度增加的緩衝</td></tr>
-<tr><td class="l">damp δ</td><td>1</td><td>0.9 <span class="todo">TODO 確認</span></td><td class="l">跟丟時每格的速度衰減</td></tr>
-<tr><td class="l">q_vel <i>w</i><sub>v</sub></td><td>1/160</td><td>1/80 <span class="todo">TODO 確認</span></td><td class="l">Kalman 速度 process noise 權重</td></tr>
+<tr><td class="l">track_high / low thresh</td><td>0.25 / 0.1</td><td>0.25 / 0.1</td><td>0.25 / 0.1</td><td class="l">兩階段的分數門檻</td></tr>
+<tr><td class="l">new_track_thresh</td><td>0.25</td><td>0.5</td><td>0.5</td><td class="l">開新軌跡所需的最低分數</td></tr>
+<tr><td class="l">match_thresh、fuse_score</td><td>0.8、開</td><td>0.8、開</td><td>0.8、開</td><td class="l">第一階段最大代價；IoU × 分數融合</td></tr>
+<tr><td class="l">track_buffer</td><td>30</td><td>30</td><td>60</td><td class="l">跟丟軌跡保留的影格數</td></tr>
+<tr><td class="l">基本邊界 <i>b</i></td><td>0</td><td>0</td><td>0.1</td><td class="l">框的放大比例（軌跡與偵測）</td></tr>
+<tr><td class="l">跟丟增量 <i>g</i></td><td>0</td><td>0</td><td>0.1</td><td class="l">每跟丟一格增加的邊界（最多 10 格）</td></tr>
+<tr><td class="l">速度增益 <i>k</i></td><td>0</td><td>0</td><td>0.5</td><td class="l">每「框高／格」速度增加的邊界（上限 1）</td></tr>
+<tr><td class="l">衰減 δ</td><td>1</td><td>1</td><td>0.8</td><td class="l">跟丟時每格的速度衰減</td></tr>
+<tr><td class="l">速度雜訊 <i>w</i><sub>v</sub></td><td>1/160</td><td>1/160</td><td>1/80</td><td class="l">Kalman 速度 process noise 權重</td></tr>
 </tbody>
 </table>
+<h3>可選後處理：因果式軌跡縫合</h3>
+<p>軌跡斷裂（一隻蜜蜂被切成好幾段短軌跡）是巢口最主要的錯誤，因此我們也評估 <b>本文＋縫合</b>：若一條軌跡在另一條軌跡結束後 10 格內開始，且起點離該軌跡最後的中心不超過 4 個框高，就延續較舊的 ID（貪婪法，距離最近者優先）。它只需要 10 格（0.4 秒）的延遲，可以即時執行。第 11 章會看到：縫合有助於穿越線計數，卻會傷害區域計數與 HOTA，所以不納入主要設定。</p>
 <h3>軌跡分析</h3>
 <p>從追蹤結果可以畫出：各 ID 的軌跡（前 60 秒的框中心）、整段序列框中心的佔據熱度圖、每 20 秒的進出次數與真值比較、軌跡長度分佈（軌跡斷裂會表現為過多的短軌跡），以及長度超過 5 格之軌跡的速度中位數。demo 中每個 ID 會拖著一秒長的尾跡，用來表示行進方向。</p>
 <h3>計數規則</h3>
-<p>BEE24 沒有計數標註，因此我們由軌跡定義計數，並對真值與預測軌跡套用同一條規則。在畫面高度一半處放一條水平線 <i>y</i> = <i>H</i>/2；對每條軌跡依時間順序取 <i>c<sub>y</sub></i> − <i>H</i>/2 的正負號，剛好落在線上的影格忽略不計，每次正負號改變就算一次穿越：往上（<i>y</i> 變小）算「進」，往下算「出」。追蹤器在序列集合 <i>S</i> 上的計數誤差定義為</p>
+<p>BEE24 沒有計數標註，因此計數由軌跡定義，真值與預測軌跡套用同一條規則。每種規則下，追蹤器在序列集合 <i>S</i> 上的計數誤差定義為</p>
 <div class="eq"><div class="m"><i>E</i> = Σ<sub><i>s</i>∈<i>S</i></sub> ( |<i>Î<sub>s</sub></i> − <i>I<sub>s</sub></i>| + |<i>Ô<sub>s</sub></i> − <i>O<sub>s</sub></i>| )</div><div class="n">(4)</div></div>
-<p>其中 <i>I</i>、<i>O</i> 是真值的進、出次數，<i>Î</i>、<i>Ô</i> 是預測值。<i>E</i> 會與真值穿越總數一起報告（測試集共 753 次）。這條規則刻意保持簡單：在線上發生 ID 換錯，或軌跡跟丟後在另一側重新開始，都可能少算或多算一次，所以計數誤差對我們想消除的關聯錯誤特別敏感。把線放在畫面中間是為了讓各序列可以互相比較的評估約定；demo 中使用者可以把線放在任何高度。</p>
+<p>其中 <i>I</i>、<i>O</i> 是真值的進、出次數，<i>Î</i>、<i>Ô</i> 是預測值。<i>E</i> 會與該規則的真值穿越總數一起報告。</p>
+<p><b>巢口區域（主要規則）。</b>每台攝影機只在第一格上手繪一個多邊形，圍住黑暗的巢門開口並外加約一個蜂身的邊距，繪製時不看任何標註或預測（<code>beetrack/zones.json</code>）。一條軌跡若第一個框中心在多邊形外、最後一個中心在多邊形內，算一次「進」；由內到外算一次「出」；起點與終點在同一側的軌跡不計。真值穿越次數：驗證集 173（進 90／出 83），測試集 341。</p>
+<p><b>中線＋遲滯帶（次要規則）。</b>在 <i>y</i> = <i>H</i>/2 放一條水平線，並設 ±0.05·<i>H</i> 的遲滯帶（約半隻蜜蜂，事先固定、不調整）：只有中心離開遲滯帶時，軌跡所在的一側才會改變，往上算「進」，往下算「出」。真值穿越次數：驗證集 95，測試集 316。</p>
+<p><b>單純中線（帶寬 0，僅供診斷）。</b>同一條線但不設遲滯帶，停在線上的蜜蜂每次晃動都會被計入：驗證集 298 次、測試集 753 次真值穿越。我們列出它只是為了說明為何需要遲滯帶或區域。</p>
+<p><b>為什麼用區域規則。</b>穿越線規則計的是軌跡「中途」發生的事件，在線附近徘徊的蜜蜂，或在線旁發生的 ID 換錯，都會多算或少算穿越；飛過巢口前方的蜜蜂也會被計入。區域規則只看軌跡相對於巢口的起點與終點，這才是「進巢」的意義。同一份追蹤輸出（本文方法、測試集）下，相對計數誤差由 83%（262 / 316，遲滯帶中線）降到 35%（119 / 341，區域）。區域規則也有弱點：它取決於軌跡的第一個與最後一個框，所以軌跡若在擁擠的巢口內斷掉，一次進出會變成兩段都不計的半截軌跡（第 13.4 節）。</p>
 
 <!-- ============================================================ 7 -->
 <h2>實作細節</h2>
@@ -171,261 +179,295 @@
 <tr><td class="l">硬體</td><td class="l">NVIDIA RTX 4060 Laptop GPU，8 GB</td></tr>
 <tr><td class="l">軟體</td><td class="l">Python 3.11（uv 環境，<code>uv.lock</code> 鎖定版本）、PyTorch 2.11.0 + CUDA 12.8、Ultralytics 8.4.208、TrackEval（git 12c8791）、OpenCV、NumPy、Matplotlib</td></tr>
 <tr><td class="l">預訓練權重</td><td class="l">Ultralytics <code>yolo11s.pt</code>（COCO），AGPL-3.0</td></tr>
-<tr><td class="l">訓練</td><td class="l">單一類別「bee」；預算 50 個 epoch，以驗證集 fitness 做 early stopping（patience 15）；seed 0、deterministic 模式；640 px 時 batch 16、1280 px 時 batch 4（受記憶體限制）；mosaic 1.0（最後 10 個 epoch 關閉）、水平翻轉 0.5、不做垂直翻轉；其餘為 Ultralytics 預設值</td></tr>
-<tr><td class="l">推論</td><td class="l">FP16、信心分數 ≥ 0.05、NMS IoU 0.7、每格最多 300 個框，輸入大小與訓練相同</td></tr>
-<tr><td class="l">追蹤</td><td class="l">Ultralytics <code>BYTETracker</code>；本文方法繼承它，只覆寫 <code>get_dists</code>、<code>multi_predict</code>、<code>get_kalmanfilter</code>（約 40 行）</td></tr>
-<tr><td class="l">評估</td><td class="l">TrackEval <code>MotChallenge2DBox</code>，單一類別、不做前處理（所有真值框都是有效的蜜蜂）；HOTA 對定位門檻 α = 0.05 … 0.95 取平均，CLEAR 與 Identity 指標用 IoU 0.5</td></tr>
-<tr><td class="l">計時</td><td class="l">CUDA 同步後量測實際時間；偵測時間包含影像解碼，排除前 10 格（暖機）；追蹤時間逐格另外量測</td></tr>
+<tr><td class="l">訓練</td><td class="l">單一類別「bee」；預算 50 個 epoch，以驗證集 fitness 做 early stopping（patience 15）；seed 0、deterministic 模式；640 px 時 batch 16，1280 px 時 batch 2（受記憶體限制），nominal batch 64，以梯度累積達到相同的有效 batch；mosaic 1.0（最後 10 個 epoch 關閉）、水平翻轉 0.5、不做垂直翻轉；其餘為 Ultralytics 預設值</td></tr>
+<tr><td class="l">推論</td><td class="l">FP16、信心分數 ≥ 0.05、NMS IoU 0.7、每格最多 300 個框，輸入大小與訓練相同；每個偵測器只快取一次，所有追蹤器共用</td></tr>
+<tr><td class="l">追蹤</td><td class="l">Ultralytics <code>BYTETracker</code>；本文方法繼承它，只覆寫距離計算、多軌跡預測與 Kalman filter 的建立</td></tr>
+<tr><td class="l">評估</td><td class="l">TrackEval <code>MotChallenge2DBox</code>，單一類別、不做前處理（所有真值框都是有效的蜜蜂），指標跨序列合併計算；HOTA 對定位門檻 α = 0.05 … 0.95 取平均，CLEAR 與 Identity 指標用 IoU 0.5</td></tr>
+<tr><td class="l">計時</td><td class="l">在閒置的機器上量測；每格偵測時間包含 JPEG 解碼（測試序列依影格數加權平均）；追蹤時間逐格另外量測</td></tr>
 </tbody>
 </table>
-<p>程式碼整理成 Python 套件 <code>beetrack</code>，每個流程步驟一個模組，皆在 repo 根目錄以 <code>uv run python -m beetrack.&lt;模組&gt;</code> 執行，所有輸出都放在 <code>runs/</code> 底下。每次追蹤都會寫出含完整參數的 <code>timing.json</code>，每次掃描也會把結果表存成 JSON，因此本報告的每一個數字都能追溯到檔案。</p>
+<p>程式碼整理成 Python 套件 <code>beetrack</code>，每個流程步驟一個模組，皆在 repo 根目錄以 <code>uv run python -m beetrack.&lt;模組&gt;</code> 執行，所有輸出都放在 <code>runs/</code> 底下。每次追蹤都會寫出含完整參數的 <code>timing.json</code>，每次評估都會在 <code>runs/eval/</code> 寫出 JSON，每次掃描也會把結果表存檔，因此本報告的每一個數字都能追溯到檔案。</p>
 
 <!-- ============================================================ 8 -->
 <h2>Baseline 系統</h2>
 <p>Baseline 是實務上最先會做出的標準流程：輸入 640 像素的微調 YOLO11-s，接上預設設定的 Ultralytics ByteTrack（表 3）。沒有微調的 COCO 模型不能當 baseline，因為 COCO 根本沒有蜜蜂這個類別。</p>
-<p><b>偵測器訓練。</b>在 50 個 epoch 的預算下，640 px 模型於第 22 個 epoch 提前停止（0.32 小時），最佳 checkpoint 在驗證影像上達到 mAP@0.5 = 0.946、mAP@0.5:0.95 = 0.513。兩者的落差表示蜜蜂大多找得到，但框的位置不夠精準；對翅膀模糊的小目標而言，這在預期之內。測試集偵測結果見表 5。</p>
-<p class="tcap"><b>表 5.</b> YOLO11-s（640 px）偵測結果。</p>
+<p><b>偵測器訓練。</b>在 50 個 epoch 的預算下，640 px 模型在第 7 個 epoch 達到最佳驗證 fitness，於第 22 個 epoch 提前停止（0.32 小時），驗證影像上 mAP@0.5 = 0.946、mAP@0.5:0.95 = 0.513。兩者的落差表示蜜蜂大多找得到，但框的位置不夠精準；對翅膀模糊的小目標而言，這在預期之內。測試影像上 mAP@0.5:0.95 降為 0.472（表 5），主要原因是 BEE24-34（第 13.4 節）。</p>
+<p class="tcap"><b>表 5.</b> YOLO11-s 偵測結果（Ultralytics validation，預設信心分數 0.001）。</p>
 <table>
-<thead><tr><th class="l">切分</th><th>Precision</th><th>Recall</th><th>mAP@0.5</th><th>mAP@0.5:0.95</th></tr></thead>
+<thead><tr><th class="l">輸入</th><th class="l">切分</th><th>Precision</th><th>Recall</th><th>mAP@0.5</th><th>mAP@0.5:0.95</th></tr></thead>
 <tbody>
-<tr><td class="l">驗證</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td>0.946</td><td>0.513</td></tr>
-<tr><td class="l">測試</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">640</td><td class="l">驗證</td><td>0.935</td><td>0.897</td><td>0.946</td><td>0.513</td></tr>
+<tr><td class="l">640</td><td class="l">測試</td><td>0.886</td><td>0.838</td><td>0.905</td><td>0.472</td></tr>
+<tr class="sep"><td class="l">1280</td><td class="l">驗證</td><td>0.939</td><td>0.910</td><td>0.955</td><td>0.536</td></tr>
+<tr><td class="l">1280</td><td class="l">測試</td><td>0.901</td><td>0.878</td><td>0.927</td><td>0.502</td></tr>
 </tbody>
 </table>
-<figure><img src="../runs/detect/y11s_640/results.png" alt="訓練曲線" onerror="this.outerHTML='<div class=ph>TODO · runs/detect/y11s_640/results.png</div>'"><figcaption><b>圖 3.</b> 640 px 偵測器的訓練與驗證曲線。</figcaption></figure>
-<p><b>Oracle 分析。</b>為了釐清追蹤錯誤有多少來自關聯、多少來自偵測，我們在驗證集上把偵測器換成真值框（分數 1）。即使每一格的每隻蜜蜂都被完美偵測，預設 ByteTrack 也只有 HOTA 71.3、IDF1 76.0，並有 431 次 ID 換錯。剩下的錯誤全部來自關聯，主要發生在相鄰兩格框不重疊的快速蜜蜂上。這個結果說明了為什麼要改進追蹤器，而不只是改進偵測器。</p>
-<p class="tcap"><b>表 6.</b> 驗證集上的 oracle 偵測（真值框）。</p>
+<figure><img style="max-height:48mm" src="../runs/detect/y11s_640/results.png" alt="訓練曲線" onerror="this.outerHTML='<div class=ph>runs/detect/y11s_640/results.png</div>'"><figcaption><b>圖 2.</b> 640 px 偵測器的訓練與驗證曲線。</figcaption></figure>
+<p><b>Oracle 分析。</b>為了釐清追蹤錯誤有多少來自關聯、多少來自偵測，我們把偵測器換成真值框（分數 1）。在驗證集上，即使每一格的每隻蜜蜂都被偵測到，預設 ByteTrack 也只有 HOTA 71.3、IDF1 76.0，並有 431 次 ID 換錯：剩下的錯誤全部來自關聯。本方法在這個設定下並沒有提升 HOTA（71.0），但 ID 換錯較少（345 次）。也就是說，本方法的優勢並不在單純的關聯上，而是在偵測有雜訊的真實情況下才顯現（第 11 章）。在測試集上，真值框搭配本方法可達 HOTA 79.2、MOTA 96.2，但仍有 904 次 ID 換錯，區域計數誤差為 100 / 341（29%）。</p>
+<p class="tcap"><b>表 6.</b> Oracle 偵測（真值框）。</p>
 <table>
-<thead><tr><th class="l">追蹤器</th><th>HOTA</th><th>AssA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th></tr></thead>
+<thead><tr><th class="l">切分</th><th class="l">追蹤器</th><th>HOTA</th><th>AssA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th><th>區域誤差</th></tr></thead>
 <tbody>
-<tr><td class="l">ByteTrack（預設）</td><td>71.3</td><td><span class="todo">TODO</span></td><td>76.0</td><td><span class="todo">TODO</span></td><td>431</td></tr>
-<tr><td class="l">本文</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">驗證</td><td class="l">ByteTrack（預設）</td><td>71.3</td><td>62.5</td><td>76.0</td><td>94.7</td><td>431</td><td>68 / 173</td></tr>
+<tr><td class="l">驗證</td><td class="l">本文</td><td>71.0</td><td>61.4</td><td>74.6</td><td>95.5</td><td>345</td><td>69 / 173</td></tr>
+<tr class="sep"><td class="l">測試</td><td class="l">本文</td><td>79.2</td><td>73.4</td><td>83.9</td><td>96.2</td><td>904</td><td>100 / 341</td></tr>
+<tr><td class="l">測試</td><td class="l">本文＋縫合</td><td>74.8</td><td>65.6</td><td>76.5</td><td>96.4</td><td>715</td><td>163 / 341</td></tr>
 </tbody>
 </table>
 
 <!-- ============================================================ 9 -->
 <h2>提出的技術改進</h2>
-<p><b>觀察到的問題。</b>Oracle 實驗顯示，即使框完全正確，關聯仍會失敗。框的中位數約 46 像素，蜜蜂只要一格移動超過一個框寬，前後兩框就完全不重疊；等速 Kalman 預測只有在蜜蜂維持速度時才有用，而蜜蜂往往不會。IoU 一旦為 0，ByteTrack 在任何門檻下都配不上，軌跡轉為跟丟，下一個偵測框就開出新 ID，結果拉低 IDF1 與 AssA，也讓穿越計數出錯。</p>
+<p><b>觀察到的問題。</b>框的中位數約 46 像素，蜜蜂只要一格移動超過一個框寬，前後兩框就完全不重疊；等速 Kalman 預測只有在蜜蜂維持速度時才有用，而蜜蜂往往不會。IoU 一旦為 0，ByteTrack 在任何門檻下都配不上，軌跡轉為跟丟，下一個偵測框就開出新 ID，結果拉低 IDF1 與 AssA，也讓計數出錯。使用真實偵測時問題更嚴重：漏偵測或過鬆的框讓下一次的重疊更小。</p>
 <p><b>為什麼這樣改。</b>每一項修改各自對應失敗的一個環節，而且都不需要學習參數，追蹤器仍能即時執行、也容易解釋：</p>
 <ul>
 <li><b>緩衝 IoU</b>：如 C-BIoU [14] 所提，讓相鄰的框重新有非零、而且仍以重疊為基礎的相似度。用放大後框的 IoU 而非中心距離，代價本身就與尺度無關，也能直接沿用 ByteTrack 的門檻。</li>
-<li><b>自適應緩衝</b>：固定的大緩衝在擁擠的蜂巢口會把相鄰的慢速蜜蜂也配在一起。只讓快速軌跡與跟丟中的軌跡放大緩衝，就是把額外的搜尋範圍用在位置不確定性真正較高的地方，這也和 Kalman 共變異數的意義一致。</li>
-<li><b>速度衰減</b>：跟丟的蜜蜂通常是停下、降落或轉了方向；若沿用最後的速度外推 60 格，預測位置會離它重新出現的地方很遠。</li>
+<li><b>自適應邊界</b>：固定的大邊界在擁擠的蜂巢口會把相鄰的慢速蜜蜂也配在一起。只讓快速軌跡與跟丟中的軌跡放大邊界，就是把額外的搜尋範圍用在位置不確定性真正較高的地方，這也和 Kalman 共變異數的意義一致。</li>
+<li><b>速度衰減</b>：跟丟的蜜蜂通常是停下、降落或轉了方向；若沿用最後的速度外推許多格，預測位置會離它重新出現的地方很遠。</li>
 <li><b>提高速度 process noise</b>：相對於身體大小，蜜蜂的加速度比行人大得多，濾波器應該更相信最新的量測。</li>
 <li><b>延長保留時間</b>：被其他蜜蜂擋住一到兩秒的蜜蜂可以保留原本的 ID。</li>
+<li><b>開新軌跡門檻 0.5</b>：蜂群中的低分框會開出許多虛假的短軌跡，要求高信心的框才能開新軌跡可減少這種情形。由於這只是門檻變更，ByteTrack-tuned 也使用相同數值。</li>
 </ul>
-<p><b>與提案的差異。</b>提案原本寫的是「對正在轉彎的軌跡提高 process noise」。實作時，每條軌跡的自適應改由緩衝大小（速度項與跟丟時間項）負責，process noise 則改用一個較高的固定權重；這樣 Kalman filter 本身不必修改，每個元件也都能單獨開關。提案也提到依大小正規化的中心距離，最後改用放大框的緩衝 IoU，因為它本身就已經對尺度正規化。</p>
+<p><b>與提案的差異。</b>提案原本寫的是「對正在轉彎的軌跡提高 process noise」。實作時，每條軌跡的自適應改由邊界大小（速度項與跟丟時間項）負責，process noise 則改用一個較高的固定權重；這樣 Kalman filter 本身不必修改，每個元件也都能單獨開關。提案也提到依大小正規化的中心距離，最後改用放大框的緩衝 IoU，因為它本身就已經對尺度正規化。最後，提案以穿越線計數；我們發現穿越線計數被徘徊的蜜蜂主導後，改用巢口區域規則（第 6.6 節）。</p>
 <p><b>成功標準</b>（提案時已訂定）：在同一份測試集、相同偵測結果下，HOTA 與 IDF1 高於 ByteTrack，且 ID 換錯更少。每個元件都在驗證集上做消融：其餘不變，只把該元件改回 ByteTrack 的值（表 10）。</p>
 
 <!-- ============================================================ 10 -->
 <h2>實驗設定</h2>
 <h3>公平性原則</h3>
 <ul>
-<li>Baseline 與改進方法都在同一份保留測試集上評估；測試標籤從不用於調參、挑選 checkpoint 或選擇追蹤設定。</li>
+<li>Baseline 與改進方法都在同一份保留測試集上評估；測試標籤從不用於調參、挑選 checkpoint 或選擇追蹤設定。本報告的每個測試數字，都來自在驗證資料上凍結的設定、只跑一次的結果。</li>
 <li>每個實驗只改變一個主要因素。實驗一只改追蹤器（偵測快取完全相同）；實驗二只改偵測器輸入大小（追蹤器與訓練預算相同）。</li>
 <li>硬體、seed（0）、前處理、模型版本、訓練預算與評估設定皆固定，列於表 4；每個實驗都寫出目的、控制條件、結果、解讀與失敗案例。</li>
 </ul>
 <h3>評估指標</h3>
-<p>偵測：precision、recall、mAP@0.5、mAP@0.5:0.95。追蹤：HOTA 及其偵測、關聯分量，IDF1、MOTA、ID 換錯次數（IDSW）、false positive 與 false negative。門檻 α 下的 HOTA 是偵測準確度與關聯準確度的幾何平均，再對 α 取平均：</p>
+<p>偵測：precision、recall、mAP@0.5、mAP@0.5:0.95。追蹤：HOTA 及其偵測、關聯分量，IDF1、MOTA、ID 換錯次數（IDSW）、false positive 與 false negative，皆跨序列合併計算。門檻 α 下的 HOTA 是偵測準確度與關聯準確度的幾何平均，再對 α 取平均：</p>
 <div class="eq"><div class="m">HOTA<sub>α</sub> = √( DetA<sub>α</sub> · AssA<sub>α</sub> ), &nbsp;&nbsp; HOTA = <span class="frac"><span>1</span><span>19</span></span> Σ<sub>α ∈ {0.05, …, 0.95}</sub> HOTA<sub>α</sub></div><div class="n">(5)</div></div>
-<p>計數：式 (4) 的計數誤差 <i>E</i>。速度：偵測器每格毫秒數、追蹤器每格毫秒數，以及端到端 FPS = 1000 /（偵測 ms + 追蹤 ms）。</p>
-<h3>調參流程（僅用驗證集）</h3>
-<p><code>sweep.py</code> 在快取的驗證偵測結果上執行整組追蹤設定，依 HOTA 排序。掃描範圍：<i>buffer</i>（<i>b</i> ∈ {0.1, 0.2, 0.3, 0.5} × <i>g</i> ∈ {0, 0.1} × <i>k</i> ∈ {0, 0.5, 1}，共 24 組）、<i>motion</i>（δ ∈ {0.8, 0.9, 1} × 1/<i>q</i><sub>v</sub> ∈ {40, 80, 160} × track_buffer ∈ {30, 60, 90}，共 27 組）、<i>thresh</i>（兩種追蹤器的分數與配對門檻，共 36 組），以及 <i>ablation</i>（7 組）。選定的參數在評估測試集之前就凍結。選定設定：<span class="todo">TODO</span>。</p>
+<p>計數：式 (4) 的計數誤差 <i>E</i>，分別以區域規則（主要）、遲滯帶中線與單純中線計算。速度：偵測器每格毫秒數、追蹤器每格毫秒數，以及端到端 FPS = 1000 /（偵測 ms + 追蹤 ms）。</p>
+<h3>調參流程（僅使用驗證資料）</h3>
+<p><code>sweep.py</code> 在快取的驗證偵測結果上執行整組追蹤設定，並依 HOTA 排序。掃描範圍：<i>buffer</i>（<i>b</i> ∈ {0.1, 0.2, 0.3, 0.5} × <i>g</i> ∈ {0, 0.1} × <i>k</i> ∈ {0, 0.5, 1}，共 24 組）、<i>motion</i>（δ ∈ {0.8, 0.9, 1} × 1/<i>w</i><sub>v</sub> ∈ {40, 80, 160} × track_buffer ∈ {30, 60, 90}，共 27 組）、<i>thresh</i>（兩種追蹤器的高分、開新軌跡與配對門檻，共 36 組）、<i>ablation</i>（9 組）、<i>stitch</i> 與 <i>zone-stitch</i>（軌跡縫合的間隔與距離，12 + 12 組）、<i>short</i>（短軌跡過濾，16 組）以及 <i>extra</i>（第二階段緩衝 IoU 與空缺內插，8 組）。選定的數值（表 3）在評估測試集之前就已凍結。</p>
 <h3>穩健性條件</h3>
 <ul>
-<li><b>人工影像劣化</b>：只在偵測前套用到測試影格，一次一種。<i>dark</i>（亮度 × 0.4，模擬黃昏或曝光不足）、<i>bright</i>（× 1.6 + 20 並截斷，模擬陽光直射）、<i>blur</i>（9 像素水平動態模糊）、<i>noise</i>（高斯雜訊 σ = 15，固定 seed）。偵測器不重新訓練。</li>
-<li><b>跳格</b>：只把每 <i>k</i> 格中的 1 格（<i>k</i> = 2、3、5，即 12.5、8.3、5 fps）交給追蹤器並評估，模擬每個處理格之間位移更大，或較慢的相機。</li>
-<li><b>擁擠程度</b>：逐段報告測試序列結果，每格蜜蜂數從 7.9 到 25.0 不等（表 2）。</li>
+<li><b>人工影像劣化</b>：只在偵測前加到測試影格上，一次一種。<i>dark</i>（亮度 × 0.4，模擬黃昏或曝光不足）、<i>bright</i>（× 1.6 + 20 並截斷，模擬直射陽光）、<i>blur</i>（1 × 9 水平動態模糊核）、<i>noise</i>（高斯雜訊，σ = 15）。640 px 偵測器不重新訓練。</li>
+<li><b>掉幀處理</b>：只把每 <i>k</i> 格中的 1 格（<i>k</i> = 2、3、5，即 12.5、8.3、5 fps）交給追蹤器，並以相同方式取樣的真值評估，模擬每處理一格蜜蜂移動更遠，或較慢的攝影機。</li>
+<li><b>擁擠程度</b>：逐一列出各測試序列的結果，每格 7.9 到 25.0 隻蜜蜂不等（表 2）。</li>
 </ul>
-<p>提案中也列了依場景分組的光線與陰影；但 BEE24 沒有場景標籤，因此改以人工的 dark 與 bright 條件研究光線影響。</p>
+<p>提案也列了依場景分組的光線與陰影條件；BEE24 沒有場景標籤，因此光線改以人工變暗與過曝來研究。</p>
 
 <!-- ============================================================ 11 -->
 <h2>量化結果</h2>
-<p>表 7 是完整系統在測試集上的主要結果：640 px 偵測器，加上以驗證集選定參數的本文追蹤器。</p>
-<p class="tcap"><b>表 7.</b> 測試集（BEE24 官方 5 支測試影片），偵測結果完全相同（640 px）。</p>
+<p>表 7 是完整系統在測試集上的主要結果，使用 640 px 偵測器與在驗證集上選定的設定。上半部各列使用完全相同的偵測結果。</p>
+<p class="tcap"><b>表 7.</b> 測試集（BEE24 官方 5 支測試影片）。計數誤差：區域 / 341（主要）、遲滯帶中線 / 316、單純中線 / 753 次真值穿越。FP、FN 以千為單位。</p>
 <table class="wide">
-<thead><tr><th class="l">追蹤器</th><th>HOTA ↑</th><th>DetA ↑</th><th>AssA ↑</th><th>IDF1 ↑</th><th>MOTA ↑</th><th>IDSW ↓</th><th>FP ↓</th><th>FN ↓</th><th>計數誤差 ↓（/753）</th><th>追蹤 ms ↓</th></tr></thead>
+<thead><tr><th class="l">追蹤器</th><th>HOTA ↑</th><th>DetA ↑</th><th>AssA ↑</th><th>IDF1 ↑</th><th>MOTA ↑</th><th>IDSW ↓</th><th>FP ↓</th><th>FN ↓</th><th>區域 ↓</th><th>遲滯帶 ↓</th><th>單純線 ↓</th></tr></thead>
 <tbody>
-<tr><td class="l">ByteTrack（預設）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr class="best"><td class="l">本文（運動自適應）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr class="sep"><td class="l">TOPICTrack [16]（參考值，偵測器不同）</td><td>46.6</td><td>–</td><td>–</td><td>59.7</td><td>66.7</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+<tr><td class="l">ByteTrack（預設）</td><td>40.2</td><td>39.0</td><td>41.9</td><td>48.1</td><td>15.0</td><td>2,186</td><td>115.3</td><td>25.4</td><td>122</td><td>263</td><td>479</td></tr>
+<tr><td class="l">ByteTrack-tuned</td><td><b>45.2</b></td><td>46.6</td><td><b>44.3</b></td><td><b>56.4</b></td><td>43.2</td><td>1,382</td><td>66.8</td><td>27.3</td><td>139</td><td>264</td><td>509</td></tr>
+<tr class="best"><td class="l">本文（運動自適應）</td><td>45.2</td><td>47.8</td><td>43.2</td><td>55.7</td><td>46.7</td><td>1,314</td><td>60.8</td><td>27.6</td><td>119</td><td>262</td><td>492</td></tr>
+<tr><td class="l">本文＋縫合</td><td>42.2</td><td>47.7</td><td>37.8</td><td>52.0</td><td><b>46.9</b></td><td><b>952</b></td><td>60.8</td><td>27.6</td><td>164</td><td><b>192</b></td><td><b>359</b></td></tr>
+<tr class="sep"><td class="l">真值框＋本文</td><td>79.2</td><td>85.9</td><td>73.4</td><td>83.9</td><td>96.2</td><td>904</td><td>0.8</td><td>4.7</td><td>100</td><td>186</td><td>312</td></tr>
+<tr><td class="l">真值框＋本文＋縫合</td><td>74.8</td><td>85.8</td><td>65.6</td><td>76.5</td><td>96.4</td><td>715</td><td>0.8</td><td>4.7</td><td>163</td><td>110</td><td>212</td></tr>
+<tr class="sep"><td class="l">TOPICTrack [16]（參考，不同偵測器）</td><td>46.6</td><td>–</td><td>–</td><td>59.7</td><td>66.7</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
 </tbody>
 </table>
-<p class="tcap"><b>表 8.</b> RTX 4060 筆電 GPU 上的處理速度（測試集平均）。</p>
+<p class="tcap"><b>表 8.</b> RTX 4060 筆電 GPU 上的處理速度（測試集，閒置機器）。</p>
 <table>
-<thead><tr><th class="l">設定</th><th>偵測 ms／格</th><th>追蹤 ms／格</th><th>端到端 FPS</th><th>Demo 即時 FPS</th></tr></thead>
+<thead><tr><th class="l">設定</th><th>偵測 ms／格（含解碼）</th><th>追蹤 ms／格</th><th>端到端 FPS</th></tr></thead>
 <tbody>
-<tr><td class="l">640 px + ByteTrack</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">640 px + 本文</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">1280 px + 本文</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">640 px＋本文</td><td>17.0</td><td>1.63</td><td>53.7</td></tr>
+<tr><td class="l">1280 px＋ByteTrack-tuned</td><td>18.5</td><td>1.69</td><td>49.5</td></tr>
+<tr><td class="l">1280 px＋本文</td><td>18.5</td><td>1.86</td><td>49.1</td></tr>
+<tr class="sep"><td class="l">即時 demo，640 px＋本文，BEE24-36</td><td colspan="2">偵測＋追蹤，不含解碼</td><td>66（平均）</td></tr>
 </tbody>
 </table>
-<p class="tcap"><b>表 9.</b> 各測試序列的穿越計數（進／出），640 px 偵測。</p>
-<table>
-<thead><tr><th class="l">序列</th><th>真值</th><th>ByteTrack</th><th>本文</th><th>ByteTrack 誤差</th><th>本文誤差</th></tr></thead>
+<p class="tcap"><b>表 9.</b> 各測試序列的巢口區域計數（進／出，括號內為誤差 <i>E</i>），除另註外使用 640 px 偵測。</p>
+<table class="wide">
+<thead><tr><th class="l">序列</th><th>真值</th><th>ByteTrack</th><th>ByteTrack-tuned</th><th>本文</th><th>真值框＋本文</th></tr></thead>
 <tbody>
-<tr><td class="l">BEE24-12</td><td>6 / 5</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">BEE24-13</td><td>19 / 17</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">BEE24-16</td><td>48 / 57</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">BEE24-34</td><td>168 / 145</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">BEE24-36</td><td>157 / 131</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr class="sep"><td class="l"><b>合計</b></td><td>398 / 355</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">BEE24-12</td><td>1 / 3</td><td>0 / 3 (1)</td><td>0 / 3 (1)</td><td>0 / 4 (2)</td><td>0 / 5 (3)</td></tr>
+<tr><td class="l">BEE24-13</td><td>10 / 11</td><td>4 / 9 (8)</td><td>4 / 8 (9)</td><td>5 / 7 (9)</td><td>5 / 9 (7)</td></tr>
+<tr><td class="l">BEE24-16</td><td>26 / 37</td><td>5 / 22 (36)</td><td>5 / 22 (36)</td><td>4 / 22 (37)</td><td>4 / 23 (36)</td></tr>
+<tr><td class="l">BEE24-34</td><td>84 / 88</td><td>49 / 69 (54)</td><td>46 / 59 (67)</td><td>54 / 66 (52)</td><td>58 / 77 (37)</td></tr>
+<tr><td class="l">BEE24-36</td><td>49 / 32</td><td>39 / 19 (23)</td><td>36 / 19 (26)</td><td>40 / 22 (19)</td><td>65 / 33 (17)</td></tr>
+<tr class="sep"><td class="l"><b>合計</b></td><td>170 / 171</td><td>97 / 122 (122)</td><td>91 / 111 (139)</td><td><b>103 / 121 (119)</b></td><td>132 / 147 (100)</td></tr>
 </tbody>
 </table>
-<p><b>結果解讀。</b><span class="todo">TODO</span>（預計討論：哪些指標變化最大；由於方法只改關聯，提升是否主要來自 AssA 而非 DetA；計數誤差如何隨 IDSW 與軌跡斷裂變化；追蹤器額外耗時相對於偵測時間的比例。）</p>
-<figure class="half"><img src="../runs/figs/BEE24-36_ours_trajectories.png" alt="軌跡" onerror="this.outerHTML='<div class=ph>TODO · runs/figs/BEE24-36_ours_trajectories.png</div>'"><figcaption><b>圖 4.</b> BEE24-36 前 60 秒的預測軌跡（本文）；虛線為計數線。</figcaption></figure><figure class="half"><img src="../runs/figs/BEE24-36_ours_heatmap.png" alt="熱度圖" onerror="this.outerHTML='<div class=ph>TODO · runs/figs/BEE24-36_ours_heatmap.png</div>'"><figcaption><b>圖 5.</b> BEE24-36 預測框中心的佔據熱度圖。</figcaption></figure>
-<figure class="half"><img src="../runs/figs/BEE24-36_ours_counts.png" alt="計數" onerror="this.outerHTML='<div class=ph>TODO · runs/figs/BEE24-36_ours_counts.png</div>'"><figcaption><b>圖 6.</b> BEE24-36 每 20 秒的進出次數：真值與本文。</figcaption></figure><figure class="half"><img src="../runs/figs/BEE24-36_ours_lengths.png" alt="軌跡長度" onerror="this.outerHTML='<div class=ph>TODO · runs/figs/BEE24-36_ours_lengths.png</div>'"><figcaption><b>圖 7.</b> BEE24-36 軌跡長度分佈：真值與本文。</figcaption></figure>
+<p><b>解讀。</b>(1) 在相同偵測下，本方法相對預設 ByteTrack 的每一項追蹤指標都較佳：HOTA +5.0、IDF1 +7.6、MOTA +31.7，ID 換錯少 40%，達到提案訂定的成功標準。(2) ByteTrack-tuned 顯示這些提升有很大一部分來自開新軌跡門檻：它的 HOTA 相同（45.2），IDF1 與 AssA 還略高（56.4 對 55.7）。本方法的關聯修改額外帶來的是偵測端的追蹤品質（DetA 47.8 對 46.6、FP 少 6.0 k、MOTA +3.5）、少 5% 的 ID 換錯，以及最低的區域計數誤差（119 對 139）。因此我們不宣稱 HOTA 優於調整後的 ByteTrack。(3) 計數規則的影響比追蹤器更大：同一份本方法的輸出，單純中線的相對誤差為 65%（492 / 753）、遲滯帶中線 83%、區域 35%。(4) 即使用真值框，區域誤差仍有 29%、ID 換錯 904 次，所以剩下的計數誤差大多來自擁擠巢口的軌跡斷裂，而不是偵測。(5) 軌跡縫合減少 362 次 ID 換錯，是穿越線計數的最佳選擇（遲滯帶 192、單純線 359），但 HOTA 下降 3.0，區域誤差升至 164：縫合有時會把巢口兩側兩隻不同的蜜蜂接在一起，讓兩段原本不計的軌跡變成一次假的進出，或把一段「進」與一段「出」合併。真值框下也出現相同的取捨（區域誤差 100 → 163）。(6) 計數誤差幾乎都是少算（本方法 103 / 121，真值 170 / 171）：蜜蜂鑽進黑暗的巢門時真值仍持續標註，偵測卻跟丟了；快速飛行的蜜蜂也會讓軌跡斷掉。BEE24-16 是最極端的例子，即使用真值框，26 次進巢也只找到 4 次。(7) 本方法每格只需 1.6–1.9 ms，約為偵測時間的十分之一，系統以很大的餘裕達到 25 fps 即時處理。</p>
+<figure class="half"><img src="../runs/figs/BEE24-36_ours_trajectories.png" alt="軌跡" onerror="this.outerHTML='<div class=ph>runs/figs/BEE24-36_ours_trajectories.png</div>'"><figcaption><b>圖 3.</b> BEE24-36 前 60 秒的預測軌跡（本文）；虛線多邊形為巢口區域。</figcaption></figure><figure class="half"><img src="../runs/figs/BEE24-36_ours_heatmap.png" alt="熱度圖" onerror="this.outerHTML='<div class=ph>runs/figs/BEE24-36_ours_heatmap.png</div>'"><figcaption><b>圖 4.</b> BEE24-36 預測框中心的佔據熱度圖。</figcaption></figure>
+<figure class="half"><img src="../runs/figs/BEE24-36_ours_counts.png" alt="計數" onerror="this.outerHTML='<div class=ph>runs/figs/BEE24-36_ours_counts.png</div>'"><figcaption><b>圖 5.</b> BEE24-36 每 20 秒的區域進出事件，真值與本文比較。</figcaption></figure><figure class="half"><img src="../runs/figs/BEE24-36_ours_lengths.png" alt="軌跡長度" onerror="this.outerHTML='<div class=ph>runs/figs/BEE24-36_ours_lengths.png</div>'"><figcaption><b>圖 6.</b> BEE24-36 軌跡長度分佈，真值與本文比較。</figcaption></figure>
+<p>在 BEE24-36 上，分析圖讓軌跡斷裂一目了然：真值有 163 條軌跡、長度中位數 2.24 秒；本方法輸出 390 條、中位數 0.64 秒（圖 6）。蜜蜂速度中位數為 73 px/s。區域計數為進 40／出 22，真值為 49 / 32；離線分析的計數與即時 demo 完全相同。</p>
 
 <!-- ============================================================ 12 -->
 <h2>對照實驗</h2>
 <h3>實驗一：關聯方法</h3>
-<p><b>目的。</b>量測運動自適應關聯是否比預設 ByteTrack 更能維持 ID，以及是哪一個元件造成差異。</p>
-<p><b>控制條件。</b>偵測快取完全相同（YOLO11-s、640 px、同一組權重），分數門檻、序列與評估程式碼都相同，只改變關聯方式。測試集結果見表 7；以下消融實驗在可以調參的驗證集上進行。</p>
-<p class="tcap"><b>表 10.</b> 驗證集消融實驗（640 px 偵測）。每一列只把本文的一個元件改回 ByteTrack 的值。</p>
+<p><b>目的。</b>量測運動自適應關聯是否比 ByteTrack 更能維持 ID，以及是哪個元件造成差異。</p>
+<p><b>控制條件。</b>完全相同的偵測快取（YOLO11-s、640 px、同一組權重），相同的序列與評估程式；只改變關聯方式，ByteTrack-tuned 與本方法使用相同的開新軌跡門檻。測試結果見表 7；以下消融在允許調參的驗證資料上進行。</p>
+<p class="tcap"><b>表 10.</b> 驗證集消融（640 px 偵測）。每一列把本方法的一個元件改回 ByteTrack 的值。</p>
 <table class="wide">
-<thead><tr><th class="l">設定</th><th class="l">相對本文的改變</th><th>HOTA</th><th>AssA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th><th>計數誤差（/298）</th></tr></thead>
+<thead><tr><th class="l">設定</th><th class="l">與本文的差異</th><th>HOTA</th><th>AssA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th><th>遲滯帶 / 95</th><th>區域 / 173</th></tr></thead>
 <tbody>
-<tr><td class="l">ByteTrack</td><td class="l">所有元件關閉</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr class="best"><td class="l">本文</td><td class="l">–</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr class="sep"><td class="l">− 緩衝</td><td class="l"><i>b</i> = <i>g</i> = <i>k</i> = 0（一般 IoU）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">− 自適應</td><td class="l"><i>g</i> = <i>k</i> = 0（固定緩衝）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">− 速度衰減</td><td class="l">δ = 1</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">− process noise</td><td class="l"><i>q</i><sub>v</sub> = 1/160</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">− 長保留</td><td class="l">track_buffer = 30</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr class="best"><td class="l">本文</td><td class="l">–</td><td>55.7</td><td>51.6</td><td>72.5</td><td>78.3</td><td>407</td><td>78</td><td>83</td></tr>
+<tr class="sep"><td class="l">− 緩衝 IoU</td><td class="l"><i>b</i> = <i>g</i> = <i>k</i> = 0（一般 IoU）</td><td>53.5</td><td>47.8</td><td>68.3</td><td>77.8</td><td>518</td><td>77</td><td>89</td></tr>
+<tr><td class="l">− 自適應邊界</td><td class="l"><i>g</i> = <i>k</i> = 0（固定 0.1）</td><td>53.9</td><td>48.2</td><td>69.5</td><td>78.2</td><td>489</td><td>74</td><td>87</td></tr>
+<tr><td class="l">− 速度衰減</td><td class="l">δ = 1</td><td>55.5</td><td>51.2</td><td>71.9</td><td>78.2</td><td>413</td><td>80</td><td>86</td></tr>
+<tr><td class="l">預設 Kalman Q</td><td class="l"><i>w</i><sub>v</sub> = 1/160</td><td>55.5</td><td>51.1</td><td>72.0</td><td>78.6</td><td>392</td><td>78</td><td>88</td></tr>
+<tr><td class="l">預設開新軌跡門檻</td><td class="l">0.25</td><td>55.4</td><td>51.2</td><td>71.1</td><td>77.1</td><td>615</td><td>78</td><td>74</td></tr>
+<tr><td class="l">track_buffer 30</td><td class="l">30 格</td><td>55.7</td><td>51.6</td><td>72.5</td><td>78.3</td><td>401</td><td>79</td><td>81</td></tr>
+<tr class="sep"><td class="l">ByteTrack-tuned</td><td class="l">關聯修改全部關閉</td><td>54.8</td><td>50.0</td><td>71.0</td><td>78.5</td><td>427</td><td>72</td><td>82</td></tr>
+<tr><td class="l">ByteTrack</td><td class="l">全部關閉</td><td>53.7</td><td>48.5</td><td>68.6</td><td>76.6</td><td>632</td><td>76</td><td>76</td></tr>
 </tbody>
 </table>
-<p><b>結果解讀。</b><span class="todo">TODO</span></p>
-<p><b>失敗案例。</b><span class="todo">TODO</span>（本文方法比 ByteTrack 差的情形，例如蜂巢口擁擠時大緩衝把相鄰蜜蜂配錯。）</p>
+<p><b>解讀。</b>改進主要來自緩衝 IoU 及其自適應邊界：拿掉緩衝會損失 2.2 HOTA、3.8 AssA，ID 換錯多 111 次；保留固定邊界、但拿掉隨速度與跟丟時間的增長，會損失 1.8 HOTA、ID 換錯多 82 次，可見關鍵在「自適應」，而不只是放大。速度衰減與較大的 process noise 各只貢獻 0.2 HOTA，較長的 track buffer 在驗證資料上沒有影響（因為無害而保留）。開新軌跡門檻主要影響 ID 換錯（615 → 407）。驗證集的計數誤差只在幾次之間變動，而且不跟著 HOTA 走：預設門檻的區域誤差最低（74），ByteTrack-tuned 的遲滯帶誤差最低（72）。在只有 173 次區域進出的情況下，這些差異接近雜訊範圍，這也是我們依 HOTA、而不是依計數誤差來選設定的原因。</p>
+<p><b>沒有採用的嘗試（僅在驗證集）。</b>以下修改都試過但沒有採用，我們當作負面結果誠實報告。在第二階段（低分框）使用緩衝 IoU，以及對空缺做線性內插，都沒有提升 HOTA。短軌跡過濾（16 組：最短長度 5–50 框 × 最低平均分數 0–0.7）的 HOTA 從未超過 55.7，而且過濾越強，MOTA 與區域計數越差。軌跡縫合的每一組設定都讓驗證 HOTA 下降，區域誤差由 83 升到 84–104 之間；表 7 所用的設定（本文＋縫合）在驗證集上為 HOTA 52.9、遲滯帶 48 / 95、區域 99 / 173。</p>
+<p><b>失敗案例。</b>本方法並非處處較佳。在 BEE24-36 上 ByteTrack-tuned 的 HOTA 較高（49.1 對 46.4，表 15）；在動態模糊下本方法的 ID 換錯較多（1,423 對 1,317，表 13），推測是模糊而拉長的框加上放大的邊界，讓相鄰的蜜蜂搶同一個偵測框。放大的搜尋範圍在擁擠的巢口是一種風險，因為互相接觸的蜜蜂常常落在彼此的邊界之內（圖 7b）。</p>
 
 <h3>實驗二：偵測器輸入大小</h3>
-<p><b>目的。</b>檢驗提高輸入解析度是否能讓小蜜蜂的偵測進步到足以改善追蹤，以及要付出多少速度代價。</p>
-<p><b>控制條件。</b>相同架構（YOLO11-s）、相同 COCO 初始權重、相同訓練影像、資料增強、seed、50 epoch 預算與 patience；相同追蹤器（本文方法、驗證集選定參數）與相同測試集；只改變輸入大小（640 對 1280 px）。1280 px 時為了塞進 8 GB 記憶體，batch 必須從 16 降到 4，這是所研究因素無法避免的副作用，一併報告。</p>
-<p class="tcap"><b>表 11.</b> 實驗二：偵測器輸入大小。</p>
+<p><b>目的。</b>檢驗提高輸入解析度是否能讓小蜜蜂的偵測改善到足以提升追蹤與計數，以及速度代價為何。</p>
+<p><b>控制條件。</b>相同架構（YOLO11-s）、相同 COCO 初始化、相同訓練影像、資料增強、seed、50 個 epoch 預算與 patience 15；相同參數的追蹤器與相同測試集。只改變輸入大小（640 對 1280 px）。1280 px 時 batch 必須由 16 降到 2 才能放進 8 GB；Ultralytics 的 nominal batch 為 64，會自動累積梯度，因此有效 batch 相同。</p>
+<p class="tcap"><b>表 11.</b> 實驗二：偵測器的訓練與偵測品質。</p>
 <table class="wide">
-<thead><tr><th class="l">輸入</th><th>Batch</th><th>Epoch（停止）</th><th>訓練時數</th><th>驗證 mAP@0.5</th><th>驗證 mAP@.5:.95</th><th>測試 mAP@0.5</th><th>測試 mAP@.5:.95</th><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>計數誤差</th><th>FPS</th></tr></thead>
+<thead><tr><th class="l">輸入</th><th>Batch</th><th>最佳／最後 epoch</th><th>訓練時間</th><th>驗證 mAP@0.5</th><th>驗證 mAP@.5:.95</th><th>測試 mAP@0.5</th><th>測試 mAP@.5:.95</th><th>偵測 ms／格</th></tr></thead>
 <tbody>
-<tr><td class="l">640</td><td>16</td><td>22</td><td>0.32</td><td>0.946</td><td>0.513</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">1280</td><td>4</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">640</td><td>16</td><td>7 / 22</td><td>0.32 h</td><td>0.946</td><td>0.513</td><td>0.905</td><td>0.472</td><td>17.0</td></tr>
+<tr><td class="l">1280</td><td>2（nbs 64）</td><td>19 / 34</td><td>1.97 h</td><td>0.955</td><td>0.536</td><td>0.927</td><td>0.502</td><td>18.5</td></tr>
 </tbody>
 </table>
-<p><b>結果解讀。</b><span class="todo">TODO</span></p>
-<p><b>失敗案例。</b><span class="todo">TODO</span></p>
+<p class="tcap"><b>表 12.</b> 實驗二：測試集追蹤結果（最後一欄為驗證集 HOTA／區域誤差）。</p>
+<table class="wide">
+<thead><tr><th class="l">追蹤器</th><th>輸入</th><th>HOTA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th><th>區域 / 341</th><th>遲滯帶 / 316</th><th>驗證 HOTA／區域</th></tr></thead>
+<tbody>
+<tr><td class="l">本文</td><td>640</td><td>45.2</td><td>55.7</td><td>46.7</td><td>1,314</td><td><b>119</b></td><td>262</td><td>55.7 / 83</td></tr>
+<tr class="best"><td class="l">本文</td><td>1280</td><td>48.0</td><td>60.0</td><td>60.3</td><td>1,227</td><td>120</td><td>252</td><td>56.9 / 75</td></tr>
+<tr><td class="l">ByteTrack-tuned</td><td>1280</td><td>47.8</td><td>60.8</td><td>59.2</td><td>1,322</td><td>135</td><td>261</td><td>57.1 / 87</td></tr>
+<tr><td class="l">本文＋縫合</td><td>1280</td><td>43.9</td><td>53.8</td><td>60.5</td><td>928</td><td>157</td><td>180</td><td>54.5 / 98</td></tr>
+</tbody>
+</table>
+<p><b>解讀。</b>1280 px 偵測器較能找到蜜蜂：測試 mAP@0.5:0.95 由 0.472 升到 0.502，recall 由 0.838 升到 0.878（表 5）。追蹤也隨之受益：HOTA +2.8、IDF1 +4.3、MOTA +13.6（FP 由 60.8 k 降到 43.1 k），ID 換錯少 87 次。然而計數沒有改善：區域誤差維持 120，遲滯帶誤差只由 262 變為 252。這印證了 oracle 的結果：計數誤差由巢口的軌跡斷裂主導，更好的框無法消除它。在 1280 px 下，本方法與 ByteTrack-tuned 的測試 HOTA 相差不到 0.2（驗證集上 ByteTrack-tuned 還高 0.2），但本方法維持較低的區域誤差（測試 120 對 135、驗證 75 對 87）。在這台機器上速度代價很小：量到的時間主要花在 JPEG 解碼，因此 1280 px 每格只慢約 9%；訓練時間則約為六倍。</p>
+<p><b>失敗案例。</b>較高解析度並非對每段序列都有幫助：BEE24-36（46.4 → 44.2）與 BEE24-12（71.8 → 69.9）的 HOTA 下降，而擁擠的 BEE24-34（42.5 → 47.6）與 BEE24-16（57.1 → 62.2）則上升（表 15）。縫合同樣以 HOTA 與區域計數換取較少的 ID 換錯。</p>
 
 <!-- ============================================================ 13 -->
 <h2>穩健性與失敗分析</h2>
 <h3>影像劣化</h3>
-<p class="tcap"><b>表 12.</b> 測試集在人工劣化下的結果（640 px 偵測器，不重新訓練）。</p>
+<p class="tcap"><b>表 13.</b> 人工影像劣化下的測試集結果（640 px 偵測器，未重新訓練）。</p>
 <table class="wide">
-<thead><tr><th class="l" rowspan="2">條件</th><th colspan="4">ByteTrack</th><th colspan="4">本文</th></tr>
-<tr><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>計數誤差</th><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>計數誤差</th></tr></thead>
+<thead><tr><th class="l" rowspan="2">條件</th><th colspan="6">ByteTrack-tuned</th><th colspan="6">本文</th></tr>
+<tr><th>HOTA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th><th>區域</th><th>遲滯帶</th><th>HOTA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th><th>區域</th><th>遲滯帶</th></tr></thead>
 <tbody>
-<tr><td class="l">原始</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">變暗（× 0.4）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">過曝（× 1.6 + 20）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">動態模糊（9 px）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">雜訊（σ = 15）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l">原始</td><td>45.2</td><td>56.4</td><td>43.2</td><td>1,382</td><td>139</td><td>264</td><td>45.2</td><td>55.7</td><td>46.7</td><td>1,314</td><td><b>119</b></td><td>262</td></tr>
+<tr><td class="l">變暗（× 0.4）</td><td>47.3</td><td>59.6</td><td>51.5</td><td>1,314</td><td>145</td><td>270</td><td>46.4</td><td>57.5</td><td>54.4</td><td>1,268</td><td><b>118</b></td><td>263</td></tr>
+<tr><td class="l">過曝（× 1.6 + 20）</td><td>41.9</td><td>51.1</td><td>35.1</td><td>1,426</td><td>174</td><td>265</td><td>41.2</td><td>49.7</td><td>38.2</td><td>1,352</td><td><b>141</b></td><td>255</td></tr>
+<tr><td class="l">動態模糊（1 × 9）</td><td>43.2</td><td>53.5</td><td>45.8</td><td>1,317</td><td>156</td><td>271</td><td>41.6</td><td>50.4</td><td>48.6</td><td>1,423</td><td><b>119</b></td><td>268</td></tr>
+<tr><td class="l">雜訊（σ = 15）</td><td>37.4</td><td>45.2</td><td>8.1</td><td>1,463</td><td>166</td><td>270</td><td>38.1</td><td>46.0</td><td>20.9</td><td>1,533</td><td><b>127</b></td><td>263</td></tr>
 </tbody>
 </table>
-<h3>跳格</h3>
-<p class="tcap"><b>表 13.</b> 測試集每 <i>k</i> 格只處理 1 格時的結果（計數誤差以跳格後序列的真值穿越為準）。</p>
+<p>雜訊的傷害最大（HOTA 下降 7 到 8 點，ByteTrack-tuned 的 MOTA 因大量誤偵測幾乎崩潰），其次是過曝與模糊。出乎意料的是，變暗反而<i>提高</i>兩種追蹤器的 HOTA 與 MOTA：變暗後的影像在 BEE24-34 黑暗的巢口裡偵測到較少未標註的蜜蜂，也就是 false positive 變少（第 13.4 節）。本方法在每一種劣化下 MOTA 都較高，區域計數誤差也都最低（118–141 對 145–174），但在變暗、過曝與模糊下，ByteTrack-tuned 的 HOTA 與 IDF1 較高。</p>
+<h3>掉幀處理</h3>
+<p class="tcap"><b>表 14.</b> 每 <i>k</i> 格只處理 1 格時的測試集結果（誤差以掉幀後序列的真值穿越次數為準）。</p>
 <table class="wide">
-<thead><tr><th class="l" rowspan="2">間隔 <i>k</i>（fps）</th><th colspan="4">ByteTrack</th><th colspan="4">本文</th></tr>
-<tr><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>計數誤差</th><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>計數誤差</th></tr></thead>
+<thead><tr><th class="l">間隔 <i>k</i>（fps）</th><th class="l">追蹤器</th><th>HOTA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th><th>區域誤差 / 真值</th><th>遲滯帶誤差 / 真值</th></tr></thead>
 <tbody>
-<tr><td class="l">1（25）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">2（12.5）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">3（8.3）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">5（5）</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td class="l" rowspan="4">2（12.5）</td><td class="l">ByteTrack</td><td>39.4</td><td>47.8</td><td>13.6</td><td>1,406</td><td><b>179</b> / 325</td><td>249 / 287</td></tr>
+<tr><td class="l">ByteTrack-tuned</td><td><b>43.9</b></td><td><b>54.8</b></td><td>40.8</td><td>919</td><td>191 / 325</td><td>249 / 287</td></tr>
+<tr><td class="l">本文</td><td>43.5</td><td>53.5</td><td>43.0</td><td>936</td><td>184 / 325</td><td>250 / 287</td></tr>
+<tr><td class="l">本文＋縫合</td><td>39.4</td><td>47.0</td><td>43.3</td><td>679</td><td>210 / 325</td><td>212 / 287</td></tr>
+<tr class="sep"><td class="l" rowspan="4">3（8.3）</td><td class="l">ByteTrack</td><td>38.0</td><td>45.7</td><td>12.8</td><td>1,273</td><td><b>182</b> / 309</td><td>224 / 256</td></tr>
+<tr><td class="l">ByteTrack-tuned</td><td>42.1</td><td>52.3</td><td>38.6</td><td>931</td><td>192 / 309</td><td>222 / 256</td></tr>
+<tr><td class="l">本文</td><td><b>44.0</b></td><td><b>55.1</b></td><td>40.3</td><td>750</td><td>184 / 309</td><td>223 / 256</td></tr>
+<tr><td class="l">本文＋縫合</td><td>39.4</td><td>46.7</td><td>40.7</td><td>524</td><td>222 / 309</td><td>190 / 256</td></tr>
+<tr class="sep"><td class="l" rowspan="4">5（5）</td><td class="l">ByteTrack</td><td>35.1</td><td>40.8</td><td>10.6</td><td>1,418</td><td><b>163</b> / 268</td><td>190 / 207</td></tr>
+<tr><td class="l">ByteTrack-tuned</td><td>39.9</td><td>48.3</td><td>33.7</td><td>1,160</td><td>165 / 268</td><td>187 / 207</td></tr>
+<tr><td class="l">本文</td><td><b>42.0</b></td><td><b>51.6</b></td><td>37.8</td><td>734</td><td>173 / 268</td><td>197 / 207</td></tr>
+<tr><td class="l">本文＋縫合</td><td>38.4</td><td>45.2</td><td>38.5</td><td>503</td><td>200 / 268</td><td>169 / 207</td></tr>
 </tbody>
 </table>
+<p>本方法在 HOTA 與 ID 換錯上退化最緩和。由完整影格率（表 7）到每 5 格取 1 格，本方法 HOTA 下降 3.2 點，ByteTrack-tuned 下降 5.3 點；在 <i>k</i> = 5 時本方法高出 2.1 HOTA，ID 換錯少 37%。這正是自適應邊界的設計情境：每處理一格，蜜蜂移動得更遠、跟丟得更久，而邊界會隨兩者放大。不過所有追蹤器的計數都變差（相對區域誤差 55–75%），且在 <i>k</i> = 2 到 5 時預設 ByteTrack 的區域誤差最低，因此這項穩健性優勢並沒有延伸到計數。</p>
 <h3>擁擠程度</h3>
-<p class="tcap"><b>表 14.</b> 各測試序列結果，依擁擠程度排序（640 px 偵測）。</p>
+<p class="tcap"><b>表 15.</b> 各測試序列結果，依擁擠程度排序（除另註外為 640 px 偵測；<code>runs/eval/test/density.json</code>）。</p>
 <table class="wide">
-<thead><tr><th class="l" rowspan="2">序列</th><th rowspan="2">每格蜜蜂數</th><th colspan="3">ByteTrack</th><th colspan="3">本文</th></tr>
-<tr><th>HOTA</th><th>IDF1</th><th>IDSW</th><th>HOTA</th><th>IDF1</th><th>IDSW</th></tr></thead>
-<tbody>
-<tr><td class="l">BEE24-12</td><td>7.9</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">BEE24-36</td><td>10.5</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">BEE24-16</td><td>14.8</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">BEE24-34</td><td>20.7</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td class="l">BEE24-13</td><td>25.0</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<thead><tr><th class="l">序列</th><th>每格蜜蜂</th><th>軌跡數</th><th>ByteTrack HOTA</th><th>ByteTrack-tuned HOTA</th><th>本文 HOTA</th><th>本文 IDSW</th><th>本文區域誤差 / 真值</th><th>本文 1280 HOTA</th></tr></thead>
+<tbody style="white-space:nowrap">
+<tr><td class="l">BEE24-12</td><td>7.9</td><td>19</td><td>71.0</td><td>71.1</td><td><b>71.8</b></td><td>4</td><td>2 / 4</td><td>69.9</td></tr>
+<tr><td class="l">BEE24-36</td><td>10.5</td><td>163</td><td>42.5</td><td><b>49.1</b></td><td>46.4</td><td>265</td><td>19 / 81</td><td>44.2</td></tr>
+<tr><td class="l">BEE24-16</td><td>14.8</td><td>80</td><td>53.9</td><td><b>57.8</b></td><td>57.1</td><td>65</td><td>37 / 63</td><td>62.2</td></tr>
+<tr><td class="l">BEE24-34</td><td>20.7</td><td>1,143</td><td>36.9</td><td>41.2</td><td><b>42.5</b></td><td>947</td><td>52 / 172</td><td>47.6</td></tr>
+<tr><td class="l">BEE24-13</td><td>25.0</td><td>54</td><td><b>67.8</b></td><td>67.2</td><td>66.3</td><td>33</td><td>9 / 21</td><td>66.6</td></tr>
 </tbody>
 </table>
-<p><b>結果解讀。</b><span class="todo">TODO</span></p>
+<p><b>解讀。</b>難度主要取決於軌跡的更替，也就是蜜蜂在巢口進出與互相遮擋，而不是單純的密度。BEE24-13 最擁擠（每格 25 隻），但蜜蜂大多停在原地（258 格中只有 54 條軌跡），所以所有追蹤器的 HOTA 都超過 66。BEE24-34 較不擁擠，卻有 1,143 條真值軌跡，是最難的序列；本方法相對 ByteTrack-tuned 的優勢在這裡最大（+1.3 HOTA），1280 px 偵測器的幫助也最大（+5.1）。在稀疏且更替少的 BEE24-12 上，所有追蹤器都相差不到 1 點。</p>
 <h3>失敗分析</h3>
-<p>我們檢查兩種追蹤器結果不同、以及發生計數錯誤的影格，搭配 demo 標註影片與軌跡長度分佈圖，把失敗歸納為下列幾類，每一類都附上裁切的連續影格作為例子。</p>
+<p>我們以 <code>failures.py</code> 檢查 false positive 最多的影格，以及巢口區域內的 ID 換錯；它會把真值框（綠色）與依 ID 上色的預測框疊在一起（圖 7）。觀察到的失敗模式如下：</p>
 <ul>
-<li><b>快速起飛與降落</b>：位移超過放大後的搜尋範圍，造成軌跡斷裂。觀察結果：<span class="todo">TODO</span></li>
-<li><b>蜂巢口擁擠</b>：相鄰蜜蜂的放大框互相重疊，可能互換 ID。觀察結果：<span class="todo">TODO</span></li>
-<li><b>計數線附近來回</b>：在線上徘徊的蜜蜂，真值與預測都會產生多次穿越；若在線上發生 ID 換錯，就會少算或多算一次。觀察結果：<span class="todo">TODO</span></li>
-<li><b>畫面邊緣</b>：正在進出畫面的蜜蜂只被偵測到一部分。觀察結果：<span class="todo">TODO</span></li>
-<li><b>誤偵測</b>：陰影或蜂巢紋理造成 false positive，劣化條件下尤其明顯。觀察結果：<span class="todo">TODO</span></li>
+<li><b>標註差異被算成 false positive</b>（圖 7a）。在 BEE24-34 第 391 格，23 個真值框對上 21 個未配對的預測。這些「false positive」有許多其實是真的蜜蜂，只是真值框比我們的框鬆很多，IoU 低於 0.5；其餘則是畫面邊緣花叢與地面上未被標註的蜜蜂。光是 BEE24-34 就佔了本方法 60.8 k 個測試 false positive 中的約 51 k，這解釋了它偏低的 MOTA，也說明了為何變暗（偵測到的這類蜜蜂變少）反而提高 MOTA。</li>
+<li><b>巢口蜂群內的 ID 換錯</b>（圖 7b）。在 BEE24-36 第 6 到 13 格，巢口內互相接觸的蜜蜂彼此遮擋，一條軌跡跟丟後以新 ID 重新開始。區域規則因此看到兩段半截軌跡，兩段都不是「由外開始、在內結束」，這次進巢就被漏掉。這就是即使使用真值框仍有 29% 計數誤差的機制。</li>
+<li><b>蜜蜂消失在黑暗的巢門裡。</b>真值會持續標註鑽進暗處的蜜蜂，偵測器卻在那裡跟丟，軌跡在到達區域內部之前就結束。加上前一種模式，使得計數誤差幾乎都是少算（表 9）。</li>
+<li><b>快速起飛與降落。</b>位移大到連放大後的搜尋範圍都涵蓋不了，軌跡就會斷掉；在 BEE24-36 上，預測軌跡的長度中位數只有 0.64 秒，真值為 2.24 秒。</li>
+<li><b>縫合錯誤。</b>跨越短空缺連接軌跡能減少 ID 換錯，但有時會在蜂群中把兩隻不同的蜜蜂接在一起，造成假的進出或抵銷真的進出，這是縫合讓區域計數變差的原因。</li>
 </ul>
-<figure><div class="ph">TODO · 失敗案例裁切圖（例如 runs/figs/failure_*.png）：同一組影格上 ByteTrack 與本文的比較</div><figcaption><b>圖 8.</b> 具代表性的失敗案例。</figcaption></figure>
+<figure><img src="../runs/figs/failure_fp_BEE24-34.png" alt="BEE24-34 的 false positive" style="max-height:64mm" onerror="this.outerHTML='<div class=ph>runs/figs/failure_fp_BEE24-34.png</div>'"><br><img src="../runs/figs/failure_idsw_BEE24-36.png" alt="BEE24-36 的 ID 換錯" style="max-height:42mm;margin-top:1mm" onerror="this.outerHTML='<div class=ph>runs/figs/failure_idsw_BEE24-36.png</div>'"><figcaption><b>圖 7.</b> 本方法的失敗案例（真值為綠色，預測依 ID 上色）。(a) 上：BEE24-34 第 391 格，真值框過鬆與邊緣未標註的蜜蜂造成未配對的預測。(b) 下：BEE24-36 第 6 → 13 格，巢口蜂群內的 ID 換錯把一隻蜜蜂切成兩段半截軌跡。</figcaption></figure>
 
 <!-- ============================================================ 14 -->
 <h2>應用與展示</h2>
-<p>可運作的應用程式是 <code>beetrack.demo</code>。它接受影片檔或影格資料夾，逐格執行微調後的偵測器與選定的追蹤器，輸出標註過的 MP4 影片與包含所有軌跡（frame、ID、框、分數）的 CSV 檔。畫面上會顯示每隻蜜蜂的框與 ID（顏色由 ID 決定）、代表行進方向的一秒尾跡、計數線，以及一行狀態列：即時進出數量、目前追蹤中的蜜蜂數、追蹤器名稱，和以最近 30 格滑動平均量測的處理 FPS（偵測＋追蹤）。計數線高度與追蹤器（本文方法或 ByteTrack）都是命令列參數，因此可以把同一段影片用兩種追蹤器並排展示。</p>
-<p>典型用法：<code>uv run python -m beetrack.demo --source data/BEE24/test/BEE24-36/img1 --tracker ours</code>。執行環境由 <code>uv.lock</code> 鎖定，每位組員只要 <code>uv sync</code> 就能重現。Demo 也在開發過程中完全沒用過的輸入上執行過：<span class="todo">TODO</span>（例如一段新的蜂巢影片；因為沒有真值，僅作為質性證據並明確標示）。</p>
-<figure><img src="../runs/demo/BEE24-36_ours.jpg" alt="demo 畫面" onerror="this.outerHTML='<div class=ph>TODO · demo 截圖（runs/demo/BEE24-36_ours.jpg）</div>'"><figcaption><b>圖 9.</b> BEE24-36 的 demo 輸出：框、ID、尾跡、計數線、進出數量與 FPS。</figcaption></figure>
+<p>可實際使用的程式是 <code>beetrack.demo</code>。它接受影片檔或影格資料夾，逐格執行微調後的偵測器與選定的追蹤器，輸出標註後的 MP4 影片，以及所有軌跡的 CSV 檔（frame、ID、框、分數）。畫面上會顯示：每隻蜜蜂的框與 ID（顏色由 ID 決定）、表示行進方向的一秒尾跡；巢口區域（或計數線）；以及一行狀態列，列出即時進出次數、目前追蹤中的蜜蜂數、追蹤器名稱與處理 FPS（以偵測加追蹤時間、30 格移動視窗計算）。加上 <code>--zone</code> 時，demo 使用與評估完全相同的區域規則：軌跡消失超過 track buffer 後才計入，所以計數會在蜜蜂進出後約 2.4 秒出現。不加時，demo 計算穿越一條線的次數，線的高度可由命令列設定。追蹤器（本文或 ByteTrack）也是命令列選項，同一段影片可以用兩種追蹤器分別展示。</p>
+<p>典型用法：<code>uv run python -m beetrack.demo --source data/BEE24/test/BEE24-36/img1 --tracker ours --zone BEE24-36</code>。執行環境由 <code>uv.lock</code> 鎖定，每位組員都能以 <code>uv sync</code> 重現。</p>
+<p><b>未見過影片的展示。</b>我們沒有自行拍攝影片，也沒有使用 BEE24 以外的蜂巢影片。因此展示使用 BEE24-36：這是 5,000 格（200 秒）的官方測試序列，從未用於訓練、checkpoint 挑選或追蹤器調參，在這個意義上是「未見過」的影片；但它來自同一個資料集，不能當作推廣到其他地點或攝影機的證據。在這段影片上，demo 平均 66 FPS（偵測＋追蹤，640 px，不含解碼），計數為進 40／出 22，真值為 49 / 32，與離線分析完全相同。輸出影片為 <code>runs/demo/BEE24-36_ours.mp4</code>；圖 8 是其中一格。</p>
+<figure><img style="max-height:55mm" src="../runs/demo/BEE24-36_ours.jpg" alt="demo 畫面" onerror="this.outerHTML='<div class=ph>runs/demo/BEE24-36_ours.jpg</div>'"><figcaption><b>圖 8.</b> BEE24-36 的 demo 輸出：框、ID、尾跡、巢口區域、進出計數與 FPS。</figcaption></figure>
 
 <!-- ============================================================ 15 -->
 <h2>限制與未來工作</h2>
 <ul>
-<li><b>只有一個資料集與場地。</b>所有結果都來自 BEE24；其他地點的相機、蜂箱形式與光線可能不同，需要新場地的少量標註影片才能確認泛化能力。</li>
-<li><b>穩健性測試是人工合成的。</b>變暗、過曝、模糊與雜訊都是簡單的全域影像變化；真實的黃昏、下雨或樹葉晃動的陰影在空間上不均勻，而且隨時間相關。</li>
-<li><b>計數規則。</b>計數是由真值軌跡在畫面中線上定義的，並非實際進入蜂巢的標註；穿越計數線但沒有進巢的蜜蜂仍會被算進去。這套規則適合比較追蹤器，不適合當作蜂群的絕對統計。</li>
-<li><b>人工設計的運動模型。</b>緩衝與雜訊參數只在六段驗證片段上調整；學習式運動模型，或像 OC-SORT [10] 那樣以觀測值回頭修正狀態，可能更能適應每隻蜜蜂的飛行方式。</li>
-<li><b>沒有使用外觀特徵。</b>蜜蜂雖然長得很像，但姿態與攜帶花粉等細微差異，或許仍有助於遮擋後的短期重識別。</li>
-<li><b>硬體。</b>速度只在一張筆電 GPU 上量測，沒有嘗試在蜂箱旁的邊緣裝置（例如 Jetson 上的 ONNX 或 TensorRT）部署。</li>
+<li><b>單一資料集與地點。</b>所有結果（包括 demo）都來自 BEE24。其他地點的攝影機、蜂箱種類與光線可能不同，需要一小段新地點的標註影片才能確認推廣能力。</li>
+<li><b>計數受限於軌跡斷裂。</b>即使用真值框，區域誤差仍有 29%。更大的偵測器、縫合或短軌跡過濾都沒有解決這個問題；需要能在蜜蜂接觸時、以及穿過黑暗巢門時維持 ID 的方法。</li>
+<li><b>計數規則。</b>計數由真值軌跡推得，並非真實進巢的標註；區域多邊形也是每台攝影機手繪一次。只標註到巢門口的蜜蜂，與被一路標進暗處的蜜蜂，可能會被計得不同。這套規則適合比較追蹤器，不適合產生絕對的蜂群統計。</li>
+<li><b>相對調整後 baseline 的提升有限。</b>與使用相同開新軌跡門檻的 ByteTrack 相比，本方法 HOTA 打平、IDF1 略低；優勢在 MOTA、ID 換錯、掉幀穩健性與區域計數。</li>
+<li><b>人工穩健性測試。</b>變暗、過曝、模糊與雜訊都是簡單的全域影像變化；真實的黃昏、雨天或樹葉晃動的陰影會隨空間變化，且在時間上相關。</li>
+<li><b>人工設計的運動模型。</b>邊界與雜訊參數是在六段驗證片段上調出來的；學習式運動模型，或 OC-SORT [10] 那樣以觀測值回頭修正，可能更能適應每隻蜜蜂的飛行。</li>
+<li><b>硬體。</b>速度只在一台筆電 GPU 上量測；沒有嘗試邊緣裝置部署（例如在蜂箱旁的 Jetson 上使用 ONNX 或 TensorRT）。</li>
 </ul>
-<p>未來工作：針對起飛與降落的學習式或多模型（IMM）運動估計；以實際巢門為範圍的區域計數；用我們自己的攝影機做長時間部署；以及量化後的邊緣推論。</p>
+<p>未來工作：能在蜜蜂接觸時仍維持 ID 的關聯方法（例如短期外觀或姿態特徵，或偵測與追蹤聯合學習）；把黑暗巢門明確建模為「已進巢」狀態；真實進巢事件的計數標註；自行拍攝蜂巢影片；以及量化後的邊緣推論。</p>
 
 <!-- ============================================================ 16 -->
 <h2>結論</h2>
-<p>BeeTrack 是一套完整且可重現的系統，能把蜂巢口影片轉換成蜜蜂 ID、軌跡與進出數量。Oracle 實驗顯示，限制小而快速之蜜蜂追蹤效果的不只是偵測，關聯本身也是瓶頸。運動自適應關聯以放大框配對，放大幅度依每條軌跡的速度與跟丟時間調整，並修正跟丟軌跡的運動模型；在相同偵測結果下，相較於 ByteTrack，測試集 HOTA 變化 <span class="todo">TODO</span>、IDF1 變化 <span class="todo">TODO</span>、ID 換錯變化 <span class="todo">TODO</span>，計數誤差由 <span class="todo">TODO</span> 降至 <span class="todo">TODO</span>。實驗二顯示 1280 px 輸入 <span class="todo">TODO</span>。系統在筆電 GPU 上可達 <span class="todo">TODO</span> FPS。所有調參都只用驗證資料，每個最終設定只在測試集上評估一次。</p>
+<p>BeeTrack 是一套完整、可重現的系統，能把蜂巢口影片轉成蜜蜂 ID、軌跡與進出計數。在相同偵測下，運動自適應關聯相對預設 ByteTrack 把測試 HOTA 由 40.2 提升到 45.2、IDF1 由 48.1 提升到 55.7，ID 換錯由 2,186 次降到 1,314 次；與使用相同開新軌跡門檻的 ByteTrack 相比，HOTA 打平（45.2），MOTA、ID 換錯與計數較佳。計數上最大的改善來自規則本身：以巢口區域取代畫面中線，使本方法的相對計數誤差由 83% 降到 35%。Oracle 實驗顯示即使框完全正確仍有 29%，剩下的誤差來自擁擠巢口的軌跡斷裂。軌跡縫合有助於穿越線計數，卻傷害區域計數與 HOTA；1280 px 偵測器提升了 HOTA（48.0）與 MOTA（60.3），但沒有改善計數。本方法在掉幀處理下退化最緩和，並在所有人工劣化下維持最佳的區域計數。系統在筆電 GPU 上離線約 54 FPS、即時 demo 66 FPS。所有調參只使用驗證資料，測試集每個設定只跑一次。</p>
 
 <!-- ============================================================ disclosure / contributions -->
-<h2 class="nonum">外部模型、資料集與 AI 使用揭露</h2>
+<h2 class="nonum">外部模型、資料集與 AI 使用聲明</h2>
 <ul>
-<li><b>預訓練模型：</b>Ultralytics YOLO11-s 的 COCO 權重（<code>yolo11s.pt</code>），AGPL-3.0。我們以 BEE24 微調，未使用其他預訓練權重。Baseline 追蹤器為 Ultralytics 的 ByteTrack 實作，本文追蹤器繼承自它。</li>
-<li><b>資料集：</b>BEE24 [16]，由作者的公開頁面下載；頁面未寫明授權，因此僅用於課程並引用論文。資料中沒有任何人物。</li>
-<li><b>評估程式：</b>TrackEval [20]（git 12c8791），未修改；另加一小段 NumPy 相容處理，補回 NumPy 1.24 移除的別名。</li>
-<li><b>AI 輔助：</b>我們使用 Anthropic 的 AI 助理 Claude 協助撰寫與除錯程式、設計與執行實驗，以及草擬、潤飾本報告與簡報。所有設計決策、程式碼與結果都經組員檢查；報告中的每個數字都來自我們程式產生的檔案，每位組員都能解釋程式碼。</li>
+<li><b>預訓練模型。</b>Ultralytics YOLO11-s 的 COCO 權重（<code>yolo11s.pt</code>），AGPL-3.0。我們在 BEE24 上微調，未使用其他預訓練權重。Baseline 追蹤器是 Ultralytics 的 ByteTrack 實作，本文追蹤器繼承自它。</li>
+<li><b>資料集。</b>BEE24 [16]，自作者公開頁面下載；未標明授權，因此只用於課程作業並引用。資料中沒有人物。</li>
+<li><b>評估程式。</b>TrackEval [20]（git 12c8791），未修改；另以一小段 NumPy 相容程式補回 NumPy 1.24 移除的別名。</li>
+<li><b>AI 協助。</b>我們使用 AI 助理 Claude（Anthropic）協助撰寫與除錯程式、設計與執行實驗，以及撰寫與編修本報告與投影片。所有設計決策、程式與結果都經過組員檢查；本報告的每個數字都來自我們程式產生的檔案，每位組員都能解釋程式碼。</li>
 </ul>
 
 <h2 class="nonum">個人貢獻說明</h2>
 <table class="wide">
-<thead><tr><th class="l">組員</th><th class="l">技術職責與完成工作</th><th>比例</th></tr></thead>
+<thead><tr><th class="l">組員</th><th class="l">技術負責項目與完成工作</th><th>比例</th></tr></thead>
 <tbody>
-<tr><td class="l">{{NAME1}}<br>{{ID1}}</td><td class="l">資料與評估流程：資料集下載與檢查、訓練／驗證／測試切分與防洩漏檢查、YOLO 標籤、TrackEval 真值與重複 ID 修正、計數規則、<code>evaluate.py</code>、跳格真值。<span class="todo">TODO 待本人確認</span></td><td>25%</td></tr>
-<tr><td class="l">{{NAME2}}<br>{{ID2}}</td><td class="l">偵測模型與實驗二：YOLO11-s 於 640 與 1280 px 的微調、偵測指標、偵測快取與人工劣化（<code>train.py</code>、<code>detect.py</code>）、速度量測。<span class="todo">TODO 待本人確認</span></td><td>25%</td></tr>
-<tr><td class="l">{{NAME3}}<br>{{ID3}}</td><td class="l">追蹤、改進與實驗一：ByteTrack baseline、運動自適應關聯（<code>track.py</code>）、oracle 分析、驗證集掃描與消融（<code>sweep.py</code>）、失敗分析。<span class="todo">TODO 待本人確認</span></td><td>25%</td></tr>
-<tr><td class="l">{{NAME4}}<br>{{ID4}}</td><td class="l">計數、視覺化、demo 與報告整合：軌跡與計數分析（<code>analytics.py</code>）、demo 程式與影片（<code>demo.py</code>）、圖表、報告與簡報整合。<span class="todo">TODO 待本人確認</span></td><td>25%</td></tr>
+<tr><td class="l">{{NAME1}}<br>{{ID1}}</td><td class="l">資料與評估：資料集下載與檢查、含洩漏檢查的訓練／驗證／測試切分、YOLO 標籤、TrackEval 真值與重複 ID 修正、掉幀真值（<code>prep.py</code>），評估指標與含巢口區域的計數規則（<code>evaluate.py</code>、<code>zones.json</code>）。</td><td>25%</td></tr>
+<tr><td class="l">{{NAME2}}<br>{{ID2}}</td><td class="l">偵測與實驗二：YOLO11-s 在 640 與 1280 px 的微調（<code>train.py</code>）、偵測指標、偵測快取與人工影像劣化（<code>detect.py</code>）、速度量測。</td><td>25%</td></tr>
+<tr><td class="l">{{NAME3}}<br>{{ID3}}</td><td class="l">追蹤、改進與實驗一：ByteTrack baseline、運動自適應關聯與軌跡縫合（<code>track.py</code>）、oracle 研究、驗證集掃描、消融與未採用方案的實驗（<code>sweep.py</code>）、掉幀實驗。</td><td>25%</td></tr>
+<tr><td class="l">{{NAME4}}<br>{{ID4}}</td><td class="l">計數、視覺化、demo 與報告：軌跡與計數分析（<code>analytics.py</code>）、失敗案例圖（<code>failures.py</code>）、demo 程式與影片（<code>demo.py</code>）、報告與投影片整合。</td><td>25%</td></tr>
 </tbody>
 </table>
 
-<h2 class="newpage">參考文獻</h2>
+<h2>參考文獻</h2>
 <ol class="refs">
 <li>J. Redmon, S. Divvala, R. Girshick and A. Farhadi, "You Only Look Once: Unified, real-time object detection," in <i>Proc. CVPR</i>, 2016.</li>
 <li>G. Jocher and J. Qiu, "Ultralytics YOLO11," 2024. [Online]. https://github.com/ultralytics/ultralytics</li>
-<li>Y. Zhao et al., "DETRs beat YOLOs on real-time object detection," in <i>Proc. CVPR</i>, 2024.</li>
+<li>Y. Zhao, W. Lv, S. Xu, J. Wei, G. Wang, Q. Dang, Y. Liu and J. Chen, "DETRs beat YOLOs on real-time object detection," in <i>Proc. CVPR</i>, 2024.</li>
 <li>A. Bewley, Z. Ge, L. Ott, F. Ramos and B. Upcroft, "Simple online and realtime tracking," in <i>Proc. ICIP</i>, 2016.</li>
-<li>R. E. Kalman, "A new approach to linear filtering and prediction problems," <i>J. Basic Engineering</i>, vol. 82, no. 1, 1960.</li>
-<li>H. W. Kuhn, "The Hungarian method for the assignment problem," <i>Naval Research Logistics Quarterly</i>, vol. 2, 1955.</li>
+<li>R. E. Kalman, "A new approach to linear filtering and prediction problems," <i>J. Basic Engineering</i>, vol. 82, no. 1, pp. 35–45, 1960.</li>
+<li>H. W. Kuhn, "The Hungarian method for the assignment problem," <i>Naval Research Logistics Quarterly</i>, vol. 2, pp. 83–97, 1955.</li>
 <li>N. Wojke, A. Bewley and D. Paulus, "Simple online and realtime tracking with a deep association metric," in <i>Proc. ICIP</i>, 2017.</li>
-<li>Y. Zhang et al., "ByteTrack: Multi-object tracking by associating every detection box," in <i>Proc. ECCV</i>, 2022.</li>
+<li>Y. Zhang, P. Sun, Y. Jiang, D. Yu, F. Weng, Z. Yuan, P. Luo, W. Liu and X. Wang, "ByteTrack: Multi-object tracking by associating every detection box," in <i>Proc. ECCV</i>, LNCS 13682, pp. 1–21, 2022.</li>
 <li>N. Aharon, R. Orfaig and B.-Z. Bobrovsky, "BoT-SORT: Robust associations multi-pedestrian tracking," arXiv:2206.14651, 2022.</li>
 <li>J. Cao, J. Pang, X. Weng, R. Khirodkar and K. Kitani, "Observation-centric SORT: Rethinking SORT for robust multi-object tracking," in <i>Proc. CVPR</i>, 2023.</li>
-<li>P. Sun et al., "DanceTrack: Multi-object tracking in uniform appearance and diverse motion," in <i>Proc. CVPR</i>, 2022.</li>
+<li>P. Sun, J. Cao, Y. Jiang, Z. Yuan, S. Bai, K. Kitani and P. Luo, "DanceTrack: Multi-object tracking in uniform appearance and diverse motion," in <i>Proc. CVPR</i>, 2022.</li>
 <li>A. Milan, L. Leal-Taixé, I. Reid, S. Roth and K. Schindler, "MOT16: A benchmark for multi-object tracking," arXiv:1603.00831, 2016.</li>
 <li>P. Dendorfer et al., "MOT20: A benchmark for multi object tracking in crowded scenes," arXiv:2003.09003, 2020.</li>
 <li>F. Yang, S. Odashima, S. Masui and S. Jiang, "Hard to track objects with irregular motions and similar appearances? Make it easier by buffering the matching space," in <i>Proc. WACV</i>, 2023.</li>
 <li>K. Bozek, L. Hebert, A. S. Mikheyev and G. J. Stephens, "Towards dense object tracking in a 2D honeybee hive," in <i>Proc. CVPR</i>, 2018.</li>
-<li>X. Cao et al., "TOPIC: A parallel association paradigm for multi-object tracking under complex motions and diverse scenes," <i>IEEE Trans. Image Processing</i>, 2025.（BEE24 資料集）</li>
+<li>X. Cao, Y. Zheng, Y. Yao, H. Qin, X. Cao and S. Guo, "TOPIC: A parallel association paradigm for multi-object tracking under complex motions and diverse scenes," <i>IEEE Trans. Image Processing</i>, vol. 34, pp. 743–758, 2025.（BEE24 資料集出處）</li>
 <li>K. Bernardin and R. Stiefelhagen, "Evaluating multiple object tracking performance: The CLEAR MOT metrics," <i>EURASIP J. Image and Video Processing</i>, 2008.</li>
 <li>E. Ristani, F. Solera, R. Zou, R. Cucchiara and C. Tomasi, "Performance measures and a data set for multi-target, multi-camera tracking," in <i>Proc. ECCV Workshops</i>, 2016.</li>
-<li>J. Luiten et al., "HOTA: A higher order metric for evaluating multi-object tracking," <i>Int. J. Computer Vision</i>, vol. 129, 2021.</li>
+<li>J. Luiten, A. Ošep, P. Dendorfer, P. Torr, A. Geiger, L. Leal-Taixé and B. Leibe, "HOTA: A higher order metric for evaluating multi-object tracking," <i>Int. J. Computer Vision</i>, vol. 129, no. 2, pp. 548–578, 2021.</li>
 <li>J. Luiten and A. Hoffhues, "TrackEval," 2020. [Online]. https://github.com/JonathonLuiten/TrackEval</li>
 <li>D. Hendrycks and T. Dietterich, "Benchmarking neural network robustness to common corruptions and perturbations," in <i>Proc. ICLR</i>, 2019.</li>
 </ol>
