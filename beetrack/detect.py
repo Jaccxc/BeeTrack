@@ -30,7 +30,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--weights", required=True, help="best.pt, or 'gt' for the oracle detector (GT boxes, score 1)")
     ap.add_argument("--imgsz", type=int, default=640)
-    ap.add_argument("--split", default="test", choices=["val", "test"])
+    ap.add_argument("--split", default="test", choices=["val", "test", "dev"])
     ap.add_argument("--corrupt", default="none", choices=list(CORRUPT))
     ap.add_argument("--tag", help="output name, default y11s_<imgsz>[_<corrupt>]")
     a = ap.parse_args()

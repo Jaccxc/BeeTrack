@@ -37,7 +37,9 @@ def load_gt(name):
 
 
 def split_specs(split):
-    """List of (eval_name, source_sequence, first_frame, last_frame) for 'train', 'val' or 'test'."""
+    """List of (eval_name, source_sequence, first_frame, last_frame) for 'train', 'val', 'test' or 'dev'.
+    dev = the training part of the long videos again, as '<seq>-head': more frames of the two val-tail scenes for tracker
+    development (4x the counting events of val). The detector was trained on these frames, so real detections are optimistic."""
     out = []
     names = sorted(p.name for p in (DATA / ("test" if split == "test" else "train")).iterdir())
     for s in names:
@@ -48,8 +50,8 @@ def split_specs(split):
             if split == "val":
                 out.append((s, s, 1, n))
         elif n >= LONG:
-            if split == "train":
-                out.append((s, s, 1, n - VAL_TAIL - GAP))
+            if split in ("train", "dev"):
+                out.append((s if split == "train" else f"{s}-head", s, 1, n - VAL_TAIL - GAP))
             else:
                 out.append((f"{s}-tail", s, n - VAL_TAIL + 1, n))
         elif split == "train":

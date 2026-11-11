@@ -3,7 +3,7 @@ run: uv run python -m beetrack.prep      (from the repository root)
 
 - YOLO labels: one .txt next to every training image (Ultralytics looks there when the path has no 'images' folder)
 - runs/data/{train,val}.txt image lists (frame stride on long videos) and runs/data/bee24.yaml
-- runs/gt/{val,test}/<seq>/: MOTChallenge ground truth + seqinfo.ini + seqmap for TrackEval
+- runs/gt/{val,test,dev}/<seq>/: MOTChallenge ground truth + seqinfo.ini + seqmap for TrackEval
 """
 import json
 
@@ -11,6 +11,7 @@ import cv2
 import numpy as np
 
 from .common import RUNS, frame_path, gt_slice, load_gt, n_frames, split_specs
+from .evaluate import merge_handovers
 
 STRIDE_LONG = 5      # long videos: every 5th frame (25 fps -> 5 fps); neighbours are near-duplicates
 STRIDE_VAL_LONG = 10
@@ -30,7 +31,7 @@ def yolo_labels(name):
     return w, h
 
 
-def write_eval_gt(split, ev, src, a, b, step=1):
+def write_eval_gt(split, ev, src, a, b, step=1, merge=False):
     """MOTChallenge folder TrackEval reads: <seq>/gt/gt.txt (conf, class, visibility all 1) + seqinfo.ini.
     step > 1 keeps every step-th frame, renumbered 1, 2, ... (same rule as track.run_sequence)."""
     d = RUNS / "gt" / split / ev
@@ -41,6 +42,8 @@ def write_eval_gt(split, ev, src, a, b, step=1):
     _, first = np.unique(g[:, 0] * 1e6 + g[:, 1], return_index=True)
     dup = np.setdiff1d(np.arange(len(g)), first)
     g[dup, 1] = g[:, 1].max() + 1 + np.arange(len(dup))
+    if merge:   # dev only: IDs that hand over to a new ID on the same box are one bee
+        g = merge_handovers(g)
     g = g[(g[:, 0] - 1) % step == 0]
     g[:, 0] = (g[:, 0] - 1) // step + 1
     np.savetxt(d / "gt" / "gt.txt", np.c_[g, np.ones((len(g), 3))], fmt="%d,%d,%.2f,%.2f,%.2f,%.2f,%d,%d,%d")
@@ -71,6 +74,9 @@ def main():
         for ev, src, a, b in split_specs("test"):
             write_eval_gt(f"test_step{k}", ev, src, a, b, step=k)
         (RUNS / "gt" / f"test_step{k}.seqmap").write_text((RUNS / "gt" / "test.seqmap").read_text())
+    for ev, src, a, b in split_specs("dev"):   # tracker-development GT: the training part of the long videos
+        write_eval_gt("dev", ev, src, a, b, merge=True)
+    (RUNS / "gt" / "dev.seqmap").write_text("name\n" + "\n".join(e for e, *_ in split_specs("dev")) + "\n")
     (out / "bee24.yaml").write_text(f"path: {out.as_posix()}\ntrain: {(out / 'train.txt').as_posix()}\nval: {(out / 'val.txt').as_posix()}\ntest: {(out / 'test.txt').as_posix()}\nnames:\n  0: bee\n")
     # the three splits never share a frame
     seen = {}

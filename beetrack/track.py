@@ -30,7 +30,8 @@ from .common import RUNS, split_specs, write_mot
 BYTETRACK = dict(track_high_thresh=0.25, track_low_thresh=0.1, new_track_thresh=0.25, track_buffer=30,
                  match_thresh=0.8, fuse_score=True)                 # ultralytics/cfg/trackers/bytetrack.yaml
 # tuned on val only (runs/eval/val/sweep_*.json); second-stage BIoU and interpolation did not help, so they stay off
-OURS = dict(BYTETRACK, new_track_thresh=0.5, track_buffer=60, buffer=0.1, grow=0.1, speed=0.5, damp=0.8, q_vel=1 / 80, second=False)
+OURS = dict(BYTETRACK, new_track_thresh=0.5, track_buffer=60, buffer=0.1, grow=0.1, speed=0.5, damp=0.8, q_vel=1 / 80, second=False,
+            flight=0, fly_tol=1.0, fly_n=2, fly_min=0.5, link_gap=2, link_cos=0.8)   # FlightLink, off by default: flight = max jump in body lengths
 # interp (any tracker): fill gaps <= interp frames inside a track by linear interpolation (offline post-processing)
 
 
@@ -53,20 +54,24 @@ class Dets:
 
 
 def iou_matrix(a, b):
-    """Pairwise IoU of (n, 4) and (m, 4) xyxy boxes."""
-    lt = np.maximum(a[:, None, :2], b[None, :, :2])
-    rb = np.minimum(a[:, None, 2:], b[None, :, 2:])
-    inter = np.prod(np.clip(rb - lt, 0, None), axis=2)
-    area = lambda x: (x[:, 2] - x[:, 0]) * (x[:, 3] - x[:, 1])
-    return inter / (area(a)[:, None] + area(b)[None, :] - inter + 1e-9)
+    """Pairwise IoU of (n, 4) and (m, 4) xyxy boxes; b may be (n, m, 4): its own version of the m boxes for every a."""
+    a, b = a[:, None], b if b.ndim == 3 else b[None]
+    inter = np.prod(np.clip(np.minimum(a[..., 2:], b[..., 2:]) - np.maximum(a[..., :2], b[..., :2]), 0, None), axis=-1)
+    area = lambda x: (x[..., 2] - x[..., 0]) * (x[..., 3] - x[..., 1])
+    return inter / (area(a) + area(b) - inter + 1e-9)
 
 
 def enlarge(xyxy, r):
-    w, h = xyxy[:, 2] - xyxy[:, 0], xyxy[:, 3] - xyxy[:, 1]
-    return np.c_[xyxy[:, 0] - r * w, xyxy[:, 1] - r * h, xyxy[:, 2] + r * w, xyxy[:, 3] + r * h]
+    """Boxes grown by r x their size on every side. r: scalar, (m,) per box, or (n, 1) -> (n, m, 4), every box at n ratios."""
+    wh = (xyxy[..., 2:] - xyxy[..., :2]) * np.asarray(r)[..., None]
+    return np.concatenate([xyxy[..., :2] - wh, xyxy[..., 2:] + wh], -1)
 
 
 class BeeTracker(BYTETracker):
+    def __init__(self, args):
+        super().__init__(args)
+        self.late = []   # rows frame, x1, y1, x2, y2, id, score: boxes seen before their track was confirmed (args.retro)
+
     def get_kalmanfilter(self):
         kf = KalmanFilterXYAH()
         kf._std_weight_velocity = self.args.q_vel
@@ -81,7 +86,13 @@ class BeeTracker(BYTETracker):
         lost = np.array([self.frame_id - t.end_frame - 1 for t in tracks], np.float32).clip(0, 10)
         v = np.array([np.hypot(*t.mean[4:6]) / max(t.mean[3], 1.0) for t in tracks])   # speed in box heights / frame
         r = self.args.buffer + self.args.grow * lost + self.args.speed * np.minimum(v, 1.0)
-        return 1 - iou_matrix(enlarge(a, r), enlarge(b, np.full(len(b), self.args.buffer)))
+        # sym: the detection grows as much as the track. Otherwise a perfectly placed detection reaches at most
+        # ((1 + 2 buffer) / (1 + 2 r))^2 IoU, so a fast or long-lost track can match nothing (r 0.6 -> 0.30, r 1.1 -> 0.14)
+        b = enlarge(b, r[:, None] if getattr(self.args, "sym", 0) else self.args.buffer)
+        iou = iou_matrix(enlarge(a, r), b)
+        if getattr(self.args, "obs", 0):   # stay-or-go: a bee that stops dead is still at its last detection, not where constant velocity puts it
+            iou = np.maximum(iou, iou_matrix(enlarge(np.array([getattr(t, "last", t.xyxy) for t in tracks]), r), b))
+        return 1 - iou
 
     def get_dists(self, tracks, detections):
         dists = self.biou_dists(tracks, detections)
@@ -89,6 +100,7 @@ class BeeTracker(BYTETracker):
 
     def _second_association(self, strack_pool, u_track, detections_second, activated, refind, lost):
         """ByteTrack's low-score stage, with buffered IoU instead of plain IoU when args.second is on."""
+        self._lost_now = lost   # this frame's newly lost tracks: _hop takes a track out again when it finds its bee
         if not self.args.second:
             return super()._second_association(strack_pool, u_track, detections_second, activated, refind, lost)
         r_tracked = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
@@ -99,6 +111,134 @@ class BeeTracker(BYTETracker):
         for it in u:
             r_tracked[it].mark_lost()
             lost.append(r_tracked[it])
+
+    # --- FlightLink (args.flight > 0): a flying bee moves several body lengths per frame, so its boxes never overlap and
+    # ByteTrack deletes the new track before it is confirmed. A new track may instead continue by centre distance, and is
+    # confirmed once (a) three points lie on a line, or (b) two points extrapolate back onto a track that was just lost
+    # (take-off): then it keeps that track's ID. A new slow track that appears where a lost flyer was heading (landing)
+    # takes the flyer's ID the same way.
+    def update(self, results, img=None, feats=None):
+        out = super().update(results, img, feats)
+        a = self.args
+        for t in self.tracked_stracks:
+            if t.frame_id != self.frame_id:
+                continue
+            t.last = results.xyxy[int(t.idx)]
+            if getattr(a, "flight", 0):
+                t.pts = (getattr(t, "pts", []) + [(self.frame_id, *t.mean[:2])])[-2:]
+                t.n_obs = getattr(t, "n_obs", 0) + 1
+            if getattr(a, "retro", 0):   # boxes a track had before it was confirmed are emitted once it is (self.late)
+                if not t.is_activated:
+                    t.pend = getattr(t, "pend", []) + [[self.frame_id, *results.xyxy[int(t.idx)], t.score]]
+                elif getattr(t, "pend", None):
+                    self.late += [[f, *b, t.track_id, s] for f, *b, s in t.pend]
+                    t.pend = None
+        return out
+
+    def _link(self, t, p, f, v, removed):
+        """Give track t (first seen at point p, frame f) the ID of the lost track it continues. v: t's velocity for a
+        take-off (t is the flyer); None for a landing, where the lost track's own last velocity is used."""
+        a, s, best = self.args, float(np.sqrt(np.prod(t.tlwh[2:]))), None
+        for o in self.lost_stracks:
+            pts = getattr(o, "pts", [])
+            if o.state != TrackState.Lost or not pts or (v is None and len(pts) < 2):
+                continue
+            gap = f - pts[-1][0]
+            vv = v if v is not None else (np.subtract(pts[-1][1:], pts[-2][1:]) / max(pts[-1][0] - pts[-2][0], 1))
+            sp, d = float(np.hypot(*vv)), np.subtract(p, pts[-1][1:])
+            dist = float(np.hypot(*d))
+            if not 0 < gap <= a.link_gap or sp < a.fly_min * s or dist > 1.5 * sp * gap + s:
+                continue
+            if dist > 0.5 * s and d @ vv / (dist * sp) < a.link_cos:   # the jump must point along the flight
+                continue
+            if best is None or dist < best[0]:
+                best = (dist, o)
+        if best:
+            t.track_id = best[1].track_id
+            best[1].mark_removed()
+            removed.append(best[1])
+        return bool(best)
+
+    def _hop(self, D, activated):
+        """args.hop > 0: a confirmed track that lost its box <= hop_gap frames ago takes a leftover detection within `hop`
+        body lengths per frame of where it was last detected or of where the filter puts it (a hop or a short dash moves a
+        bee further than any overlap test allows). Returns the detections that are still free."""
+        a = self.args
+        T = [t for t in self.tracked_stracks + self.lost_stracks if t.state == TrackState.Lost and hasattr(t, "last")
+             and self.frame_id - t.end_frame <= getattr(a, "hop_gap", 1)]
+        cost = np.full((len(T), len(D)), 2.0, np.float32)
+        for i, t in enumerate(T):
+            s, c0 = float(np.sqrt(np.prod(t.tlwh[2:]))), (t.last[:2] + t.last[2:]) / 2
+            for j, d in enumerate(D):
+                c, (w, h) = d.tlwh[:2] + d.tlwh[2:] / 2, d.tlwh[2:]
+                if 1 / 3 < w * h / s**2 < 3:
+                    cost[i, j] = min(np.hypot(*(c - c0)), np.hypot(*(c - t.mean[:2]))) / (a.hop * s * (self.frame_id - t.end_frame))
+        m, _, free = matching.linear_assignment(cost, thresh=1.0)
+        for i, j in m:
+            T[i].re_activate(D[j], self.frame_id)
+            T[i].how = "hop"
+            if T[i] in self._lost_now:
+                self._lost_now.remove(T[i])
+            activated.append(T[i])
+        return [D[j] for j in free]
+
+    def _unconfirmed_association(self, unconfirmed, u_detection, detections, activated, removed):
+        a = self.args
+        fly, hop, dup = (getattr(a, k, 0) for k in ("flight", "hop", "dup"))
+        if dup and 0 < len(u_detection) < len(detections):   # a leftover box on top of a box that already has its track is a duplicate
+            free = set(u_detection)
+            o = iou_matrix(np.array([detections[i].xyxy for i in u_detection]),
+                           np.array([d.xyxy for k, d in enumerate(detections) if k not in free])).max(1)
+            u_detection = [i for i, x in zip(u_detection, o) if x < dup]
+        if not fly and not hop:
+            return super()._unconfirmed_association(unconfirmed, u_detection, detections, activated, removed)
+        detections = [detections[i] for i in u_detection]
+        matches, u_unc, u_det = matching.linear_assignment(self.get_dists(unconfirmed, detections), thresh=0.7)
+        for it, idet in matches:                       # ByteTrack's own confirmation (overlapping boxes)
+            t = unconfirmed[it]
+            first = getattr(t, "pts", None) and getattr(t, "n_obs", 0) == 1
+            t.update(detections[idet], self.frame_id)
+            if first and self._link(t, t.pts[0][1:], t.pts[0][0], None, removed):
+                t.how = "land"   # how a track was confirmed, when not by plain overlap (diagnostics only)
+            activated.append(t)
+        U, D = [unconfirmed[i] for i in u_unc], [detections[j] for j in u_det]
+        if hop:
+            D = self._hop(D, activated)
+        cost = np.full((len(U), len(D)), 2.0, np.float32)
+        for i, t in enumerate(U):
+            if not fly or not getattr(t, "pts", None):
+                continue
+            c, s, v = np.array(t.pts[-1][1:]), float(np.sqrt(np.prod(t.tlwh[2:]))), getattr(t, "fly_v", None)
+            gate = a.flight * s if v is None else a.fly_tol * s + 0.5 * np.hypot(*v)
+            for j, d in enumerate(D):
+                w, h = d.tlwh[2:]
+                if d.score >= getattr(a, "fly_score", 0) and 1 / 3 < w * h / s**2 < 3:
+                    cost[i, j] = np.hypot(*(d.tlwh[:2] + d.tlwh[2:] / 2 - c - (0 if v is None else v))) / gate
+        fm, fu, fd = matching.linear_assignment(cost, thresh=1.0)
+        for i, j in fm:
+            t, d = U[i], D[j]
+            t.fly_v = d.tlwh[:2] + d.tlwh[2:] / 2 - np.array(t.pts[-1][1:])
+            t.mean, t.covariance = t.kalman_filter.initiate(t.convert_coords(d.tlwh))   # a jump this size would wreck a Kalman update
+            t.mean[4:6] = t.fly_v
+            t.frame_id, t.score, t.cls, t.idx, t.state = self.frame_id, d.score, d.cls, d.idx, TrackState.Tracked
+            t.tracklet_len += 1
+            first = t.pts[0] if t.n_obs == 1 else None
+            if first and self._link(t, first[1:], first[0], t.fly_v, removed):
+                t.is_activated, t.how = True, "takeoff"
+            elif t.n_obs >= a.fly_n:                    # free chain: fly_n + 1 points on a line
+                t.is_activated, t.how = True, "chain"
+            activated.append(t)
+        for i in fu:
+            U[i].mark_removed()
+            removed.append(U[i])
+        return list(range(len(fd))), [D[j] for j in fd]
+
+    def _init_new_tracks(self, u_detection, detections, activated, refind=None):
+        n = len(activated)
+        super()._init_new_tracks(u_detection, detections, activated, refind)
+        if getattr(self.args, "all", 0):   # tracklet mode: a new track is output from its first box, confirmed or not
+            for t in activated[n:]:
+                t.is_activated = True
 
     def multi_predict(self, tracks):
         for t in tracks:
@@ -119,7 +259,11 @@ class Tracker:
 
     def update(self, dets):
         out = self.t.update(Dets(dets))
-        return out[:, :6] if len(out) else np.zeros((0, 6), np.float32)
+        if not len(out):
+            return np.zeros((0, 6), np.float32)
+        if getattr(self.args, "raw", 0):   # the matched detection itself: the Kalman-smoothed box lags behind a bee that accelerates
+            out[:, :4] = np.asarray(dets, np.float32).reshape(-1, 5)[out[:, 7].astype(int), :4]
+        return out[:, :6]
 
 
 def make_tracker(name, frame_rate=25, **overrides):
@@ -136,6 +280,8 @@ def run_sequence(dets, n, tracker, step=1):
         out = tracker.update(d)
         secs += time.perf_counter() - t0
         rows += [[k, tid, x1, y1, x2 - x1, y2 - y1, s] for x1, y1, x2, y2, tid, s in out]
+    rows += [[f, tid, x1, y1, x2 - x1, y2 - y1, s] for f, x1, y1, x2, y2, tid, s in getattr(tracker.t, "late", [])]
+    rows.sort(key=lambda r: r[0])
     a = tracker.args
     if getattr(a, "stitch", 0):
         rows = stitch(rows, a.stitch, getattr(a, "stitch_dist", 2.0))
@@ -228,7 +374,17 @@ def _check_drop_short():
     assert [x[1] for x in drop_short(r, 2, 0)] == [3, 3]
 
 
+def _check_flight():
+    """A bee sits for 5 frames, then flies 3 body lengths per frame: one ID with FlightLink, lost without it."""
+    box = lambda x: [[x, 100, x + 20, 120, 0.9]]
+    seq = [box(100)] * 5 + [box(100 + 60 * k) for k in range(1, 5)]
+    ids = lambda **kw: [[int(r[4]) for r in t.update(np.array(d, np.float32))] for t in [Tracker("ours", **kw)] for d in seq]
+    assert ids(flight=5)[-2:] == [[1], [1]], ids(flight=5)
+    assert ids()[-2:] == [[], []], ids()
+
+
 _check_interpolate()
+_check_flight()
 _check_stitch()
 _check_drop_short()
 
@@ -240,7 +396,7 @@ def parse_set(items):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dets", default="y11s_640", help="detection cache tag under runs/dets/")
-    ap.add_argument("--split", default="val", choices=["val", "test"])
+    ap.add_argument("--split", default="val", choices=["val", "test", "dev"])
     ap.add_argument("--tracker", default="ours", choices=["ours", "bytetrack"])
     ap.add_argument("--set", nargs="*", help="parameter overrides, e.g. buffer=0 track_buffer=30")
     ap.add_argument("--step", type=int, default=1, help="keep every step-th frame (frame-drop robustness)")
