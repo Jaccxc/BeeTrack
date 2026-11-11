@@ -1,4 +1,4 @@
-# Build BeeTrack_Report_{EN,ZH}.pdf: fill team placeholders from proposal/team.json into temporary copies,
+# Build BeeTrack_Report_{EN,ZH}.pdf and the simplified BeeTrack_Report_{EN,ZH}_S.pdf: fill team placeholders from proposal/team.json into temporary copies,
 # print them with headless Edge, then delete the copies (names never land in the HTML sources).
 # run: powershell -ExecutionPolicy Bypass -File report\build.ps1
 param(
@@ -14,7 +14,7 @@ $members = [IO.File]::ReadAllText((Resolve-Path $Team), $utf8) | ConvertFrom-Jso
 if ($members.Count -ne 4) { throw "team.json must list 4 members, found $($members.Count)" }
 
 $edgeProfile = Join-Path $env:TEMP "beetrack_edge_profile"   # separate profile so a running Edge does not swallow the job
-foreach ($lang in "en", "zh") {
+foreach ($lang in "en", "zh", "en_s", "zh_s") {   # *_s = simplified edition (report_*_s.html -> BeeTrack_Report_*_S.pdf)
   $html = [IO.File]::ReadAllText("$here\report_$lang.html", $utf8)
   for ($i = 0; $i -lt 4; $i++) {
     $html = $html.Replace("{{NAME$($i + 1)}}", [Net.WebUtility]::HtmlEncode($members[$i][0]))

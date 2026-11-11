@@ -1,0 +1,32 @@
+/* BeeTrack report, simplified "S" edition: same components as style.css, larger type and normal margins. */
+@import url("style.css");
+@page { size: A4; margin: 20mm; }
+
+html { font-size: 11pt; }
+body { line-height: 1.5; }
+body.zh { font-size: 10.5pt; line-height: 1.75; }
+
+.cover { height: 240mm; }
+.cover table { font-size: 11pt; }
+.cover table th, .cover table td { padding: 1.4mm 3mm; }
+
+h2 { font-size: 15pt; margin: 7mm 0 3mm; }
+h3 { font-size: 12.5pt; margin: 5mm 0 2mm; }
+p { margin: 0 0 3mm; }
+ul, ol { margin: 0 0 3mm; padding-left: 7mm; }
+li { margin-bottom: 1.5mm; }
+code, .mono { font-size: 9.5pt; }
+
+table { font-size: 10pt; margin: 2mm auto 3mm; line-height: 1.35; }
+th, td { padding: 1.1mm 2.6mm; }
+.tcap { font-size: 10pt; margin: 4mm 0 1mm; }
+figure { margin: 4mm 0; }
+figcaption { font-size: 10pt; }
+
+.eq .m { font-size: 12pt; }
+.arch { font-size: 9.5pt; line-height: 1.35; }
+.arch .blk b { font-size: 10.5pt; }
+ol.refs { font-size: 10pt; padding-left: 8mm; }
+body.zh ol.refs { line-height: 1.5; }
+/* numbers and first-column labels never wrap; long descriptive cells (.l, not first) and headers may */
+td:not(.l), td:first-child { white-space: nowrap; }
