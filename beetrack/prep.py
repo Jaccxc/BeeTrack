@@ -74,9 +74,10 @@ def main():
         for ev, src, a, b in split_specs("test"):
             write_eval_gt(f"test_step{k}", ev, src, a, b, step=k)
         (RUNS / "gt" / f"test_step{k}.seqmap").write_text((RUNS / "gt" / "test.seqmap").read_text())
-    for ev, src, a, b in split_specs("dev"):   # tracker-development GT: the training part of the long videos
-        write_eval_gt("dev", ev, src, a, b, merge=True)
-    (RUNS / "gt" / "dev.seqmap").write_text("name\n" + "\n".join(e for e, *_ in split_specs("dev")) + "\n")
+    for split in ("dev", "train"):   # dev: the training part of the long videos, for tracker development; train: what link.py is fitted on
+        for ev, src, a, b in split_specs(split):
+            write_eval_gt(split, ev, src, a, b, merge=True)
+        (RUNS / "gt" / f"{split}.seqmap").write_text("name\n" + "\n".join(e for e, *_ in split_specs(split)) + "\n")
     (out / "bee24.yaml").write_text(f"path: {out.as_posix()}\ntrain: {(out / 'train.txt').as_posix()}\nval: {(out / 'val.txt').as_posix()}\ntest: {(out / 'test.txt').as_posix()}\nnames:\n  0: bee\n")
     # the three splits never share a frame
     seen = {}

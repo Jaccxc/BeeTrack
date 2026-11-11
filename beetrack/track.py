@@ -26,12 +26,19 @@ from ultralytics.trackers.utils import matching
 from ultralytics.trackers.utils.kalman_filter import KalmanFilterXYAH
 
 from .common import RUNS, split_specs, write_mot
+from .link import link, model
 
 BYTETRACK = dict(track_high_thresh=0.25, track_low_thresh=0.1, new_track_thresh=0.25, track_buffer=30,
                  match_thresh=0.8, fuse_score=True)                 # ultralytics/cfg/trackers/bytetrack.yaml
 # tuned on val only (runs/eval/val/sweep_*.json); second-stage BIoU and interpolation did not help, so they stay off
 OURS = dict(BYTETRACK, new_track_thresh=0.5, track_buffer=60, buffer=0.1, grow=0.1, speed=0.5, damp=0.8, q_vel=1 / 80, second=False,
             flight=0, fly_tol=1.0, fly_n=2, fly_min=0.5, link_gap=2, link_cos=0.8)   # FlightLink, off by default: flight = max jump in body lengths
+# two-pass tracker: a first pass that joins only boxes that overlap almost perfectly (buffered IoU >= 0.7, no score fusion,
+# no growing search area, a track is dropped after 2 lost frames) and outputs every box from its first frame on (all, raw),
+# after a second NMS at IoU 0.5 (nms); then link.link joins the tracklets offline (link = probability threshold) and
+# tracks of fewer than min_len boxes are dropped
+PASS1 = dict(all=1, raw=1, obs=1, grow=0, track_buffer=2, new_track_thresh=0.25, fuse_score=False, match_thresh=0.3, nms=0.5)
+PRESETS = dict(bytetrack=BYTETRACK, ours=OURS, link=dict(OURS, **PASS1, link=0.15, min_len=3))
 # interp (any tracker): fill gaps <= interp frames inside a track by linear interpolation (offline post-processing)
 
 
@@ -59,6 +66,18 @@ def iou_matrix(a, b):
     inter = np.prod(np.clip(np.minimum(a[..., 2:], b[..., 2:]) - np.maximum(a[..., :2], b[..., :2]), 0, None), axis=-1)
     area = lambda x: (x[..., 2] - x[..., 0]) * (x[..., 3] - x[..., 1])
     return inter / (area(a) + area(b) - inter + 1e-9)
+
+
+def nms(d, thr):
+    """Rows of d (x1, y1, x2, y2, score) that survive greedy NMS: a box goes when its IoU with a kept, higher-scoring box is >= thr."""
+    iou, keep = iou_matrix(d[:, :4], d[:, :4]), []
+    for i in np.argsort(-d[:, 4], kind="stable"):
+        if not keep or iou[i, keep].max() < thr:
+            keep.append(i)
+    return np.sort(keep).astype(int)
+
+
+assert list(nms(np.array([[0, 0, 10, 10, 0.5], [1, 0, 11, 10, 0.9], [30, 0, 40, 10, 0.3]]), 0.5)) == [1, 2]
 
 
 def enlarge(xyxy, r):
@@ -252,17 +271,19 @@ class Tracker:
     """Common interface: update(N x 5 xyxy+score) -> rows x1, y1, x2, y2, id, score."""
 
     def __init__(self, name="ours", **overrides):
-        base = OURS if name == "ours" else BYTETRACK
-        self.args = SimpleNamespace(**{**base, **overrides})
+        self.args = SimpleNamespace(**{**PRESETS[name], **overrides})
         STrack.shared_kalman._std_weight_velocity = getattr(self.args, "q_vel", 1 / 160)
-        self.t = (BeeTracker if name == "ours" else BYTETracker)(self.args)
+        self.t = (BYTETracker if name == "bytetrack" else BeeTracker)(self.args)
 
     def update(self, dets):
+        dets = np.asarray(dets, np.float32).reshape(-1, 5)
+        if getattr(self.args, "nms", 0):   # the detector's own NMS (IoU 0.7) leaves a second box on many bees; real bees rarely overlap that much
+            dets = dets[nms(dets, self.args.nms)]
         out = self.t.update(Dets(dets))
         if not len(out):
             return np.zeros((0, 6), np.float32)
         if getattr(self.args, "raw", 0):   # the matched detection itself: the Kalman-smoothed box lags behind a bee that accelerates
-            out[:, :4] = np.asarray(dets, np.float32).reshape(-1, 5)[out[:, 7].astype(int), :4]
+            out[:, :4] = dets[out[:, 7].astype(int), :4]
         return out[:, :6]
 
 
@@ -283,6 +304,9 @@ def run_sequence(dets, n, tracker, step=1):
     rows += [[f, tid, x1, y1, x2 - x1, y2 - y1, s] for f, x1, y1, x2, y2, tid, s in getattr(tracker.t, "late", [])]
     rows.sort(key=lambda r: r[0])
     a = tracker.args
+    if getattr(a, "link", 0) and rows:   # link_model: another fitted model than beetrack/link_model.json
+        m = getattr(a, "link_model", None)
+        rows = sorted(link(rows, a.link, model(json.loads(open(m).read())) if m else None).tolist())
     if getattr(a, "stitch", 0):
         rows = stitch(rows, a.stitch, getattr(a, "stitch_dist", 2.0))
     if getattr(a, "min_len", 0) or getattr(a, "min_score", 0):
@@ -396,8 +420,8 @@ def parse_set(items):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dets", default="y11s_640", help="detection cache tag under runs/dets/")
-    ap.add_argument("--split", default="val", choices=["val", "test", "dev"])
-    ap.add_argument("--tracker", default="ours", choices=["ours", "bytetrack"])
+    ap.add_argument("--split", default="val", choices=["val", "test", "dev", "train"])
+    ap.add_argument("--tracker", default="ours", choices=list(PRESETS))
     ap.add_argument("--set", nargs="*", help="parameter overrides, e.g. buffer=0 track_buffer=30")
     ap.add_argument("--step", type=int, default=1, help="keep every step-th frame (frame-drop robustness)")
     ap.add_argument("--name", help="output name, default <tracker>")
@@ -411,7 +435,7 @@ def main():
         rows, t = run_sequence(dets, s1 - s0 + 1, Tracker(a.tracker, **over), a.step)
         write_mot(RUNS / "trackers" / osplit / name / "data" / f"{ev}.txt", rows)
         secs, frames = secs + t, frames + len(range(1, s1 - s0 + 2, a.step))
-    info = dict(tracker=a.tracker, dets=a.dets, step=a.step, params={**(OURS if a.tracker == "ours" else BYTETRACK), **over},
+    info = dict(tracker=a.tracker, dets=a.dets, step=a.step, params={**PRESETS[a.tracker], **over},
                 tracker_ms_per_frame=1000 * secs / max(frames, 1))
     (RUNS / "trackers" / osplit / name / "timing.json").write_text(json.dumps(info, indent=1))
     print(f"{name}: {frames} frames, tracker {info['tracker_ms_per_frame']:.2f} ms/frame")

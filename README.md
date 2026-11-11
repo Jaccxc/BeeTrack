@@ -36,10 +36,33 @@ Detections are computed once per detector and reused by every tracker setting, s
 
 **Robustness**: `detect.py --corrupt dark|bright|blur|noise` (synthetic image changes on test frames) and `track.py --step k` with `evaluate.py --split test_step<k>` (frame dropping).
 
+## TrackletLink: a two-pass tracker for entrance counting
+
+`--tracker link` first joins only boxes that overlap almost perfectly (IoU ≥ 0.7, every box kept, a second NMS at IoU 0.5), which gives short but pure tracklets, and then joins the tracklets offline: a small network scores every "this tracklet end continues as that tracklet start" pair from its geometry (`beetrack/link.py`, weights in `beetrack/link_model.json`), and the most confident links are taken first.
+
+```bash
+uv run python -m beetrack.track --dets y11s_640 --split test --tracker link
+```
+
+To fit the linker again (needs the detection cache and ground truth of the train and val splits): `python -m beetrack.detect ... --split train`, then `python -m beetrack.link --dets y11s_640 --fit train val`.
+
+Counting is scored per event: a bee whose track starts outside the entrance zone (`beetrack/zones.json`) and ends inside it is one "in", the reverse one "out"; a predicted event is true when it follows a bee that really did that. Test split, 405 ground-truth events:
+
+| Detector | Tracker | Event F1 | True / false / missed | Zone count error | HOTA |
+|---|---|---|---|---|---|
+| YOLO11-s | ByteTrack | 0.400 | 124 / 91 / 281 | 190 | 40.2 |
+| YOLO11-s | Ours (online) | 0.424 | 134 / 93 / 271 | 180 | 45.2 |
+| YOLO11-s | BEE24 paper tracker | 0.364 | 102 / 54 / 303 | 249 | 45.3 |
+| YOLO11-s | **TrackletLink** | **0.616** | 258 / 175 / 147 | 186 | 40.7 |
+| YOLOX-x (paper's detector) | BEE24 paper tracker | 0.499 | 149 / 43 / 256 | 213 | 50.9 |
+| YOLOX-x (paper's detector) | **TrackletLink** | **0.674** | 280 / 146 / 125 | 155 | 49.0 |
+
+TrackletLink finds twice as many true events; its count error does not fall on YOLO11-s because of false events in the dense BEE24-34, and its HOTA is not better (it is chosen for counting). Every experiment, including the negative ones, is in [docs/experiment_log.md](docs/experiment_log.md) (Traditional Chinese).
+
 ## Layout
 
 ```
-beetrack/   common (paths, split, MOT I/O) · prep · train · detect · track · evaluate · sweep · analytics · demo
+beetrack/   common (paths, split, MOT I/O) · prep · train · detect · track · link · evaluate · sweep · analytics · demo
 tools/      fetch_bee24.py
 proposal/   proposal deck generator (make_figs.py, build_deck.js, build.ps1)
 ```

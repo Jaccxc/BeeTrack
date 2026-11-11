@@ -70,6 +70,14 @@ demo.py     ──► runs/demo/<name>_<tracker>.mp4 + .csv（線上：逐格偵
 
 **為什麼用緩衝 IoU（要能講出的理由）**：蜜蜂框約 46 像素。蜜蜂一格移動超過自己的寬度，預測框和偵測框就不重疊，IoU = 0，任何門檻都配不上，軌跡跟丟後換新 ID。把框放大就能恢復重疊。讓放大幅度**自適應**，是為了讓蜂巢口擁擠處的慢速蜜蜂維持小緩衝（避免和鄰居配錯），只有快速或跟丟中的軌跡才放大，因為它們的位置不確定性真的比較大。
 
+### `link.py`：TrackletLink（兩階段追蹤，為進出計數設計）
+- 用法：`track.py --tracker link`。第一階段是 `track.py` 的 `PASS1`：只接幾乎完全重疊的框（緩衝 IoU ≥ 0.7、不融合分數、跟丟 2 格就結束），每個框都輸出，之前先做第二次 NMS（IoU 0.5，去掉同一隻蜂上的重複框）。結果是很碎、但身分很純的 tracklet。
+- 第二階段 `link(rows, thr)`：`candidates` 列出「tracklet j 在 i 結束後 25 格內開始、而且夠近」的候選連結；`features` 算 25 個成對幾何特徵（間隔、距離、兩端速度外插的落差、框形變化、共線支持等，長度以身長為單位）；`model` 讀 `link_model.json`（2 × 32 的小型 MLP，推論只用 NumPy）給每條候選一個機率；由高到低貪婪連結，每個尾、每個頭只用一次，低於 `thr`（0.15）不接。最後丟掉少於 3 個框的軌跡。
+- 擬合：`labelled` 用真值決定每條候選的標籤（同一隻蜂的下一段 = 1），`fit` 用 torch 訓練後存成 JSON。執行：`uv run python -m beetrack.link --dets y11s_640 --fit train val`（需要 train、val 的偵測快取與 `prep.py` 寫出的真值）。
+- 檔案載入時會跑 `_check()`：兩隻合成蜂（一隻跳兩個身長、一隻三點一線飛過）驗證連結邏輯與共線特徵。
+
+**為什麼分兩階段（要能講出的理由）**：逐格決策的追蹤器遇到蜜蜂跳動或起飛只能二選一：放掉牠（漏計），或把 ID 留給鄰居（誤計）。先只接確定的，再看完整段序列決定哪個尾接哪個頭，可用的資訊比較多。所有實驗（含負面結果）在 `docs/experiment_log.md`。
+
 ### `evaluate.py`：指標
 - `trackeval_metrics`：TrackEval `MotChallenge2DBox`，計算 HOTA、CLEAR、Identity。重要設定：`DO_PREPROC=False`（MOT17 的前處理會移除干擾類別；我們的真值只有蜜蜂，全部有效）、`SKIP_SPLIT_FOL=True`、自己的 seqmap。類別名稱「pedestrian」只是 TrackEval 對類別 1 的稱呼。檔案開頭那一小段補回 `np.float` 等別名，因為 TrackEval 還在用、NumPy ≥ 1.24 已移除。
 - `crossings(rows, line_y)`：**計數規則**。每條軌跡依影格排序，取（中心 y − 線）的正負號，0 去掉；每次變號算一次穿越；往上（+ → −，y 變小）算進，往下算出。真值與預測用的是同一個函式。
