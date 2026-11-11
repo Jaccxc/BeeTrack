@@ -126,3 +126,17 @@ Difficulty follows track turnover (bees entering/leaving, occlusion at the entra
 - Zone counts: GT 49 in / 32 out; ours 40 in / 22 out (offline analytics == live demo count).
 - GT 163 tracks, median 2.24 s; ours 390 tracks, median 0.64 s (fragmentation); median speed 73 px/s.
 - Figures: runs/figs/BEE24-36_ours_{trajectories,heatmap,counts,lengths}.png; demo video runs/demo/BEE24-36_ours.mp4 (H.264), still runs/demo/BEE24-36_ours.jpg.
+
+## ReID probe (val, GT boxes; `beetrack/reid_probe.py`, `runs/eval/reid_probe.json`)
+Task: given a bee's crop at frame t, pick the same bee among the GT bees at frame t+gap (300 frame pairs per gap).
+"Near" = only queries with another bee within 4 box heights; rank-1 accuracy in %.
+| gap (frames) | appearance, ImageNet R18 | appearance, fine-tuned R18 | position only | appearance + position | chance | queries |
+|---|---|---|---|---|---|---|
+| 5 | 66.5 | 73.9 | 93.3 | 92.8 | 11.8 | 4490 |
+| 10 | 56.2 | 64.6 | 89.5 | 89.0 | 12.1 | 4356 |
+| 25 | 47.9 | 53.9 | 80.6 | 79.4 | 13.6 | 3850 |
+| 50 | 43.9 | 49.0 | 69.7 | 69.5 | 15.7 | 3026 |
+Fine-tuning: ResNet-18, 64 px crops, 3000 steps of contrastive loss on train-split frame pairs (negatives = other bees in the same frame).
+Appearance is far above chance but below plain position at every gap, and adding it to position (equal weight, not tuned) gives no gain.
+Crops include background, so part of the appearance score is location leaking in; true identity cues are weaker still.
+Conclusion: a ReID branch was not integrated into the tracker.
