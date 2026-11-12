@@ -1687,9 +1687,33 @@ TTA 的偵測 recall 稍升、precision 明顯降(33-head 0.90 / 0.87 → 0.91 /
 
 **預測(跑之前寫下)** 校正後的 ByteTrack 在 val + dev 上 30 秒窗誤差 25–32%,仍比 TrackletLink(17.3%)差超過 2 個百分點;校正後的 TrackletLink 變化在 ±1 個百分點內。
 
+**結果**(val + dev 合併,30 秒窗)
+
+| 追蹤器 | 原始 | 校正後 | 係數(val 用 dev 擬合的 / dev 用 val 擬合的) |
+|---|---|---|---|
+| ByteTrack | 41.4% | 34.1% | val:k_in 1.86、k_out 1.43;dev:k_in 2.37、k_out 1.34 |
+| TrackletLink seed 0 | 16.9% | 19.4% | val:1.06 / 1.02;dev:1.20 / 1.06 |
+| TrackletLink seed 1 | 17.7% | 21.4% | val:1.05 / 1.02;dev:1.23 / 1.02 |
+| TrackletLink seed 2 | 17.5% | 21.1% | val:1.06 / 1.01;dev:1.25 / 1.02 |
+
+**結論**
+- 校正只修掉 ByteTrack 一部分的誤差:41% → 34%,仍比 TrackletLink 差 17 個百分點。ByteTrack 少算的比例會隨序列和時間窗變(val 要乘 2.4,dev 只要 1.9),乘一個固定係數修不掉。
+- TrackletLink 校正後反而變差 2–4 個百分點,因為它幾乎沒有偏差,用另一個 split 的係數只會加進雜訊。**不採用校正**。
+- 預測方向對,但 ByteTrack 校正後(34%)比預測的 25–32% 差。
+
 ---
 
-## 45. 下一步
+## 45. 校正基準在 test 上(只跑一次)
+
+**動機** §44 的校正 ByteTrack 是只用 val + dev 決定的基準(係數由 val + dev 合併擬合)。test 上 ByteTrack 也是穩定少算(§41:偏差 −47%),而 TrackletLink 在 test 上沒有勝過 ByteTrack。報告要誠實,所以必須知道:**簡單的校正在 test 上會不會勝過 TrackletLink**。只用既有輸出重新計分。
+
+**作法** `calib.py`:k 用 val + dev 合併擬合,套用到 test 的 `q_bt_y`(ByteTrack)與 `q_lk_final`(鎖定的 TrackletLink)。
+
+**預測(跑之前寫下)** 校正 ByteTrack 在 test 上的 30 秒窗誤差 30–38%,**會低於** TrackletLink 的 47%;校正後的 TrackletLink 約 50%(34 號的多算會被放大)。
+
+---
+
+## 46. 下一步
 
 - test 誤差的主因仍是偵測器在沒看過的場景上的泛化(§27、§32)。在現有 27 個訓練序列之內,尺度擴增(§34)、自我訓練(§35)與集成(§37)都沒有可靠的增益;剩下的方向需要外部資源:更多場景的標註,或用開放詞彙偵測器(文字提示 "bee")在新場景產生比自己更準的偽標籤(要下載新的權重,尚未做)。
 - 之後比較偵測器配方,每個配方至少跑三個 seed(§40:同一配方換 seed,合併 F1 就差 0.053)。
