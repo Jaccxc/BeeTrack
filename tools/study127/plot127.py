@@ -32,14 +32,15 @@ CLASSES = [
 ]
 
 
-def cell_index(cells: list[dict]) -> dict[tuple, dict]:
+def cell_index(cells: list[dict], membership: dict) -> dict[tuple, dict]:
     index = {}
     for cell in cells:
         key = (cell["arm"], cell["sequence"], cell.get("seed"), round(float(cell["threshold"]), 1))
         if key in index:
             raise ValueError(f"duplicate cell {key}")
         # The public rows are per-event evidence. Rebuild declared aggregate counters first.
-        count_cell(cell)
+        c_ids = set(membership[cell["sequence"]]["C_segment_ids"])
+        count_cell(cell, c_ids)
         index[key] = cell
     expected = set()
     for seq in ("BEE24-33-head", "BEE24-35-head"):
@@ -94,12 +95,18 @@ def no_edge_u(index: dict[tuple, dict], sequence: str, seed: int) -> tuple[dict[
 def plot(index: dict[tuple, dict], output: Path) -> None:
     fig = Figure(figsize=(11.6, 8.8), facecolor="white")
     FigureCanvasAgg(fig)
-    ax_top = fig.add_axes([.16, .70, .78, .13])
+    ax_top = fig.add_axes([.16, .67, .78, .13])
     ax_bot = fig.add_axes([.28, .25, .66, .36])
     fig.text(.055, .96, "Origins of P0 events with no official GT edge", color=INK,
              fontsize=16, fontweight="bold", va="top")
     fig.text(.055, .915, "§127 endpoint attribution · IoU 0.5 primary; C/33 also shows IoU 0.3 sensitivity",
              color=INK, fontsize=9, va="top")
+    fig.text(.055, .885,
+             "U bars are shares of the official no-edge events per seed; no owner means ≥1 endpoint lacks a qualifying IoU owner.",
+             color=INK, fontsize=8, va="top")
+    fig.text(.055, .86,
+             "Net 0 means both endpoints uniquely map to one GT segment with a local crossing but no formal net event.",
+             color=INK, fontsize=8, va="top")
 
     # The registered example is all 67 C/33 predictions, shown at both event IoUs.
     c_rows = [("C / 33 · IoU 0.5", label_c33(index, .5)),
@@ -165,12 +172,6 @@ def plot(index: dict[tuple, dict], output: Path) -> None:
               for k, label in CLASSES]
     fig.legend(handles=legend, loc="lower center", bbox_to_anchor=(.53, .025), ncol=4,
                frameon=False, fontsize=8, columnspacing=1.2, handletextpad=.45)
-    fig.text(.28, .19,
-             "Bars show shares of each no-edge denominator; segment labels are counts. No owner = ≥1 endpoint lacks an assigned IoU owner.",
-             fontsize=7.5, color=INK, va="top")
-    fig.text(.28, .162,
-             "Net 0 combines same-bee transits inside/outside C for U; C/33 counts only confirmed C members.",
-             fontsize=7.5, color=INK, va="top")
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=160, facecolor="white")
 
@@ -184,7 +185,7 @@ def main() -> None:
         bundle = json.load(f)
     if bundle.get("format") != "study127-event-attribution-v1":
         raise ValueError("unsupported public integer event package")
-    plot(cell_index(bundle["cells"]), args.output)
+    plot(cell_index(bundle["cells"], bundle["C_membership_provenance"]), args.output)
     print(args.output)
 
 

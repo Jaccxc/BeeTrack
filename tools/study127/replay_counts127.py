@@ -57,15 +57,26 @@ def maximum_matching(events: list[dict]) -> int:
     return len(owner)
 
 
-def count_cell(cell: dict) -> dict:
+def count_cell(cell: dict, c_segment_ids: set[int]) -> dict:
     events = cell["events"]
     for event in events:
+        if event["signed_time"] != event["direction"] * event["frames"][1]:
+            raise ValueError("signed event time does not match direction and crossing endpoint")
+        derived_membership = [None if owner["gt_id"] is None else owner["gt_id"] in c_segment_ids
+                              for owner in event["owners"]]
+        if event["owner_in_C"] != derived_membership or any(
+                owner["in_C"] != member for owner, member in zip(event["owners"], derived_membership)):
+            raise ValueError("C membership does not reproduce from the bundled segment set")
         category, assigned = derive_categories(cell, event)
         if category != event["category"] or assigned != event["assigned_category"]:
             raise ValueError(f"stored endpoint fields do not reproduce attribution for {event['pred_id']}")
     cats = dict(sorted(Counter(e["category"] for e in events).items()))
     statuses = dict(sorted(Counter(e["graph_status"] for e in events).items()))
     buckets = dict(sorted(Counter(e["graph_bucket"] for e in events).items()))
+    bucket_categories = {
+        bucket: dict(sorted(Counter(e["category"] for e in events if e["graph_bucket"] == bucket).items()))
+        for bucket in ("no_legal_edge", "eligible_selected", "eligible_unselected")
+    }
     directions = {}
     for sign in (1, -1):
         group = [e for e in events if e["direction"] == sign]
@@ -76,6 +87,8 @@ def count_cell(cell: dict) -> dict:
         raise ValueError("event rows do not match declared event denominator/categories")
     if statuses != cell["graph_statuses"]:
         raise ValueError("event rows do not match graph status totals")
+    if bucket_categories != cell["categories_by_graph_bucket"]:
+        raise ValueError("event rows do not match category totals by graph bucket")
     if maximum_matching(events) != cell["official_graph_tp"]:
         raise ValueError("event adjacency does not reproduce official maximum matching TP")
     if sum(e["official_selected"] for e in events) != cell["official_graph_tp"]:
@@ -102,6 +115,7 @@ def count_cell(cell: dict) -> dict:
             "threshold": cell["threshold"], "denominator": cell["predicted_events"],
             "gt_events": cell["gt_events"], "official_tp": cell["official_graph_tp"],
             "categories": cats, "graph_statuses": statuses, "graph_buckets": buckets,
+            "categories_by_graph_bucket": bucket_categories,
             "direction_counts": directions}
 
 
@@ -113,7 +127,9 @@ def main():
         data = json.load(f)
     if data.get("format") != "study127-event-attribution-v1":
         raise ValueError("unsupported artifact format")
-    summary = [count_cell(cell) for cell in data["cells"]]
+    membership = data["C_membership_provenance"]
+    summary = [count_cell(cell, set(membership[cell["sequence"]]["C_segment_ids"]))
+               for cell in data["cells"]]
     print(json.dumps({"format": data["format"], "replayed_cells": len(summary), "summary": summary},
                      ensure_ascii=False, separators=(",", ":"), allow_nan=False))
 
