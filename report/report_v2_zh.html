@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BeeTrack 期末報告 v2</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* placeholder for a value that is not measured yet (test run, robustness run, or a metric not in RESULTS_v2.md) */
+.todo { background: #ffe9a8; color: #6b4a00; font-weight: 700; padding: 0 1mm; border-radius: 1mm; white-space: nowrap; }
+.arch .blk { padding: 1.6mm 1.2mm; }
+table.split { break-inside: auto; }   /* long tables may run over a page break; the header row repeats */
+table.split tr { break-inside: avoid; }
+</style>
+</head>
+<body class="zh">
+
+<section class="cover">
+  <div class="course">國立臺北大學 電機工程學系<br>圖像分析的深度學習（M5261）· 2026 年秋季學期 · 期末專題</div>
+  <div class="title">BeeTrack</div>
+  <div class="subtitle">以學習式小軌跡連結進行蜂巢口的<br>蜜蜂偵測、追蹤與計數</div>
+  <table>
+    <thead><tr><th class="l">組員</th><th>學號</th><th class="l">主要負責</th></tr></thead>
+    <tbody>
+      <tr><td class="l">{{NAME1}}</td><td>{{ID1}}</td><td class="l">資料與評估</td></tr>
+      <tr><td class="l">{{NAME2}}</td><td>{{ID2}}</td><td class="l">偵測、實驗 2</td></tr>
+      <tr><td class="l">{{NAME3}}</td><td>{{ID3}}</td><td class="l">追蹤、改進、實驗 1</td></tr>
+      <tr><td class="l">{{NAME4}}</td><td>{{ID4}}</td><td class="l">計數、視覺化、demo、報告</td></tr>
+    </tbody>
+  </table>
+  <div class="meta">Project 1：即時多目標偵測與追蹤<br>期末發表：2026 年 12 月 24 日</div>
+</section>
+
+<!-- ============================================================ 1 -->
+<h2>摘要</h2>
+<div class="abstract">
+<p>巢口流量，也就是離開和回到蜂箱的蜜蜂數量，能直接反映蜂群的活動，但靠人眼計數沒辦法大量進行。BeeTrack 在蜂巢口影片中找出每一隻蜜蜂，隨時間追蹤牠，並計算有多少蜜蜂進出。蜜蜂由在 BEE24 資料集上微調的 YOLO11-s 偵測器找出。嚴格的第一階段追蹤器只把幾乎完全重疊的框接起來，所以每一段短的小軌跡很可能只屬於一隻蜜蜂。接著由只看幾何資訊的小型網路 TrackletLink 離線決定哪一段小軌跡接續哪一段。一條軌跡從巢口區域外開始、在區域內結束，算一次進；反過來算一次出。我們主要用 <i>30 秒窗計數誤差</i>評估系統：每 30 秒比較一次預測與真實的進、出次數，把差值加總，再除以真實事件的總數。在偵測器訓練時看過的蜂箱上（val + dev，486 次事件），主流程 P0 的窗誤差是 18.46%（三個偵測器的平均），計數經過校正的 ByteTrack 是 34.82%，預設 ByteTrack 是 40.18%。在偵測器沒看過的蜂箱上，結果比較差。在留一蜂箱測試中，P0 在兩個留出的蜂箱上分別是 22.18% 與 23.90%。把多個偵測器、多種輸入尺度或翻轉後影片的窗計數取平均，在部分折上降低了誤差，但沒有任何事先寫下的規則在兩折上都明顯勝過 P0。有一條規則通過了兩折，但它是看過這些結果之後才設計的，之後在兩段新片段中也只有一段得到確認。因此主系統仍是 P0，做平均的各臂只當附帶結果。在五支官方測試影片上（405 次事件，鎖定設定只跑一次），P0 的窗誤差是 <span class="todo">[test]</span>，校正 ByteTrack 是 <span class="todo">[test]</span>。</p>
+<p class="keywords"><b>關鍵詞：</b>多目標追蹤、小軌跡連結、蜜蜂監測、YOLO11、ByteTrack、巢口計數、領域偏移、留一蜂箱</p>
+</div>
+
+<!-- ============================================================ 2 -->
+<h2>緒論與問題定義</h2>
+<h3>研究動機</h3>
+<p>養蜂人與授粉研究者會觀察蜂巢口，因為外出採集的流量會很快反映天氣、蜜源、農藥與疾病的變化。在巢口架一台攝影機很便宜，但把影片轉成數字並不容易。幾分鐘的影片就有上千次短距離飛行，人工計數又慢又容易出錯。如果有系統能追蹤每一隻蜜蜂並算出進出數量，就能做到連續而客觀的監測。</p>
+<h3>問題的困難之處</h3>
+<p>多數多目標追蹤器是為行人設計的，而蜜蜂比行人難追。在 950 × 600 的畫面中，一個蜜蜂框只有大約 46 × 50 像素。數十隻蜜蜂外觀幾乎一樣，外觀特徵幫助不大。蜜蜂會在幾格之內加速、轉向或降落。巢口又是畫面中最擁擠的地方，偏偏計數就發生在這裡。巢口的一條軌跡斷掉，一次進就變成兩段什麼都不算的半截軌跡；一次錯誤的連結，則可能把只是飛過的蜜蜂算成一次進。</p>
+<p>還有第二個困難，是我們一開始低估的：測試時的蜂箱是新的。偵測器只用四個蜂箱訓練，在我們的紀錄中，五支測試影片都當作沒有任何偵測器看過的蜂箱。一個在訓練蜂箱上算得準的系統，到了新蜂箱仍可能算不準；本專題有很大一部分工作就是在量測這件事。</p>
+<h3>與第一份報告相比的改變</h3>
+<p>第一份報告提出<i>運動自適應關聯</i>，也就是在 ByteTrack 內部做的一組修改，並在測試集的 341 次事件上計算巢口進出。之後有四件事改變了；第一份報告的所有數字都被取代，不和本報告混用。</p>
+<ul>
+<li><b>真值。</b>BEE24 的長影片會把同一個 ID 編號重複給另一隻蜜蜂。現在只要同一個 ID 中斷超過 25 格（1 秒），我們就把它切開，真值與預測都這樣處理。測試集因此從 341 次事件變成 405 次。</li>
+<li><b>指標。</b>只看總數時，漏算和多算的事件會互相抵消。現在的主要指標是 30 秒窗計數誤差（第 6.5 節），次要指標是事件 F1。</li>
+<li><b>方法。</b>運動自適應追蹤器不再是本文宣稱的改進。它只留下來當作嚴格的第一階段，真正的決定改由離線連結器 TrackletLink 來做。</li>
+<li><b>沒看過的蜂箱。</b>開發期間，我們曾在舊協定下用測試集評過早期版本的連結器。在那些測試蜂箱上，它的計數並沒有比簡單校正過的 ByteTrack 好。從那之後我們不再使用測試集，改為建立新蜂箱的留一蜂箱代理，之後所有設計都在代理上進行。我們直接寫出這件事，因為這代表我們不能宣稱測試集從來沒有影響過我們。</li>
+</ul>
+<h3>目標、輸入與輸出</h3>
+<p>本系統對應課程的 Project 1。輸入是蜂巢口影片（影片檔或影格資料夾）。輸出包括：每一格中每隻蜜蜂的框與追蹤 ID；每個 ID 的軌跡；巢口的進出次數，含總數與每個 30 秒窗的次數；標註後的影片；以及所有軌跡的 CSV 檔。目標依照課程要求：微調一個能偵測蜜蜂的深度偵測器（R1）；建立在漏偵測、快速飛行與短暫遮擋下仍能維持身分的追蹤器，並能計數（R2）；提出有理由的改進，在相同偵測結果下與 ByteTrack 比較（R3）；至少兩組一次只改一個因素的對照實驗（R4）；至少三種條件下的穩健性分析（R5）；以及能端到端處理影片的 demo 程式（R6）。</p>
+<h3>本文貢獻</h3>
+<ul>
+<li>為 BEE24 訂定能處理重複使用 ID 的計數協定，以及一個按時間窗計算、不讓誤差在整支影片上互相抵消的計數指標。</li>
+<li>TrackletLink：一個兩階段追蹤器，先由嚴格的線上處理產生乾淨的小軌跡，再由只看幾何的小型網路離線把它們接起來。</li>
+<li>留一蜂箱代理：每折九個偵測器種子、事前登記的判讀規則，加上新片段檢查，用來測試任何改進能不能帶到沒看過的蜂箱。</li>
+<li>誠實的負面結果：對偵測器、尺度與翻轉做計數平均，在部分折上有幫助，但沒有在兩折上都乾淨地勝出，所以不採用。</li>
+<li>上界研究：說明誤差中有多少來自偵測、連結，以及協定本身。</li>
+</ul>
+
+<!-- ============================================================ 3 -->
+<h2>相關研究</h2>
+<p><b>物件偵測。</b>YOLO 系列 [1] 屬於單階段偵測器，一次前向傳遞就預測出所有框，是即時 tracking-by-detection 最常見的選擇。我們使用 YOLO11 [2] 的 small 版本。RT-DETR [3] 等 Transformer 偵測器速度相近，但需要的記憶體與訓練時間超出我們 8 GB 筆電 GPU 的負擔。</p>
+<p><b>Tracking-by-detection。</b>SORT [4] 以等速 Kalman filter [5] 與以 IoU 為代價的匈牙利配對 [6] 連結偵測框。DeepSORT [7] 加入重識別特徵，但所有目標長得一樣時幫助不大。ByteTrack [8] 在第二階段也會配對低信心分數的偵測框；它是 Ultralytics 的預設追蹤器，也是我們的基準。BoT-SORT [9] 加入相機運動補償與外觀特徵，但 BEE24 的相機是固定的。OC-SORT [10] 在軌跡跟丟之後，用觀測值重新估計 Kalman 狀態。</p>
+<p><b>不規則運動。</b>DanceTrack [11] 指出，在 MOT17 [12] 與 MOT20 [13] 上調好的追蹤器，遇到外觀相同、運動多變的目標時會變差，這正是蜜蜂的情況。C-BIoU [14] 在計算 IoU 前先放大框，讓快速物體仍能配對。我們的第一份報告就是以這個想法為基礎；現在系統的第一階段仍使用緩衝 IoU，只是用法很嚴格。</p>
+<p><b>離線連結。</b>在看得到整段序列的情況下，事後把短的小軌跡接起來，是多目標追蹤裡很早就有的想法，用延遲換取更好的決定。我們的連結器刻意做得很小：它只看中斷兩端的幾何資訊，因為在我們自己的測試中，外觀特徵分不太出不同的蜜蜂（第 12.4 節）。</p>
+<p><b>昆蟲追蹤與計數。</b>Bozek 等人 [15] 追蹤蜂巢內部密集的蜜蜂。BEE24 資料集 [16] 與 TOPICTrack 一起發表，這個方法平行進行運動與外觀關聯；我們把它釋出的追蹤器當作基準（「論文的追蹤器」）。Lei 等人 [22] 以 YOLOv8m、OC-SORT 與一個方框形的計數區域，在巢口計算蜜蜂數量；我們在自己的軌跡上測試了他們的方框規則（第 12.4 節）。這兩篇論文發表的數字使用不同的偵測器與協定，因此不直接比較。</p>
+<p><b>評估。</b>CLEAR MOT 指標 [17]（MOTA、ID 換錯）很受偵測品質影響；IDF1 [18] 衡量身分是否一致；HOTA [19] 則平衡偵測與關聯。這些指標都以 TrackEval [20] 計算。人工影像劣化的設計參考 Hendrycks 與 Dietterich [21] 的精神。</p>
+
+<!-- ============================================================ 4 -->
+<h2>資料集與前處理</h2>
+<h3>來源與標註</h3>
+<p>BEE24 [16] 共有 36 支蜂巢口影片，25 fps（約 950 × 600 px；其中一段為 810 × 430），共 446,908 個框、4,559 個蜜蜂身分。每個框都帶有 MOTChallenge 格式的追蹤 ID（frame、id、x、y、w、h），可以計算以身分為基礎的追蹤指標。資料可公開下載，大小 2.3 GB。資料集頁面沒有寫明授權，因此我們只在本課程中使用並引用論文。影片中只有昆蟲，沒有拍到任何人。</p>
+<p>訓練影片來自四個蜂箱：白色板（BEE24-01 到 -11、-14、-15）、灰色板（BEE24-17 到 -32），以及兩個單一場景 BEE24-33 與 BEE24-35。BEE24-33 是擁擠的蜂箱（最後 1,000 格平均每格 37.3 隻蜜蜂），BEE24-35 則比較稀疏（9.8 隻）。這兩個蜂箱用在沒看過蜂箱的代理實驗。</p>
+<h3>資料切分與防止洩漏</h3>
+<p>官方切分為 31 支訓練影片與 5 支測試影片。測試影片（BEE24-12、-13、-16、-34、-36）只跑一次，設定事先鎖定。短的訓練影片（75 到 258 格）每格的蜜蜂數遠少於長影片，如果驗證集只用整段短影片，會把系統調到錯誤的情境。因此我們留出四段短影片（BEE24-10、-15、-24、-28），<i>另外</i>再留出長影片 BEE24-33 與 -35 的最後 1,000 格（稱為「尾段」）。每段尾段與訓練影格之間隔著 50 格，這段不屬於任何切分。BEE24-33 與 -35 的前 3,950 格（稱為「前段」）是偵測器的訓練影格；我們仍在上面評估追蹤，稱為 <b>dev</b>，也清楚那裡的偵測結果偏樂觀。val 與 dev 合稱<b>看過的蜂箱</b>。<code>common.py</code> 定義各個切分，<code>prep.py</code> 以 assert 檢查沒有任何一格同時屬於兩個切分。</p>
+<p class="tcap"><b>表 1.</b> 資料切分與真值事件。一次事件是指在第 6.4 節計數規則下的一次進或一次出。</p>
+<table class="wide">
+<thead><tr><th class="l">切分</th><th class="l">內容</th><th>影格數</th><th>真值事件</th><th class="l">用途</th></tr></thead>
+<tbody>
+<tr><td class="l">訓練</td><td class="l">27 支官方訓練影片（BEE24-33、-35 只用前段）</td><td>10,060（3,740 張影像）</td><td>–</td><td class="l">偵測器微調</td></tr>
+<tr class="sep"><td class="l">驗證（val）</td><td class="l">BEE24-10、-15、-24、-28；-33、-35 的尾段（第 4001–5000 格）</td><td>2,640</td><td>173</td><td class="l">early stopping；所有追蹤器與連結器的選擇</td></tr>
+<tr><td class="l">dev</td><td class="l">BEE24-33、-35 的前段（第 1–3950 格）</td><td>2 × 3,950</td><td>313</td><td class="l">追蹤器與連結器的選擇（偵測結果偏樂觀）</td></tr>
+<tr><td class="l"><b>val + dev</b></td><td class="l">「看過的蜂箱」</td><td></td><td><b>486</b></td><td class="l">主要的開發數字（表 7）</td></tr>
+<tr class="sep"><td class="l">35-head / 33-head</td><td class="l">前段，用從沒看過該蜂箱的偵測器評估</td><td>每段 3,950</td><td>129 / 184</td><td class="l">沒看過蜂箱的代理（表 13–14）</td></tr>
+<tr><td class="l">35-tail / 33-tail</td><td class="l">尾段，偵測器同上</td><td>每段 1,000</td><td>37 / 50</td><td class="l">新片段檢查（表 15）</td></tr>
+<tr class="sep"><td class="l">測試</td><td class="l">BEE24-12、-13、-16、-34、-36（官方）</td><td>10,762</td><td>405</td><td class="l">鎖定設定跑一次（表 8）</td></tr>
+</tbody>
+</table>
+<p class="tcap"><b>表 2.</b> 測試影片與 v2 協定下的真值事件。</p>
+<table>
+<thead><tr><th class="l">影片</th><th>影格數</th><th>真值 進</th><th>真值 出</th></tr></thead>
+<tbody>
+<tr><td class="l">BEE24-12</td><td>250</td><td>1</td><td>3</td></tr>
+<tr><td class="l">BEE24-13</td><td>258</td><td>10</td><td>11</td></tr>
+<tr><td class="l">BEE24-16</td><td>254</td><td>26</td><td>37</td></tr>
+<tr><td class="l">BEE24-34</td><td>5,000</td><td>84</td><td>88</td></tr>
+<tr><td class="l">BEE24-36</td><td>5,000</td><td>91</td><td>54</td></tr>
+<tr class="sep"><td class="l"><b>合計</b></td><td>10,762</td><td colspan="2">405</td></tr>
+</tbody>
+</table>
+<h3>前處理</h3>
+<ul>
+<li><b>偵測器標籤。</b>每個框先裁切到影像範圍內，不到一個像素的框捨棄，再寫成單一類別的 YOLO 標籤。沒有蜜蜂的影格會得到空白標籤檔，當作負樣本。</li>
+<li><b>取樣間隔。</b>25 fps 影片的相鄰影格幾乎相同。長影片（≥ 1,000 格）每 5 格取一格作為訓練影像，每 10 格取一格作為驗證影像；短影片每一格都用。</li>
+<li><b>追蹤指標的真值。</b>每段評估序列都寫成 TrackEval 讀取的 MOTChallenge 資料夾。少數官方訓練影片中，同一個 ID 在同一格出現兩次；多出來的那一筆改給一個新的 ID。</li>
+<li><b>計數用的真值。</b>真值軌跡先在超過 25 格的中斷處切開（重複使用的 ID），再套用事件規則。只有在 dev 上，如果一個 ID 結束後三格內又在同一個框上重新開始，會先合併（<code>merge_handovers</code>），因為 BEE24-33 的訓練部分常常在同一隻蜜蜂上換 ID。val 與測試集的真值維持原樣。</li>
+<li><b>巢口區域。</b>每台攝影機都只在第一格上手繪一個多邊形，圍住黑暗的巢門開口，再外加大約一個體長的邊距；畫的時候不看任何標籤或預測（<code>zones.json</code>）。</li>
+</ul>
+
+<!-- ============================================================ 5 -->
+<h2>完整系統架構</h2>
+<p>BeeTrack 是一套 tracking-by-detection 流程，後面再加上一道離線的第二階段處理（圖 1）。鎖定的主要設定稱為 <b>P0</b>。</p>
+<div class="arch">
+  <div class="blk"><b>輸入</b>蜂巢口影片或影格資料夾（25 fps）</div><div class="ar">→</div>
+  <div class="blk"><b>偵測</b>YOLO11-s，微調<br>固定 640 px，FP16<br>分數 ≥ 0.05</div><div class="ar">→</div>
+  <div class="blk hl"><b>第一階段</b>嚴格的線上處理<br>緩衝 IoU ≥ 0.7<br>保留每個框<br>→ 短的小軌跡</div><div class="ar">→</div>
+  <div class="blk hl"><b>TrackletLink</b>候選中斷 ≤ 25 格<br>25 個幾何特徵<br>MLP，p ≥ 0.15 時連結</div><div class="ar">→</div>
+  <div class="blk"><b>計數</b>捨棄只有 1–2 個框的軌跡<br>區域規則：進／出<br>每個 30 s 窗的次數</div><div class="ar">→</div>
+  <div class="blk"><b>輸出</b>軌跡 CSV<br>進出次數<br>標註影片</div>
+</div>
+<div class="archnote">框起處：取代第一份報告中單一線上追蹤器的兩個階段。附加臂（第 6.6 節）會對多個偵測器、多種輸入尺度或翻轉後的影片重複前四個方塊，再把窗計數取平均。</div>
+<p class="tcap" style="margin-top:0"><b>圖 1.</b> P0 的系統方塊圖與資料流。</p>
+<p><b>資料流。</b><code>prep.py</code> 把原始標註轉成 YOLO 標籤、影像清單與 TrackEval 真值。<code>train.py</code> 微調偵測器。<code>detect.py</code> 對每一格評估影格只跑一次偵測器，並快取框（<code>frame, x1, y1, x2, y2, score</code>），也可以先加上人工劣化。<code>track.py</code> 逐格把快取的框餵給追蹤器；它的 <code>link</code> 預設組就是第一階段，後面接 <code>link.py</code> 與短軌跡過濾。<code>evaluate.py</code> 包含事件規則、重複 ID 的切分與事件配對。<code>demo.py</code> 對任意影片執行線上路徑。</p>
+<p><b>為什麼要快取偵測結果。</b>有好幾個實驗只能改變追蹤器。偵測器只跑一次，再把完全相同的框重播給每一個追蹤器，就能排除偵測每次執行的差異，讓比較完全受控。</p>
+<p><b>還沒放進套件的部分。</b>窗誤差的計分程式、交叉擬合的連結器模型、測試用連結器 <code>m_dev_strict.json</code>，以及本報告各實驗的執行腳本，目前都放在我們的實驗腳本中，不在 <code>beetrack</code> 套件內。套件附的連結器模型（<code>link_model.json</code>）是另一次擬合的結果。我們把這點列為限制（第 15 章）。</p>
+
+<!-- ============================================================ 6 -->
+<h2>方法與演算法</h2>
+<h3>偵測器</h3>
+<p>YOLO11-s 是 anchor-free 的單階段偵測器，由 CSP 式骨幹、特徵金字塔頸部，以及在 stride 8、16、32 上的 decoupled head 組成。P0 一律以 640 px 執行偵測器；附加臂 P1（第 6.6 節）則替每支影片選不同的尺度。偵測結果保留到分數 0.05，因為 ByteTrack 和我們的第一階段都會用到低分框。</p>
+
+<h3>第一階段：嚴格的小軌跡</h3>
+<p>線上追蹤器每一格都必須做決定。遇到跳動或衝刺的蜜蜂時，它不是放掉這條軌跡（之後會漏算），就是讓 ID 延續到旁邊的蜜蜂上（之後會多算）。我們把這件事拆成兩步。第一階段只把幾乎完全重疊的框接起來，所以每段小軌跡很可能只屬於一隻蜜蜂。它就是第一份報告中的 BeeTracker（ByteTrack 的子類別），只是改用嚴格的設定（表 3）：</p>
+<ul>
+<li><b>高門檻的緩衝 IoU。</b>和 C-BIoU [14] 一樣，軌跡框與偵測框在計算 IoU 前先放大。只有緩衝 IoU 至少 0.7（代價 ≤ 0.3）時才接受配對，而且不融合分數。第一份報告的速度項只放大軌跡框，所以快速蜜蜂最多能達到的重疊會低於 0.7，牠的小軌跡就在這裡結束。這是刻意的：這些連結交給連結器決定。</li>
+<li><b>與最後觀測配對。</b>軌跡除了和 Kalman 預測比對，也會和自己最後一次的偵測框比對，因為突然停住的蜜蜂仍在最後的框上。</li>
+<li><b>保留每個框。</b>新軌跡不論是否已確認，都從第一個框開始輸出；輸出的是原始偵測框，不是經過 Kalman 平滑的框。</li>
+<li><b>短暫記憶。</b>跟丟的軌跡只保留 2 格，所以一段小軌跡最多能跨過一兩格的漏偵測。</li>
+<li><b>第二次 NMS。</b>以 IoU 0.5 再做一次抑制，因為偵測器本身的 NMS（0.7）會在許多蜜蜂身上留下第二個框。</li>
+</ul>
+<p class="tcap"><b>表 3.</b> 預設 ByteTrack（基準）與 P0 的第一階段（<code>track.py</code>，預設組 <code>link</code>）。</p>
+<table>
+<thead><tr><th class="l">參數</th><th>ByteTrack</th><th>P0 第一階段</th><th class="l">意義</th></tr></thead>
+<tbody>
+<tr><td class="l">track_high / low thresh</td><td>0.25 / 0.1</td><td>0.25 / 0.1</td><td class="l">兩個關聯階段的分數門檻</td></tr>
+<tr><td class="l">new_track_thresh</td><td>0.25</td><td>0.25</td><td class="l">開新軌跡所需的最低分數</td></tr>
+<tr><td class="l">match_thresh、fuse_score</td><td>0.8，開</td><td>0.3，關</td><td class="l">第一階段的最大代價（0.3 = 緩衝 IoU ≥ 0.7）</td></tr>
+<tr><td class="l">track_buffer</td><td>30</td><td>2</td><td class="l">跟丟軌跡保留的影格數</td></tr>
+<tr><td class="l">基本邊界 / 跟丟增量 / 速度增益</td><td>0 / 0 / 0</td><td>0.1 / 0 / 0.5</td><td class="l">計算 IoU 前的框放大量</td></tr>
+<tr><td class="l">衰減 δ、速度雜訊 <i>w</i><sub>v</sub></td><td>1、1/160</td><td>0.8、1/80</td><td class="l">跟丟軌跡的速度衰減；Kalman 速度雜訊</td></tr>
+<tr><td class="l">輸出</td><td>已確認的軌跡，Kalman 框</td><td>每個框，原始框</td><td class="l"></td></tr>
+<tr><td class="l">額外 NMS</td><td>–</td><td>IoU 0.5</td><td class="l">第二次抑制重複框</td></tr>
+</tbody>
+</table>
+
+<h3>TrackletLink</h3>
+<p><b>候選。</b>對每一段結束的小軌跡 <i>i</i>，所有在 1 到 25 格後開始的小軌跡 <i>j</i> 都是候選，條件是跳躍距離每格中斷最多 3 個體長，總共最多 6 個體長。體長定義為框面積的平方根。25 格的上限和計數協定中重複 ID 的上限相同。</p>
+<p><b>特徵。</b>每個候選給網路 25 個數字，長度都以體長為單位：中斷長度；直線距離（也換算成每格）；<i>i</i> 的速度往前外插、<i>j</i> 的速度往後外插，各自離另一端有多遠；兩個速度各自與跳躍方向的餘弦；框寬與框高的變化，以及兩個端點框的 IoU；兩段的速度、長度與分數；「三點共線」測試（把跳躍延伸到只有一兩個框的小軌跡之外時，最近的第三段小軌跡有多近）；以及每個框是否沿跳躍方向拉長，因為飛行中的蜜蜂會沿著身體方向模糊。</p>
+<p><b>網路與標籤。</b>多層感知器有兩層隱藏層、每層 32 個單元，輸入是標準化後的特徵，以二元交叉熵訓練（Adam，學習率 10<sup>−3</sup>，weight decay 10<sup>−4</sup>，30 個 epoch，batch 2,048）。標籤來自真值：如果 <i>i</i> 最後一個框下的蜜蜂就是 <i>j</i> 第一個框下的蜜蜂，而且 <i>j</i> 正是這隻蜜蜂下一段小軌跡開始的地方，標為 1；如果是不同的蜜蜂，或其中一個框不在任何蜜蜂上，標為 0；其餘不使用。PyTorch 只用來擬合；推論只是幾行 NumPy，讀一個存權重的 JSON 檔。</p>
+<p><b>連結。</b>一段序列的所有候選一次評分。從最有把握的開始，如果它的結尾端與開始端都還沒被用掉，就保留這個連結，一直做到機率低於 0.15 為止。這是貪婪法，不是最佳解，但很簡單，而且每段小軌跡的結尾與開始都只用一次。</p>
+<p><b>哪裡用哪個連結器。</b>在測試集上，P0 使用一個固定的連結器（<code>m_dev_strict.json</code>）。這個連結器擬合時看過 dev，所以在 val + dev 上我們改用三個交叉擬合的連結器，每個都沒看過它所評分的序列，並報告平均。在 val + dev 上，<code>m_dev_strict.json</code> 的結果是 19.56%（只報告）。</p>
+
+<h3>短軌跡過濾與計數規則</h3>
+<p>連結之後，框數少於 3 的軌跡會被捨棄。接著套用協定中的事件規則（在測試執行前已鎖定），預測軌跡與真值軌跡都一樣處理：</p>
+<ul>
+<li>軌跡先在每個超過 25 格的中斷處切開（BEE24 會重複使用 ID）；</li>
+<li><b>進</b>：第一個框中心在巢口多邊形外，最後一個在內；<b>出</b>：反過來；起點與終點在同一側的軌跡不計；</li>
+<li>事件時間是這條軌跡在該方向上最後一次穿越的那一格。</li>
+</ul>
+<p>區域規則只看軌跡相對於巢口從哪裡開始、在哪裡結束，這才是「進巢」的意思。它的弱點是軌跡斷裂：在擁擠的巢口裡斷掉的軌跡，會變成兩段都不計的半截軌跡。</p>
+
+<h3>評估指標：30 秒窗計數誤差</h3>
+<p>整支影片的總數會讓誤差互相抵消：漏算十次進、又多算十次進，總數仍然完全正確。事件 F1 則是另一個極端：事件必須在幾格之內落在正確的蜜蜂上才算對。養蜂人在意的是介於兩者之間的東西：每一小段時間內有多少蜜蜂進出。因此我們把影片切成 30 秒的窗，逐窗比較次數。</p>
+<p>對一支影片的一個窗 <i>w</i>，令 <i>I<sub>w</sub></i>、<i>O<sub>w</sub></i> 為真實的進、出次數，<i>Î<sub>w</sub></i>、<i>Ô<sub>w</sub></i> 為預測次數。這個窗的代價是 |<i>Î<sub>w</sub></i> − <i>I<sub>w</sub></i>| + |<i>Ô<sub>w</sub></i> − <i>O<sub>w</sub></i>|。舉例：實際有 4 隻蜜蜂進、3 隻出，我們預測 5 進 3 出，這個窗的代價是 1。如果預測 3 進 4 出，代價是 2，即使總數 7 是對的。窗的邊界落在哪裡是運氣，所以我們把窗格平移 <i>o</i> = 0, 1, …, 29 秒，整個計算重做一次，再取平均。最後對所有影片加總，再除以真值事件數 <i>N</i>：</p>
+<div class="eq"><div class="m"><i>E</i><sub>30</sub> = <span class="frac"><span>100</span><span><i>N</i></span></span> Σ<sub><i>v</i></sub> <span class="frac"><span>1</span><span>30</span></span> Σ<sub><i>o</i>=0</sub><sup>29</sup> Σ<sub><i>w</i></sub> ( |<i>Î<sub>v,w,o</sub></i> − <i>I<sub>v,w,o</sub></i>| + |<i>Ô<sub>v,w,o</sub></i> − <i>O<sub>v,w,o</sub></i>| ) &nbsp; [%]</div><div class="n">(1)</div></div>
+<p>數值越低越好，0% 代表每個窗都完全正確。它沒有 100% 的上限：憑空多出很多事件的系統可以超過這個值。為了對尺度有個感覺：一個<i>知道每支影片真實總數</i>、並把總數平均分配到各窗的參考，在 val + dev 上是 18.28%，35-head 是 23.29%，33-head 是 22.04%。我們的系統不知道真實總數，所以它不是基準，但可以看出時間分布和總數一樣重要。</p>
+<p><b>次要指標。</b><i>事件 F1</i>：一次預測事件算正確的條件是，在它某一次同方向的穿越時，軌跡落在一隻真值蜜蜂上（框 IoU ≥ 0.5，也報告 0.3 的結果），這隻蜜蜂在 ±5 格內以同方向穿越，而且在該方向上有真值事件；配對是一對一。<i>偏差</i> = 預測事件數 − 真值事件數，可以分辨是多算還是少算。第 11.3 節列出標準的追蹤指標。</p>
+
+<h3>附加臂</h3>
+<p>除了 P0，我們也測試了幾個臂（arm），目的是讓計數比較不受單一偵測器錯誤的影響。它們改變的是要平均幾次流程的結果，或是輸入尺度。平均後的次數可能是小數，所以這些臂沒有定義事件 F1。</p>
+<p class="tcap"><b>表 4.</b> 各臂。全部共用 P0 的第一階段、連結器、過濾與事件規則。</p>
+<table class="wide split">
+<thead><tr><th class="l">臂</th><th class="l">定義</th></tr></thead>
+<tbody>
+<tr><td class="l">P0</td><td class="l">主要設定，固定 640 px</td></tr>
+<tr><td class="l">P1</td><td class="l">每支影片依<i>閃爍度</i>選輸入尺度：在整支影片上分別以 352、448、640、960、1280、1600 px 執行，保留分數 ≥ 0.25 的框；閃爍度 = 相鄰影格框數變化的平均絕對值除以平均框數；取閃爍度最小者，相對差距小於 2% 視為平手，由較小的尺度勝出；不到 1,000 格的影片用 640。完全不使用標籤。</td></tr>
+<tr><td class="l">E3</td><td class="l">3 個偵測器（或 3 個種子）各跑一次 P0，再把每個 30 s 窗的進、出次數取平均</td></tr>
+<tr><td class="l">F8</td><td class="l">一個偵測器在畫面的 8 種對稱版本上執行（原圖、左右翻轉、上下翻轉、旋轉 180°、轉置、反轉置、順逆時針各旋轉 90°）；每種各跑一次 P0；窗計數取平均</td></tr>
+<tr><td class="l">E3×F8</td><td class="l">兩者合併：3 × 8 = 24 個成員取平均</td></tr>
+<tr><td class="l">E3×P1</td><td class="l">3 個偵測器各自在 P1 替它選的尺度下跑 P0；次數取平均</td></tr>
+<tr><td class="l">E3×P1×F8</td><td class="l">每個偵測器在自己的 P1 尺度下跑 8 種對稱版本；24 個成員取平均</td></tr>
+<tr><td class="l">E3×P1↓×F8</td><td class="l">同 E3×P1×F8，但 P1 選出高於 640 的尺度（960、1280、1600）時改用 640。這是看過結果後才設計的（事後設計）。</td></tr>
+</tbody>
+</table>
+
+<!-- ============================================================ 7 -->
+<h2>實作細節</h2>
+<p class="tcap"><b>表 5.</b> 軟硬體與固定設定。</p>
+<table>
+<thead><tr><th class="l">項目</th><th class="l">設定</th></tr></thead>
+<tbody>
+<tr><td class="l">硬體</td><td class="l">NVIDIA RTX 4060 Laptop GPU，8 GB</td></tr>
+<tr><td class="l">軟體</td><td class="l">Python 3.11（uv 環境，<code>uv.lock</code>）、PyTorch 2.11.0 + CUDA 12.8、Ultralytics 8.4.208、TrackEval、SciPy、OpenCV、NumPy、Matplotlib</td></tr>
+<tr><td class="l">預訓練權重</td><td class="l">Ultralytics <code>yolo11s.pt</code>（COCO），AGPL-3.0</td></tr>
+<tr><td class="l">偵測器訓練</td><td class="l">單一類別「bee」；預算 50 個 epoch，以驗證集 fitness 做 early stopping（patience 15），保留 <code>best.pt</code>；640 px 時 batch 16；mosaic 1.0（最後 10 個 epoch 關閉）、水平翻轉 0.5、不做垂直翻轉；其餘為 Ultralytics 預設值。三個偵測器用相同配方、不同種子：<code>y11s_640</code>（種子 0）、<code>y11s4_s1</code>、<code>y11s4_s2</code>。</td></tr>
+<tr><td class="l">留一蜂箱偵測器</td><td class="l">相同配方，用四個蜂箱中三個蜂箱的訓練切分影格訓練；每折 9 個種子</td></tr>
+<tr><td class="l">推論</td><td class="l">FP16、分數 ≥ 0.05、NMS IoU 0.7、每格最多 300 個框；每個偵測器的偵測結果只快取一次，所有追蹤器共用</td></tr>
+</tbody>
+</table>
+<p>程式碼是一個 Python 套件 <code>beetrack</code>，每個步驟一個模組，都以 <code>uv run python -m beetrack.&lt;module&gt;</code> 執行。每個實驗都寫在 <code>docs/experiment_log.md</code>，內容有動機、登記的判讀規則、預測與結果。本報告的數字都抄自根據這份紀錄整理的結果摘要。</p>
+
+<!-- ============================================================ 8 -->
+<h2>基準系統</h2>
+<p>所有基準都使用和 P0 完全相同的快取偵測結果、事件規則與指標，只有追蹤器不同。</p>
+<ul>
+<li><b>預設 ByteTrack。</b>使用預設設定（<code>bytetrack.yaml</code>，表 3）的 Ultralytics ByteTrack，也就是實務上最先會做出來的系統。</li>
+<li><b>校正 ByteTrack。</b>ByteTrack 會跟丟很多蜜蜂，所以它少算的情形相當穩定。因此一個公平又實際的基準，是把它的進、出次數各乘上係數 <i>k</i> = 真實總數 / 預測總數。係數在 val + dev 上對每個偵測器擬合一次，之後固定不變。用於測試集的係數：三個偵測器的 <i>k</i><sub>in</sub> / <i>k</i><sub>out</sub> 分別為 2.016 / 1.396、1.866 / 1.364 與 1.969 / 1.192。我們是在發現簡單的校正在新蜂箱上很難打敗之後，才加入這個基準（第 2.3 節）。</li>
+<li><b>論文的追蹤器。</b>隨 BEE24 [16] 發表的追蹤器 TOPICTrack，接在我們的偵測結果上。它載入 ReID 的部分必須先修正。使用它附帶的參數時，在 val + dev 上是 47.65%；所以我們也在沒看過蜂箱的代理上替它選了一組設定，用的是我們替自己做選擇時的同一批資料：設定 A（門檻 0.2，min_hits 3）。它在測試集上只報告。</li>
+</ul>
+<p>沒有微調的 COCO 模型不能當基準，因為 COCO 沒有蜜蜂這個類別。</p>
+<p><b>偵測器訓練與偵測品質。</b>表 6 將列出三個偵測器的訓練長度與偵測品質。這些數字還沒有整理進 v2 的結果摘要，所以這裡先留空，不從舊的執行結果抄過來。</p>
+<p class="tcap"><b>表 6.</b> P0 三個偵測器的偵測品質（Ultralytics validation）。</p>
+<table>
+<thead><tr><th class="l">偵測器</th><th>最佳 / 最後 epoch</th><th>驗證 mAP@0.5</th><th>驗證 mAP@0.5:0.95</th><th>測試 mAP@0.5</th><th>測試 mAP@0.5:0.95</th></tr></thead>
+<tbody>
+<tr><td class="l"><code>y11s_640</code></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l"><code>y11s4_s1</code></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l"><code>y11s4_s2</code></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+</tbody>
+</table>
+<p>我們自己的結果給了一個警告：偵測品質和計數不會一起變好。訓練時加入垂直翻轉，6 次執行中 6 次的驗證 mAP 都上升，新蜂箱上的計數誤差卻變差（第 12.4 節）。</p>
+
+<!-- ============================================================ 9 -->
+<h2>提出的技術改進</h2>
+<p><b>觀察到的問題。</b>在第一份報告中，運動自適應追蹤器改善了追蹤指標，卻沒有解決計數問題。錯誤集中在巢口：快速的蜜蜂讓軌跡斷掉，或軌跡跳到旁邊的蜜蜂上。任何線上追蹤器都必須在當下這一格、只看過去的資訊就做出判斷。對線上追蹤器來說，一隻消失五格、又在兩個體長外重新出現的蜜蜂，看起來就和舊蜜蜂旁邊出現一隻新蜜蜂一樣。</p>
+<p><b>想法。</b>不要太早下決定。嚴格的第一階段產生的小軌跡幾乎一定各只屬於一隻蜜蜂；只要不確定，它就可以把軌跡切斷。「這段小軌跡是不是接續那一段？」這個決定留到之後，在看得到中斷兩側的情況下再做：第一段小軌跡往哪裡去、第二段從哪裡來、跳躍有多大，以及是否有第三段小軌跡落在同一條線上。這些由一個小型網路從真值學習。</p>
+<p><b>為什麼這樣選。</b></p>
+<ul>
+<li><i>只用幾何。</i>我們先測試過外觀特徵。正確載入論文的 ReID 模型後，從候選中選對的比例是 0.289，低於我們小型幾何網路的 0.507。蜜蜂長得太像了。</li>
+<li><i>嚴格的第一階段。</i>乾淨的小軌跡才有乾淨的訓練標籤。接得太多的第一階段會把錯誤藏在小軌跡內部，任何連結器都無法還原。</li>
+<li><i>低門檻（0.15）的貪婪連結。</i>大部分真正的連結都很容易，把握也高。低門檻讓連結器也能把雜訊碎片併進真正的軌跡，這對計數很重要（第 13.5 節）。</li>
+<li><i>捨棄只有 1–2 個框的軌跡。</i>背景上的單框碎片會造成錯誤的半截事件。</li>
+</ul>
+<p><b>與提案及第一份報告的差異。</b>提案描述的是運動自適應配對的線上追蹤器。現在這個追蹤器只是第一階段，設定也很不一樣，改進則在離線的部分。提案計算的是穿越線的次數，第一份報告計算整支影片的區域進出；現在則是按每個 30 秒窗計數。demo 仍執行線上追蹤器（第 14 章）。</p>
+<p><b>成功標準</b>，在檢驗它們的實驗之前就已固定：</p>
+<ul>
+<li><b>(a) 看過的蜂箱。</b>在 val + dev 上，窗誤差要低於兩個 ByteTrack 基準。任何新的臂也必須讓 val + dev 的平均不高於 P0 的 18.46%。</li>
+<li><b>(b) 沒看過的蜂箱。</b>在留一蜂箱代理上，一個臂必須在<i>兩</i>折上都通過判準 1 與判準 2（第 10.3 節），才算比較好。</li>
+<li><b>測試集。</b>依第 10.4 節的判讀規則，在執行前就已訂好。</li>
+</ul>
+
+<!-- ============================================================ 10 -->
+<h2>實驗設定</h2>
+<h3>公平性規則</h3>
+<ul>
+<li>基準與本方法都在同一個留出的測試集上評估，使用相同的偵測結果、事件規則與指標。測試集標籤不用來調整任何東西，所有設定都在唯一一次測試執行之前鎖定。</li>
+<li>每次比較只改變一個因素：追蹤器（實驗 1）、輸入尺度（實驗 2）或平均的執行次數（實驗 3）。硬體、前處理、模型、訓練配方與評估程式都固定（表 5）。每一條新規則在執行前都先在紀錄中登記，附上判讀規則與寫好的預測。</li>
+</ul>
+<h3>開發資料與雜訊</h3>
+<p>所有選擇都在 val + dev 上決定；後面的留一蜂箱代理也只用 val 和 dev 的影片，test 從來沒有用來做選擇。單一個數字背後藏著很多雜訊：同一套流程換一個偵測器種子，結果就可能差好幾個百分點。因此每個 val + dev 結果都列出三個偵測器的數字，以及它們的平均與全距（最大 − 最小）。差距大於全距時，我們才把它當成真的差異。</p>
+<h3>沒看過的蜂箱：留一蜂箱代理</h3>
+<p>為了在不碰測試集的情況下模擬新蜂箱，我們用四個蜂箱中的三個訓練偵測器。<b>L35</b> 折訓練時不用蜂箱 35，在 35-head 上評估（129 次事件）；<b>L33</b> 折訓練時不用蜂箱 33，在 33-head 上評估（184 次事件）。每折有 9 個偵測器種子，分成三組（種子 0–2、3–5、6–8）。每組得出一個數字，三組數值的全距就是雜訊的尺度。兩條判準都事先固定：</p>
+<ul>
+<li><b>判準 1（泛化）。</b>每組計算 <i>d</i> = 臂 − P0 單一偵測器。三個 <i>d</i> 的平均必須是負的，而且大小要超過 max(該臂的全距, P0 的全距)。</li>
+<li><b>判準 2（第二個基準）。</b>同上，但改用 臂 − 校正 ByteTrack E3，並取這兩者全距中較大的一個。</li>
+</ul>
+<p>當前段的結果引出一條新規則時，我們會在同兩支影片的<b>尾段</b>（第 4001–5000 格；37 與 50 次事件）上檢查，判讀規則在執行前登記。</p>
+<h3>測試協定</h3>
+<p>每個測試數字都合併五支影片：每支影片先對 30 種平移取平均，再把各影片相加，最後除以 405。每個臂只跑一次。判讀規則在執行前就已訂好：</p>
+<ul>
+<li>P0 對每個基準：取 3 個偵測器的平均差，和兩個臂中較大的全距比較。為負且大於全距：「在測試集上較準確」。為負但小於全距：「較低，但在偵測器之間的差異範圍內」。其他情況就照實寫出數字。</li>
+<li>P1 與 F8 對 P0 用同樣方式判讀，只報告。E3 類的臂各只有一個數字；它們與 P0 平均的差，拿來和 P0 的全距比較，用同樣三種說法。</li>
+<li>偏差與事件 F1 逐支影片與合計報告，但不做判定。</li>
+</ul>
+<h3>穩健性條件</h3>
+<ul>
+<li><b>影像劣化</b>：在偵測前加到影格上，一次一種，偵測器不重新訓練：<i>變暗</i>（亮度 × 0.4）、<i>變亮</i>（× 1.6 + 20，截斷）、<i>模糊</i>（1 × 9 水平動態模糊）、<i>雜訊</i>（高斯，σ = 15）。</li>
+<li><b>掉幀</b>：只把每 <i>k</i> 格中的一格（<i>k</i> = 2、3、5）送去偵測與追蹤。真值事件維持完整幀率，連結器不重新擬合。</li>
+<li><b>擁擠程度</b>：擁擠的蜂箱 33 對照稀疏的蜂箱 35，以及逐支影片的結果。</li>
+<li><b>新蜂箱</b>：上述的留一蜂箱代理。</li>
+</ul>
+<p>影像劣化與掉幀都在 val + dev 上、用三個看過蜂箱的偵測器執行，比較 P0、校正 ByteTrack（用乾淨資料擬合的 <i>k</i>）與預設 ByteTrack。開發期間測試集保持鎖定；同樣的條件已登記為唯一一次測試執行中只報告的項目。乾淨條件必須重現表 7 的數字（18.46 / 34.82 / 40.18%）。</p>
+
+<!-- ============================================================ 11 -->
+<h2>量化結果</h2>
+<h3>看過的蜂箱</h3>
+<p class="tcap"><b>表 7.</b> val + dev（看過的蜂箱，486 次真值事件），30 s 窗誤差（%）。單偵測器的臂：每個偵測器一欄，各為 3 個交叉擬合連結器的平均。E3 類的臂把 3 個偵測器混成一個數字，所以它們的三欄是三個連結器；只能拿它們的平均和其他列比較。</p>
+<table class="wide split">
+<thead><tr><th class="l">臂</th><th><code>y11s_640</code></th><th><code>y11s4_s1</code></th><th><code>y11s4_s2</code></th><th>平均 ↓</th><th>全距</th><th>事件 F1@0.5 ↑</th></tr></thead>
+<tbody>
+<tr class="best"><td class="l">P0</td><td>18.89</td><td>17.34</td><td>19.15</td><td>18.46</td><td>1.81</td><td>0.740</td></tr>
+<tr><td class="l">P1</td><td>18.82</td><td>16.24</td><td>18.90</td><td>17.99</td><td>2.66</td><td>0.741</td></tr>
+<tr><td class="l">F8</td><td>15.81</td><td>15.51</td><td>16.83</td><td>16.05</td><td>1.32</td><td><span class="todo">[TODO §144]</span></td></tr>
+<tr class="sep"><td class="l">預設 ByteTrack</td><td>41.37</td><td>38.13</td><td>41.04</td><td>40.18</td><td>3.24</td><td>0.545</td></tr>
+<tr><td class="l">校正 ByteTrack</td><td>33.78</td><td>29.09</td><td>41.60</td><td>34.82</td><td>12.51</td><td><span class="todo">[TODO §93]</span></td></tr>
+<tr><td class="l">論文的追蹤器，設定 A</td><td>36.63</td><td>34.02</td><td>35.10</td><td>35.25</td><td>2.61</td><td>0.592</td></tr>
+<tr class="sep"><td class="l">E3（單一數字）</td><td colspan="3">–</td><td>17.07</td><td>–</td><td>n/a</td></tr>
+<tr><td class="l">E3×F8（連結器 1 / 2 / 3）</td><td>15.48</td><td>15.40</td><td>15.72</td><td>15.53</td><td>–</td><td>n/a</td></tr>
+<tr><td class="l">E3×P1（連結器 1 / 2 / 3）</td><td>16.26</td><td>16.32</td><td>16.95</td><td>16.51</td><td>–</td><td>n/a</td></tr>
+<tr><td class="l">E3×P1×F8（連結器 1 / 2 / 3）</td><td>15.67</td><td>15.22</td><td>15.64</td><td>15.51</td><td>–</td><td>n/a</td></tr>
+<tr><td class="l">E3×P1↓×F8（連結器 1 / 2 / 3）</td><td>15.77</td><td>15.51</td><td>15.94</td><td>15.74</td><td>–</td><td>n/a</td></tr>
+</tbody>
+</table>
+<figure><img src="fig_v2/fig_seen.png" alt="各臂在 val + dev 上窗誤差的長條圖" style="max-height:50mm"><figcaption><b>圖 2.</b> 表 7 的圖示。長條為平均；圓點為三個偵測器（E3 類的列為三個連結器；E3 只有一個數字）。</figcaption></figure>
+<p><b>解讀。</b>在偵測器認得的蜂箱上，P0 的窗誤差不到預設 ByteTrack 的一半，比校正 ByteTrack 與論文追蹤器的一半略多。每一個差距都大於偵測器之間的差異，而且每個偵測器上都是 P0 比較低。事件 F1 也是同樣的結論（0.740 對 0.545 與 0.592；IoU 0.3 時，P0 為 0.750，預設 ByteTrack 為 0.557）。校正在兩個偵測器上對 ByteTrack 有幫助，但 12.51 個百分點的全距顯示，一個固定的係數沒辦法適用每個偵測器。所有附加臂都守住看過蜂箱的門檻（平均 ≤ 18.46%）。做平均的臂全都比 P0 低，含 F8 的降得最多；例如 E3×P1↓×F8 低了 2.72 個百分點。P1 也比較低，但差距小於偵測器的全距。成功標準 (a) 達成。</p>
+
+<h3>測試集</h3>
+<p>測試只執行一次，在本草稿之後，使用上述設定。表 8 依照鎖定的格式。</p>
+<p class="tcap"><b>表 8.</b> 測試集（5 支官方影片，405 次真值事件），30 s 窗誤差（%）。判讀欄：依第 10.4 節規則給出的說法。</p>
+<table class="wide split">
+<thead><tr><th class="l">臂</th><th><code>y11s_640</code></th><th><code>y11s4_s1</code></th><th><code>y11s4_s2</code></th><th>平均</th><th>全距</th><th>事件 F1@0.5</th><th class="l">判讀</th></tr></thead>
+<tbody>
+<tr class="best"><td class="l">P0</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td class="l">–</td></tr>
+<tr><td class="l">校正 ByteTrack</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr><td class="l">預設 ByteTrack</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr><td class="l">論文的追蹤器 A（只報告）</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr class="sep"><td class="l">P1（只報告）</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr><td class="l">F8（只報告）</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr class="sep"><td class="l">E3（只報告）</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0 的</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr><td class="l">E3×F8（只報告）</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0 的</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr><td class="l">E3×P1（只報告）</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0 的</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr><td class="l">E3×P1↓×F8（只報告）</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0 的</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
+</tbody>
+</table>
+<p class="tcap"><b>表 9.</b> P0 在測試集上的逐支影片結果（偵測器 <code>y11s_640</code>；另外兩個偵測器的結果見紀錄）。偏差 = 預測 − 真值事件數。</p>
+<table class="wide">
+<thead><tr><th class="l">影片</th><th>真值 進 / 出</th><th>P0 進 / 出</th><th>窗誤差</th><th>事件 F1@0.5（配對 / 錯誤 / 漏掉）</th><th>事件 F1@0.3</th><th>偏差</th></tr></thead>
+<tbody>
+<tr><td class="l">BEE24-12</td><td>1 / 3</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l">BEE24-13</td><td>10 / 11</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l">BEE24-16</td><td>26 / 37</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l">BEE24-34</td><td>84 / 88</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l">BEE24-36</td><td>91 / 54</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr class="sep"><td class="l"><b>合計</b></td><td>405</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+</tbody>
+</table>
+<p>我們也會列出 P1 對 3 個偵測器 × 5 支影片各選了哪個尺度（<span class="todo">[test]</span>）。如果每次選的都是 640 以上，測試集上的 E3×P1↓×F8 就等於 E3×F8，到時會註明。</p>
+<p><b>執行前的預期。</b>我們在測試執行前寫下猜測，避免事後重新詮釋結果。這些只是我們自己的猜測。平均低於 P0 的機率：F8 70%、E3×F8 75%、E3×P1 70%、E3×P1↓×F8 70%。差距也大於 P0 全距的機率：E3×F8 35%、E3×P1 30%、E3×P1↓×F8 35%。F8 被判讀為「較低，但在偵測器之間的差異範圍內」：55%。E3×P1↓×F8 低於 E3×F8：45%。結果：<span class="todo">[test]</span>。</p>
+<p><b>解讀。</b><span class="todo">[test]</span>（只依第 10.4 節的判讀規則撰寫）。</p>
+
+<h3>追蹤指標</h3>
+<p>Project 1 要求以身分為基礎的追蹤指標。P0 會輸出每個框及其 ID，所以 TrackEval 可以像評估其他追蹤器一樣評估它。這些數字還沒有整理進我們的 v2 結果，所以表格先留空。</p>
+<p class="tcap"><b>表 10.</b> 以官方 TrackEval 真值計算的追蹤指標（偵測器 <code>y11s_640</code>）。</p>
+<table class="wide">
+<thead><tr><th class="l">切分</th><th class="l">追蹤器</th><th>HOTA</th><th>DetA</th><th>AssA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th></tr></thead>
+<tbody>
+<tr><td class="l">val + dev</td><td class="l">預設 ByteTrack</td><td colspan="6"><span class="todo">[TODO tracking metrics]</span></td></tr>
+<tr><td class="l">val + dev</td><td class="l">P0</td><td colspan="6"><span class="todo">[TODO tracking metrics]</span></td></tr>
+<tr class="sep"><td class="l">測試</td><td class="l">預設 ByteTrack</td><td colspan="6"><span class="todo">[test]</span></td></tr>
+<tr><td class="l">測試</td><td class="l">P0</td><td colspan="6"><span class="todo">[test]</span></td></tr>
+</tbody>
+</table>
+<p>之後判讀時要注意一點：P0 保留每個框，包括低分框，而被捨棄的短軌跡會從輸出移除。這兩個選擇都是為了計數，可能會讓 MOTA 變差。</p>
+
+<h3>速度</h3>
+<p>偵測器與第一階段是逐格執行的。TrackletLink 需要整支影片（或至少往後看 25 格），所以目前形式的 P0 是離線系統。在 RTX 4060 Laptop GPU 上，640 px 的偵測器每格需要 <span class="todo">[TODO speed]</span> ms，第一階段 <span class="todo">[TODO speed]</span> ms，連結、過濾與計數則是每格影片 <span class="todo">[TODO speed]</span> ms，端到端為 <span class="todo">[TODO speed]</span> FPS。</p>
+
+<!-- ============================================================ 12 -->
+<h2>對照實驗</h2>
+<h3>實驗 1：關聯方法</h3>
+<p><b>目的。</b>在其他條件都相同時，量測兩階段追蹤器（P0）在看過與沒看過的蜂箱上，計數是否比 ByteTrack 與論文的追蹤器好。</p>
+<p><b>控制條件。</b>完全相同的快取偵測結果（相同權重、640 px），相同的影片、事件規則與指標，只改變追蹤器。看過的蜂箱：三個偵測器（表 7）。沒看過的蜂箱：每折 9 個留一蜂箱種子。</p>
+<p class="tcap"><b>表 11.</b> 實驗 1，沒看過蜂箱的前段。窗誤差（%），三個種子組的平均（括號內為各組的全距）；事件 F1 為 9 個種子的結果。</p>
+<table class="wide">
+<thead><tr><th class="l">追蹤器</th><th>L35：35-head（129）</th><th>L33：33-head（184）</th><th>事件 F1 L35 / L33</th></tr></thead>
+<tbody>
+<tr class="best"><td class="l">P0 單一偵測器</td><td>22.18 (11.09)</td><td>23.90 (4.55)</td><td>0.765 / 0.324</td></tr>
+<tr><td class="l">預設 ByteTrack 單一偵測器</td><td>26.90 (2.26)</td><td>33.13 (8.55)</td><td>0.561 / 0.254</td></tr>
+<tr><td class="l">預設 ByteTrack E3</td><td>25.33 (3.11)</td><td>31.37 (10.34)</td><td>n/a</td></tr>
+<tr><td class="l">校正 ByteTrack E3</td><td>46.01 (9.25)</td><td>41.44 (11.97)</td><td>n/a</td></tr>
+</tbody>
+</table>
+<p>如果看 9 個單一種子，分布比分組看起來更寬。以單一種子計，P0 在 L35 是 22.18（全距 33.80），在 L33 是 23.90（13.26）；預設 ByteTrack 是 26.90（10.90）與 33.13（15.18）；校正 ByteTrack 是 47.38（45.60）與 44.57（28.84）。</p>
+<p><b>解讀。</b>在看過的蜂箱上，兩階段追蹤器明顯勝出（表 7）。在沒看過的蜂箱上，它在兩折上仍是最好的追蹤器，但差距縮小了。和預設 ByteTrack 比，L33 上的差距大於兩邊的組間全距，L35 上則沒有，在那裡 P0 自己的種子組就相差 11 個百分點。校正 ByteTrack 在沒看過蜂箱的前段上表現很差：它的係數是在偵測器認得的蜂箱上擬合的，到了新蜂箱就校正過頭。論文的追蹤器從來沒有接近 P0：用附帶參數是 47.65%，設定 A 是 35.25%，事後從 20 種設定中挑最好的是 26.01%，而 P0 在 val + dev 上是 18.46%；20 種設定中沒有任何一種在所有偵測器上都勝出。</p>
+<p><b>失敗案例。</b>L33 上的事件 F1 只有 0.324：在擁擠的新蜂箱上，P0 找到的事件大多沒有在正確的時間落在正確的蜜蜂上，即使窗計數算出來很接近。在 L35 上，P0 的 9 個種子全都多算（平均 +25.0 次事件）。單一種子可能錯得很嚴重：L35 的種子 6 是 46.51%，有 87 次錯誤事件，大多是空背景上的軌跡。偵測器在新背景上亂報，是任何連結器都修不好的。</p>
+
+<h3>實驗 2：輸入尺度</h3>
+<p><b>目的。</b>新蜂箱上的蜜蜂，大小可能和訓練時不同。測試在不使用標籤的情況下替每支影片選輸入尺度（P1），和 P0 固定的 640 px 相比，是否能改善計數。</p>
+<p><b>控制條件。</b>相同的偵測器、追蹤器、連結器與規則，只改變偵測器的輸入尺度。在看過的蜂箱上，逐個偵測器比較 P1 與 P0；在沒看過的蜂箱上比較 E3×P1 與 E3，讓兩邊平均的是同樣三個種子。</p>
+<p class="tcap"><b>表 12.</b> 實驗 2。窗誤差（%），平均（全距）。</p>
+<table class="wide">
+<thead><tr><th class="l">資料</th><th class="l">比較的臂</th><th>固定 640</th><th>依閃爍度選尺度</th></tr></thead>
+<tbody>
+<tr><td class="l">val + dev（3 個偵測器）</td><td class="l">P0 對 P1</td><td>18.46 (1.81)</td><td>17.99 (2.66)</td></tr>
+<tr class="sep"><td class="l">35-head（3 個種子組）</td><td class="l">E3 對 E3×P1</td><td>20.45 (11.82)</td><td>11.07 (3.98)</td></tr>
+<tr><td class="l">33-head（3 個種子組）</td><td class="l">E3 對 E3×P1</td><td>19.29 (7.15)</td><td>21.95 (2.31)</td></tr>
+<tr class="sep"><td class="l">35-tail（3 個種子組）</td><td class="l">E3 對 E3×P1</td><td>22.12 (9.43)</td><td>13.39 (6.79)</td></tr>
+<tr><td class="l">33-tail（3 個種子組）</td><td class="l">E3 對 E3×P1</td><td>19.66 (10.93)</td><td>16.10 (10.40)</td></tr>
+</tbody>
+</table>
+<p><b>解讀。</b>在看過的蜂箱上，P1 比 P0 低，但在偵測器之間的差異範圍內，事件 F1 也一樣（0.741 對 0.740）。在沒看過的蜂箱上，選尺度是我們找到唯一能讓誤差大幅變動的改變：在稀疏的蜂箱 35 上，前段與尾段的誤差都大幅下降；在擁擠的蜂箱 33 上，前段變差、尾段變好。四格中有三格是選尺度的臂比較低，但每次差距都在較大的組間全距之內，所以不能稱為改進。和 P0 單一偵測器比，E3×P1 在 L35 上以 0.02 個百分點通過判準 1，在 L33 上沒有通過。讓我們意外的是，新蜂箱上唯一有一點幫助的訊號竟然這麼粗糙，只是框數的閃爍度（第 13.5 節）。</p>
+<p><b>失敗案例。</b>選出的尺度不穩定。在沒看過的蜂箱上，換同一支影片的另一段 1,000 格，選擇就會翻轉：24 次選擇中有 5 次是壞選擇。選較小的尺度在 7 個種子中 7 個有幫助，選較大的尺度在 11 個中只有 5 個有幫助。在 L35 上，種子 4 與 8 選了 1280 與 960，得到 20.56% 與 19.96%；同樣的種子在 640 下是 11.88% 與 14.10%。在尾段上，選出的尺度和前段落在 640 同一側的，L35 是 9 個種子中 6 個，L33 是 9 個中 8 個。</p>
+
+<h3>實驗 3：平均窗計數</h3>
+<p><b>目的。</b>多個偵測器，或同一個偵測器在翻轉後的影片上，犯的錯有一部分不同。測試把它們的窗計數取平均，能不能讓沒看過蜂箱上的誤差降到在兩折上都通過兩條判準。</p>
+<p><b>控制條件。</b>相同的追蹤器、連結器、規則與指標。E3 對 P0 單一偵測器，只改變平均的偵測器數量（同一組的 3 個種子，對每個種子單獨執行）。E3×F8 對 E3 只多加 8 種對稱。和 P1 的組合同時改變尺度，列出來是為了完整。</p>
+<p class="tcap"><b>表 13.</b> 沒看過蜂箱的前段，窗誤差（%）。分組欄依序為種子 0–2 / 3–5 / 6–8。</p>
+<table class="wide">
+<thead><tr><th class="l">列</th><th>L35 各組</th><th>平均</th><th>全距</th><th>L33 各組</th><th>平均</th><th>全距</th></tr></thead>
+<tbody>
+<tr class="best"><td class="l">P0 單一偵測器</td><td>17.76 / 19.93 / 28.85</td><td>22.18</td><td>11.09</td><td>23.27 / 26.50 / 21.94</td><td>23.90</td><td>4.55</td></tr>
+<tr><td class="l">E3</td><td>15.87 / 17.81 / 27.68</td><td>20.45</td><td>11.82</td><td>16.80 / 23.95 / 17.13</td><td>19.29</td><td>7.15</td></tr>
+<tr><td class="l">E3×F8</td><td>15.07 / 15.29 / 20.80</td><td>17.05</td><td>5.73</td><td>17.42 / 17.62 / 18.35</td><td>17.80</td><td>0.92</td></tr>
+<tr><td class="l">E3×P1</td><td>8.65 / 11.94 / 12.63</td><td>11.07</td><td>3.98</td><td>20.57 / 22.87 / 22.40</td><td>21.95</td><td>2.31</td></tr>
+<tr><td class="l">E3×P1×F8</td><td>9.26 / 11.76 / 12.80</td><td>11.28</td><td>3.54</td><td>16.05 / 22.07 / 17.80</td><td>18.64</td><td>6.02</td></tr>
+<tr><td class="l">E3×P1↓×F8（事後設計）</td><td>9.26 / 10.54 / 10.98</td><td>10.26</td><td>1.72</td><td>17.42 / 17.62 / 18.35</td><td>17.80</td><td>0.92</td></tr>
+<tr class="sep"><td class="l">校正 ByteTrack E3</td><td>42.84 / 43.09 / 52.09</td><td>46.01</td><td>9.25</td><td>41.32 / 47.48 / 35.51</td><td>41.44</td><td>11.97</td></tr>
+<tr><td class="l">預設 ByteTrack 單一偵測器</td><td>27.27 / 25.58 / 27.84</td><td>26.90</td><td>2.26</td><td>35.92 / 27.46 / 36.01</td><td>33.13</td><td>8.55</td></tr>
+<tr><td class="l">預設 ByteTrack E3</td><td>25.99 / 23.45 / 26.56</td><td>25.33</td><td>3.11</td><td>35.16 / 24.82 / 34.14</td><td>31.37</td><td>10.34</td></tr>
+</tbody>
+</table>
+<figure><img src="fig_v2/fig_heads.png" alt="兩折在沒看過蜂箱前段上窗誤差的長條圖" style="max-height:56mm"><figcaption><b>圖 3.</b> 表 13 的圖示。長條為三個種子組的平均，圓點為各組，虛線為該折 P0 的平均。</figcaption></figure>
+<p class="tcap"><b>表 14.</b> 前段上的判準（平均 <i>d</i> 對門檻）。判準 1：對 P0 單一偵測器；判準 2：對校正 ByteTrack E3。</p>
+<table class="wide">
+<thead><tr><th class="l">臂</th><th class="l">L35 判準 1</th><th class="l">L35 判準 2</th><th class="l">L33 判準 1</th><th class="l">L33 判準 2</th></tr></thead>
+<tbody>
+<tr><td class="l">E3</td><td class="l">否：−1.73 對 11.82</td><td class="l">是：−25.55 對 11.82</td><td class="l">否：−4.61 對 7.15</td><td class="l">是：−22.14 對 11.97</td></tr>
+<tr><td class="l">E3×F8</td><td class="l">否：−5.13 對 11.09</td><td class="l">是：−28.96 對 9.25</td><td class="l">是：−6.11 對 4.55</td><td class="l">是：−23.64 對 11.97</td></tr>
+<tr><td class="l">E3×P1</td><td class="l">是，勉強：−11.11 對 11.09</td><td class="l">是：−34.94 對 9.25</td><td class="l">否：−1.96 對 4.55</td><td class="l">是：−19.49 對 11.97</td></tr>
+<tr><td class="l">E3×P1×F8</td><td class="l">否：−10.91 對 11.09</td><td class="l">是：−34.73 對 9.25</td><td class="l">否：−5.26 對 6.02</td><td class="l">是：−22.79 對 11.97</td></tr>
+<tr><td class="l">E3×P1↓×F8（事後設計）</td><td class="l">是：−11.92 對 11.09</td><td class="l">是：−35.75 對 9.25</td><td class="l">是：−6.11 對 4.55</td><td class="l">是：−23.64 對 11.97</td></tr>
+</tbody>
+</table>
+<p><b>前段的結果。</b>每個做平均的臂都輕鬆勝過校正 ByteTrack（判準 2）。難的是判準 1。只用 E3 時兩折都沒有通過。加上 8 種對稱（E3×F8）以 1.56 個百分點的餘裕通過 L33，但 L35 沒有通過。加上選尺度（E3×P1）以 0.02 個百分點通過 L35，但 L33 沒有通過。E3×P1×F8 兩折都沒過，分別差 0.19 與 0.76 個百分點。所以在最後一條規則之前，沒有任何臂在兩折上都通過判準 1。</p>
+<p><b>事後設計的規則。</b>看逐種子的結果時，我們發現 P1 選低於 640 的尺度在 7 個種子中 7 個有幫助，選高於 640 的只有 11 個中的 5 個。所以我們做了 E3×P1↓×F8：只有在 P1 的選擇會縮小影像時才採用。它在前段上兩折都通過（L35 的餘裕為 0.83 個百分點）。但這是在同樣兩段前段上試的第 8 條規則，而且是根據它們的結果設計的，所以這次通過不算數。在 L33 上，這條規則讓每個種子都回到 640，所以這個臂在那裡等於 E3×F8，L33 的通過完全來自 F8。</p>
+<p><b>尾段上的新片段檢查。</b>為了誠實地檢驗這條事後規則，我們在同兩支影片的尾段上登記了一次執行，判讀規則在執行前固定，之後不再更改。</p>
+<p class="tcap"><b>表 15.</b> 沒看過蜂箱的尾段（各在前段之後的 1,000 格；37 與 50 次真值事件），窗誤差（%）。</p>
+<table class="wide">
+<thead><tr><th class="l">列</th><th>L35 各組</th><th>平均</th><th>全距</th><th>L33 各組</th><th>平均</th><th>全距</th></tr></thead>
+<tbody>
+<tr class="best"><td class="l">P0 單一偵測器</td><td>25.59 / 20.24 / 30.21</td><td>25.35</td><td>9.97</td><td>26.09 / 29.07 / 30.89</td><td>28.68</td><td>4.80</td></tr>
+<tr><td class="l">E3（只報告）</td><td>21.26 / 17.84 / 27.27</td><td>22.12</td><td>9.43</td><td>13.24 / 21.56 / 24.18</td><td>19.66</td><td>10.93</td></tr>
+<tr><td class="l">E3×F8（只報告）</td><td>13.03 / 12.27 / 19.41</td><td>14.91</td><td>7.14</td><td>17.57 / 18.71 / 21.12</td><td>19.13</td><td>3.55</td></tr>
+<tr><td class="l">E3×P1（只報告）</td><td>16.28 / 9.49 / 14.41</td><td>13.39</td><td>6.79</td><td>10.44 / 20.84 / 17.02</td><td>16.10</td><td>10.40</td></tr>
+<tr><td class="l">E3×P1↓×F8</td><td>6.90 / 8.92 / 4.83</td><td>6.88</td><td>4.09</td><td>17.57 / 18.71 / 21.12</td><td>19.13</td><td>3.55</td></tr>
+<tr class="sep"><td class="l">校正 ByteTrack E3</td><td>53.28 / 47.23 / 56.26</td><td>52.26</td><td>9.03</td><td>14.58 / 24.37 / 26.80</td><td>21.92</td><td>12.22</td></tr>
+</tbody>
+</table>
+<figure><img src="fig_v2/fig_tails.png" alt="兩折在沒看過蜂箱尾段上窗誤差的長條圖" style="max-height:48mm"><figcaption><b>圖 4.</b> 表 15 的圖示（表示方式同圖 3）。</figcaption></figure>
+<p><b>尾段的結果。</b>E3×P1↓×F8 的結果如下：</p>
+<ul>
+<li>判準 1，L35：<i>d</i> = −18.69 / −11.32 / −25.38，平均 −18.46 對 9.97：<b>通過</b>（餘裕 8.49）。</li>
+<li>判準 1，L33：<i>d</i> = −8.52 / −10.36 / −9.77，平均 −9.55 對 4.80：<b>通過</b>（餘裕 4.75）。</li>
+<li>判準 2，L35：<i>d</i> = −46.38 / −38.31 / −51.44，平均 −45.38 對 9.03：<b>通過</b>。</li>
+<li>判準 2，L33：<i>d</i> = +2.99 / −5.66 / −5.68，平均 −2.78 對 12.22：<b>未通過</b>，差 9.43 個百分點。</li>
+</ul>
+<p>登記的結果是「尾段只確認一折」：只有 L35 通過兩條判準。因此主要設定仍是 P0，E3×P1↓×F8 仍然只報告。</p>
+<p><b>解讀。</b>L33 沒有通過，不是因為這個臂變差：它在 33-tail 是 19.13%，在 33-head 是 17.80%。改變的是基準。校正 ByteTrack E3 用同樣的係數，在 33-tail 是 21.92%，在前段則是 41.44%，而它逐種子的數值從 19.31% 到 57.87%。它為什麼在這段片段上好這麼多，我們只能猜，沒有量測過。還有兩件事削弱了尾段檢查：每個尾段只是一段 40 秒的片段，只有 37 與 50 次事件；而且尾段和前段來自同一個蜂箱，所以這是新片段，不是新蜂箱。我們也注意到，在 33-tail 上，P1 的大尺度並沒有造成傷害：E3×P1（16.10%）比 E3×P1↓×F8 低 3.03 個百分點。這和前段相反，所以「縮小安全、放大不安全」這個想法在 33-tail 上不成立。</p>
+<p><b>我們的結論。</b>在表 13 與表 15 中，每個做平均的臂，平均都低於 P0 單一偵測器，代價是每支影片要跑 3 到 24 次流程。但沒有任何事先登記的規則在兩個沒看過蜂箱的折上都乾淨地勝過 P0；唯一通過兩段前段的規則，是根據這兩段前段設計的，之後也只在一段新的尾段上得到確認。我們可以一直試新規則，直到有一條通過為止；事先登記正是為了防止這種做法。在代理上，成功標準 (b) 沒有達成。這是負面結果，我們就照負面結果報告。</p>
+<p><b>失敗案例。</b>平均只能消除隨機的窗雜訊，沒辦法消除每個成員共有的偏差。在 L35 上，P0 的誤差大約一半是偏差（9 個種子平均，22.18 中佔 10.41），而且 9 個種子全都多算。把 24 個都多算的成員取平均，結果仍然多算。</p>
+
+<h3>沒有效的嘗試</h3>
+<p>我們還試了很多其他想法，依四個研究問題分組，表 16 簡單列出。除非另外說明，數字都是種子組 0–2 在 35-head / 33-head 上的窗誤差（%），P0 在這裡是 17.76 / 23.27。「不採用」表示登記的規則就是這樣判定的。</p>
+<p class="tcap"><b>表 16.</b> 沒有效的想法。</p>
+<table class="wide split">
+<thead><tr><th class="l">問題</th><th class="l">想法</th><th class="l">結果</th></tr></thead>
+<tbody>
+<tr><td class="l" rowspan="7">#1 新蜂箱上的偵測器</td><td class="l">凍結骨幹（A1）</td><td class="l">12.42 / 33.99；L33 上多算的事件增加 25–52 次</td></tr>
+<tr><td class="l">蜂箱對抗（A2）</td><td class="l">24.79 / 30.46</td></tr>
+<tr><td class="l">凍結的 DINOv2 特徵（A3）</td><td class="l">9.18 / 32.32；看過蜂箱的 mAP@0.5 下降 0.056</td></tr>
+<tr><td class="l">訓練時加入垂直翻轉</td><td class="l">31.15 / 26.82；val mAP 6 次中 6 次上升，計數卻變差</td></tr>
+<tr><td class="l">同一次訓練 5 個 checkpoint 的平均</td><td class="l">32.97 / 20.08</td></tr>
+<tr><td class="l">在第三個蜂箱上以偽標籤蒸餾的偵測器</td><td class="l">事件 F1 −0.031 / −0.035，計數誤差 +9.2 個百分點</td></tr>
+<tr><td class="l">用較晚的 checkpoint 取代 <code>best.pt</code></td><td class="l">沒有穩定趨勢；保留 <code>best.pt</code></td></tr>
+<tr class="sep"><td class="l" rowspan="6">#2 追蹤與連結</td><td class="l">第一階段之後的幾何連接</td><td class="l">密集蜂箱差 4.3 個百分點；不採用</td></tr>
+<tr><td class="l">用幾何規則移除重複或重疊的小軌跡</td><td class="l">對 val + dev 沒有影響（影子軌跡為 0.00）</td></tr>
+<tr><td class="l">用外觀（論文的 ReID）做連結</td><td class="l">選對的比例 0.289，我們的網路是 0.507</td></tr>
+<tr><td class="l">連結前在跳格處切開小軌跡</td><td class="l">15.90（全距 18.40）/ 25.10；val + dev +1.17</td></tr>
+<tr><td class="l">為新偵測器重新擬合連結器</td><td class="l">L33 從來沒有低於 P0 自己掃描出的 21.87%</td></tr>
+<tr><td class="l">論文的追蹤器，20 種設定</td><td class="l">val + dev 上最好是 26.01%，事後挑選</td></tr>
+<tr class="sep"><td class="l" rowspan="6">#3 計數邏輯</td><td class="l">巢口附近的快速軌跡補算事件</td><td class="l">4 種設定上都差超過 2 個百分點</td></tr>
+<tr><td class="l">一進一出成對抵銷</td><td class="l">看過蜂箱的每種設定都變差；L35 −2.85，但在全距內</td></tr>
+<tr><td class="l">由目標蜂箱決定最短軌跡長度</td><td class="l">L35 9.18（未觸發），L33 23.93 對 23.27</td></tr>
+<tr><td class="l">Lei 等人 [22] 的方框計數規則</td><td class="l">每個追蹤器都變差；TrackletLink 在三處差 10–20 個百分點</td></tr>
+<tr><td class="l">用跨偵測器的支持度刪除多出的事件</td><td class="l">L35 E3 20.45 → 11.49，但 L33 19.29 → 39.46</td></tr>
+<tr><td class="l">新蜂箱上提高追蹤分數門檻</td><td class="l">不採用</td></tr>
+<tr class="sep"><td class="l">#4 誤差分解</td><td class="l" colspan="2">見第 13.5 節</td></tr>
+</tbody>
+</table>
+<p>Lei 等人的規則值得多說一句。蜜蜂進入巢口周圍的方框時就計一次，若同一個 ID 又離開，就把這次計數取消。這條規則是為能維持 ID 的追蹤器設計的；用在我們的軌跡上，每個試過的地方都變差。A1 與 A3 偵測器呈現的是整個專題一再出現的模式：在稀疏的蜂箱 35 上大幅改善，在擁擠的蜂箱 33 上大幅變差。</p>
+
+<!-- ============================================================ 13 -->
+<h2>穩健性與失敗分析</h2>
+<h3>影像劣化</h3>
+<p>表 17 是第 10.5 節的劣化實驗。它的乾淨欄完全重現表 7，P0 在乾淨條件下的軌跡也和存檔的逐位元組相同，所以這次執行有效。測試集上的同樣條件已登記為只報告，會和鎖定的測試執行一起跑一次：<span class="todo">[test]</span>。</p>
+<p class="tcap"><b>表 17.</b> 人工影像劣化下的 val + dev（3 個偵測器，不重新訓練）。格內：平均窗誤差（%）（偵測器間的全距）；最後一列是 P0 的事件 F1@0.5。每格的偏差記在實驗紀錄中。</p>
+<table class="wide">
+<thead><tr><th class="l">臂</th><th>乾淨</th><th>變暗（× 0.4）</th><th>變亮（× 1.6 + 20）</th><th>模糊（1 × 9）</th><th>雜訊（σ = 15）</th></tr></thead>
+<tbody>
+<tr><td class="l">P0</td><td>18.46 (1.81)</td><td>18.02 (1.16)</td><td>19.23 (3.68)</td><td>19.88 (2.79)</td><td>22.61 (0.89)</td></tr>
+<tr><td class="l">校正 ByteTrack（乾淨資料的 <i>k</i>）</td><td>34.82 (12.51)</td><td>34.39 (6.73)</td><td>37.14 (14.27)</td><td>37.22 (9.47)</td><td>40.48 (13.05)</td></tr>
+<tr><td class="l">預設 ByteTrack</td><td>40.18 (3.24)</td><td>41.32 (4.83)</td><td>40.81 (1.93)</td><td>39.74 (2.98)</td><td>46.63 (3.55)</td></tr>
+<tr><td class="l">P0 事件 F1@0.5</td><td>0.740</td><td>0.738</td><td>0.710</td><td>0.694</td><td>0.681</td></tr>
+</tbody>
+</table>
+<p><b>判讀。</b>四種劣化下，P0 都是誤差最低的臂，比兩個 ByteTrack 基準低 15 個百分點以上。雜訊對它傷害最大（+4.15 個百分點，事件 F1 從 0.740 降到 0.681）。變暗幾乎沒有影響（−0.44），變亮與模糊增加不到 1.5 個百分點。四種劣化平均下來，校正 ByteTrack 變差得比 P0 稍多（+2.49 對 +1.47 個百分點）。它在偵測器之間的全距一直很大（6.73 到 14.27 個百分點），在乾淨影片上就已經是這樣（12.51）：每個偵測器一個、在乾淨偵測結果上擬合的係數，只是粗略的修正；我們沒有針對每種劣化重新擬合，因為實際部署的系統也做不到。</p>
+
+<h3>掉幀</h3>
+<p class="tcap"><b>表 18.</b> 只處理每 <i>k</i> 格中一格時的 val + dev（真值事件為完整幀率；連結器不重新擬合）。格內：平均窗誤差（%）（全距）。</p>
+<table class="wide">
+<thead><tr><th class="l">臂</th><th><i>k</i> = 1（25 fps）</th><th><i>k</i> = 2（12.5 fps）</th><th><i>k</i> = 3（8.3 fps）</th><th><i>k</i> = 5（5 fps）</th></tr></thead>
+<tbody>
+<tr><td class="l">P0</td><td>18.46 (1.81)</td><td>22.81 (3.21)</td><td>33.69 (2.57)</td><td>47.47 (1.35)</td></tr>
+<tr><td class="l">校正 ByteTrack（乾淨資料的 <i>k</i>）</td><td>34.82 (12.51)</td><td>35.96 (3.30)</td><td>43.85 (2.15)</td><td>54.22 (0.57)</td></tr>
+<tr><td class="l">預設 ByteTrack</td><td>40.18 (3.24)</td><td>51.56 (2.18)</td><td>60.06 (3.55)</td><td>63.84 (2.51)</td></tr>
+</tbody>
+</table>
+<p><b>判讀。</b>掉幀是 P0 最弱的條件。只保留每隔一格的影格，就已經增加 4.35 個百分點；在 5 fps 時誤差是 47.47%。大部分來自少算：偏差從完整幀率的 −30.0 次事件（共 486 次），在 <i>k</i> = 2、3、5 時變成 −87.4、−153.3 與 −223.9。P0 在每個 <i>k</i> 下仍低於校正 ByteTrack，但領先幅度從 16.4 個百分點縮小到 13.2、10.2 與 6.8。我們的解釋如下，但沒有另外量測：第一階段只接緩衝 IoU 至少 0.7 的框，軌跡漏掉 2 格就會被忘掉；所以當蜜蜂在兩個保留的影格之間移動得更遠時，牠的軌跡會斷成短片段，而少於 3 個框的片段會被捨棄。實務上這套流程需要 25 fps 的影片。還有一點要記得：連結器是在 25 fps 下擬合的。掉幀時，它的中斷與跳躍特徵代表的意義不一樣，所以 P0 在這裡本來就處於劣勢。我們維持這樣的設定，因為實際部署的系統不會為每一種幀率重新擬合。</p>
+
+<h3>擁擠程度</h3>
+<p>兩個沒看過蜂箱的折同時也是擁擠程度的對照：蜂箱 33 很擁擠（尾段平均每格 37.3 隻蜜蜂），蜂箱 35 很稀疏（9.8 隻）。表 11–15 的模式一致：在稀疏的蜂箱上，動到偵測的改變（選尺度、凍結特徵）會讓誤差大幅變動，大多是下降；在擁擠的蜂箱上，幾乎沒有任何改變能讓 P0 的變動超過種子雜訊，事件 F1 也降到 0.324。第 13.5 節的上界說明了原因：在擁擠的前段上，即使框完全正確，誤差仍有 29.17%。依擁擠程度排序，val + dev 上乾淨條件下逐支影片的誤差只分成兩群。蜂箱 33 的兩段每格有 37.3 與 40.2 隻蜜蜂，P0 在這兩段是 21.10% 與 19.48%（校正 ByteTrack 是 27.83% 與 32.27%）。其他六支影片每格有 9.8 到 13.5 隻。其中蜂箱 35 最容易（12.61% 與 8.83%），四段短影片（75 到 250 格、5 到 56 次事件，每段都比一個窗短）則從 21.48% 到 56.30%。所以在我們的資料中，擁擠程度和蜂箱分不開：「擁擠」其實就是蜂箱 33。逐支影片的數字只報告乾淨條件。</p>
+
+<h3>新蜂箱</h3>
+<p>實驗 1–3 的留一蜂箱結果是我們主要的穩健性結果。簡單說：P0 仍領先所有追蹤器基準，但在偵測器沒看過的蜂箱上比較不準（22.18% 與 23.90%，看過的蜂箱是 18.46%），而且它在新蜂箱上的誤差很受偵測器種子影響。在測試集上，五支影片也都是新蜂箱：<span class="todo">[test]</span>。</p>
+
+<h3>誤差從哪裡來</h3>
+<p>為了看出該怪流程的哪一部分，我們在兩段沒看過蜂箱的前段上，把部分元件換成完美版本（表 19）。</p>
+<p class="tcap"><b>表 19.</b> 沒看過蜂箱前段上的誤差分解與上界，窗誤差（%）（真實偵測：種子組 0–2）。</p>
+<table class="wide">
+<thead><tr><th class="l">設定</th><th>35-head</th><th>33-head</th></tr></thead>
+<tbody>
+<tr class="best"><td class="l">P0，真實偵測</td><td>17.76</td><td>23.27</td></tr>
+<tr class="sep"><td class="l">完美的框（真值框）經過 P0</td><td>7.86</td><td>29.17</td></tr>
+<tr><td class="l">完美的框 + 完美連結</td><td>2.33</td><td>23.77</td></tr>
+<tr><td class="l">每個框都給它底下真實蜜蜂的身分</td><td>–</td><td>1.63</td></tr>
+<tr><td class="l">純的小軌跡 + 完美連結</td><td>–</td><td>23.95</td></tr>
+<tr class="sep"><td class="l">真實偵測 + 完美連結</td><td>21.58</td><td>25.97</td></tr>
+<tr><td class="l">只有 precision 完美</td><td>16.24</td><td>39.55</td></tr>
+<tr><td class="l">只有 recall 完美</td><td>33.02</td><td>84.67</td></tr>
+<tr><td class="l">移除真實蜜蜂上多出的框（D2）+ 完美連結</td><td>4.24</td><td>–</td></tr>
+<tr class="sep"><td class="l">均分參考（真實總數平均分配）</td><td>23.29</td><td>22.04</td></tr>
+</tbody>
+</table>
+<p><b>這說明了什麼。</b></p>
+<ul>
+<li><b>稀疏蜂箱是偵測問題。</b>完美的框讓 35-head 從 17.76% 降到 7.86%，再加上完美連結則降到 2.33%。只移除真實蜜蜂上多出的框並完美連結，得到 4.24%，是這些上界研究中唯一低於 5.05% 標準的設定。</li>
+<li><b>擁擠蜂箱是結構問題。</b>在 33-head 上，完美的框反而讓結果<i>變差</i>（29.17%），完美連結後仍有 23.77%。如果每個框都給真實身分，誤差是 1.63%，所以限制不在協定本身。原因是：第一階段允許軌跡跳過一兩格，而在那幾格裡，同一隻蜜蜂又開始了另一段小軌跡。同一隻蜜蜂相鄰的 15,017 對小軌跡中，有 1,249 對在時間上重疊（33-head 上有 2,016 次跳格）。只會「尾接頭」的連結器沒辦法把它們接起來。在跳格處切開（表 16）原則上修好了結構，但在真實偵測上沒有幫助。</li>
+<li><b>完美連結不是目標。</b>在真實偵測上，完美連結比 P0 差（21.58 / 25.97 對 17.76 / 23.27），因為 P0 的連結也會把雜訊碎片併進真正的軌跡。只修偵測的某一面也帶不過去：只有 recall 完美時，兩個蜂箱都差很多。</li>
+<li><b>漏掉的蜜蜂算不到。</b>即使所有連結都正確，基本偵測器加上選尺度，在 33-head 上仍有 18.6%（三個種子）。</li>
+<li><b>偏差與雜訊。</b>在 L35 上，誤差大約一半是偏差（22.18 中佔 10.41），9 個種子全都多算；在 L33 上大多是窗雜訊（23.90 中佔 20.90）。平均只能對付雜訊。偏差需要來自目標蜂箱的訊號，而我們找到唯一有幫助的訊號是 P1 的閃爍度。</li>
+</ul>
+<p>均分參考讓我們很意外。一條知道每支影片真實總數、但完全不知道時間分布的規則，在前段上得到 23.29% 與 22.04%，和 P0 自己的數字很接近。在擁擠的前段上，P0 還贏不了它。我們的系統不知道總數，所以這不是公平的基準，但它讓我們不得不謙虛。</p>
+
+<h3>失敗模式</h3>
+<ul>
+<li><b>新蜂箱上的背景軌跡。</b>偵測器在不熟悉的背景上亂報，會在空背景上產生穿過區域邊界的軌跡（L35 種子 6：87 次錯誤事件）。</li>
+<li><b>擁擠時交錯的小軌跡。</b>同一隻蜜蜂的小軌跡在時間上重疊，「尾接頭」的連結器接不起來（第 13.5 節）。</li>
+<li><b>不穩定的尺度選擇。</b>P1 可能選到傷害很大的大尺度（實驗 2）。</li>
+<li><b>重複框。</b>偵測器的 NMS 會在許多蜜蜂身上留下第二個框。第一階段額外的 NMS 移除了其中很多。第一階段之後再用幾何規則移除剩下的，並沒有改變誤差（表 16）。</li>
+<li><b>蜜蜂消失在黑暗的巢門開口裡。</b>真值會跟著蜜蜂進到巢口裡，但偵測器會跟丟，軌跡在到達區域內部之前就結束了。</li></ul>
+
+<!-- ============================================================ 14 -->
+<h2>應用與展示</h2>
+<p>可執行的應用程式是 <code>beetrack.demo</code>。它接受影片檔或影格資料夾，逐格執行微調後的偵測器與追蹤器，並輸出標註過的 MP4 影片，以及所有軌跡的 CSV 檔（影格、ID、框、分數）。畫面上會顯示每隻蜜蜂的框與 ID、一秒長的尾跡、巢口區域、即時的進出次數、追蹤中的蜜蜂數量與處理 FPS。加上 <code>--zone</code> 時，會套用評估用的區域規則。典型用法：</p>
+<p><code>uv run python -m beetrack.demo --source &lt;frame folder&gt; --tracker ours --zone &lt;camera&gt;</code></p>
+<p><b>demo 還沒有呈現的部分。</b>demo 執行的是第一份報告的線上追蹤器（<code>ours</code>）或 ByteTrack，不執行 P0，因為 TrackletLink 是離線的：它要看過後面的影格才決定連結。離線路徑（<code>track.py</code> 搭配第一階段與連結器，再計數）會產生 P0 對整支影片的軌跡與計數。即時版的 P0 需要至少 25 格的滑動窗，大約一秒的延遲；我們還沒有做。</p>
+<p><b>P0 展示影片。</b><span class="todo">[TODO demo]</span> 一支測試影片上 P0 的軌跡與每窗計數的標註影片，會在鎖定的測試執行之後才製作，以免影響任何設定。</p>
+<p>環境由 <code>uv.lock</code> 鎖定，每位組員都能用 <code>uv sync</code> 重現。</p>
+
+<!-- ============================================================ 15 -->
+<h2>限制與未來工作</h2>
+<ul>
+<li><b>泛化問題沒有解決。</b>P0 在沒看過的蜂箱上比在看過的蜂箱上不準，而且誤差很受偵測器種子影響。我們事前登記的規則沒有一條能在兩折上都修好這個問題。</li>
+<li><b>代理只有兩折。</b>兩個留出的蜂箱，一個稀疏、一個擁擠，數量並不多。尾段增加的是新片段，不是新蜂箱。而且代理只對偵測器留出蜂箱：追蹤器設定與連結器都是在 val + dev 上選的，其中包含這兩個蜂箱的影格。</li>
+<li><b>測試集以前看過。</b>早期版本的流程曾在舊協定下用測試集評分。在那之後我們沒有根據測試集設計任何東西，但測試集並不是完全沒被我們碰過。</li>
+<li><b>可重現性的缺口。</b>窗誤差的計分程式、交叉擬合的連結器、測試用連結器與實驗執行腳本都不在 <code>beetrack</code> 套件內，而套件自己的連結器模型是另一次擬合的結果。這些應該在最終繳交前移進 repository。</li>
+<li><b>離線方法。</b>P0 需要往後看；demo 展示的是較舊的線上追蹤器。</li>
+<li><b>計數協定。</b>次數來自真值軌跡與手繪區域，不是來自真實進巢的標註。這個協定適合比較追蹤器，不適合當作蜂群的絕對統計。</li>
+<li><b>尚未完成的量測。</b>目前偵測器的偵測 mAP、P0 的追蹤指標與 P0 的速度都還沒有量（表 6 與表 10、第 11.4 節）。</li>
+</ul>
+<p>未來工作：在擁擠時不讓軌跡跳格的第一階段，或能合併交錯小軌跡的連結器；針對新蜂箱的偏差，找出來自該蜂箱本身的訊號，因為平均無法消除偏差；更多留出的蜂箱；可即時使用的滑動窗版連結器；以及來自真實新場地的少量標註短片。</p>
+
+<!-- ============================================================ 16 -->
+<h2>結論</h2>
+<p>BeeTrack 把蜂巢口影片轉成蜜蜂軌跡，以及每 30 秒的進出次數。主要設定 P0 包括：640 px 的 YOLO11-s、把影片切成乾淨小軌跡的嚴格第一階段、以門檻 0.15 離線接起小軌跡的 TrackletLink、移除只有一兩個框的軌跡，以及區域事件規則。在偵測器認得的蜂箱上（val + dev，486 次事件），P0 的窗誤差是 18.46%，每個偵測器上都遠低於預設 ByteTrack（40.18%）、校正 ByteTrack（34.82%）與論文的追蹤器（35.25%）。在偵測器沒看過的蜂箱上，P0 仍領先所有追蹤器基準，但誤差上升到 22.18% 與 23.90%。對偵測器、尺度與翻轉影片的窗計數取平均，在部分折上有幫助，但沒有任何事先登記的規則在兩折上都乾淨地勝過 P0；唯一通過兩段前段的事後規則，在兩段新尾段中也只有一段得到確認。因此 P0 仍是主要設定，做平均的臂只報告。誠實地總結：兩階段追蹤器在已知蜂箱上明顯改善了追蹤，但新蜂箱上的計數仍受限於偵測器，我們還沒找到可靠的解法。唯一一次鎖定的測試執行將會顯示 <span class="todo">[test]</span>。</p>
+
+<!-- ============================================================ disclosure / contributions -->
+<h2 class="nonum">外部模型、資料集與 AI 使用聲明</h2>
+<ul>
+<li><b>預訓練模型。</b>Ultralytics YOLO11-s 的 COCO 權重（<code>yolo11s.pt</code>），AGPL-3.0，在 BEE24 上微調。只有 A3 研究（表 16）試用了凍結的 DINOv2 特徵，它不屬於 P0。基準追蹤器是 Ultralytics 的 ByteTrack 實作；我們的第一階段繼承自它。</li>
+<li><b>基準程式。</b>BEE24 作者 [16] 釋出的 TOPICTrack 追蹤器，修正了 ReID 載入的部分，只當作基準使用。這個釋出版本附帶的 OC-SORT 實作，只用於和 Lei 等人 [22] 的計數規則比較。</li>
+<li><b>資料集。</b>BEE24 [16]，從作者的公開頁面下載；沒有標明授權，因此只用於課程作業並引用。資料中沒有出現任何人。</li>
+<li><b>評估程式。</b>TrackEval [20]，未修改，另加一小段 NumPy 相容程式。</li>
+<li><b>AI 協助。</b>我們使用 AI 助理 Claude（Anthropic）協助撰寫與除錯程式、設計與執行實驗，以及起草與編修本報告與投影片。所有設計決策、程式與結果都經過組員檢查。本報告的每個結果數字都抄自我們的實驗紀錄，每位組員都能解釋程式碼。</li>
+</ul>
+
+<h2 class="nonum">個人貢獻說明</h2>
+<p><span class="todo">[TODO contributions v2]</span> 下表描述的是到第一份報告為止的工作；每位組員再依 v2 的工作（TrackletLink、沒看過蜂箱的代理、做平均的臂、穩健性實驗）更新自己那一列。</p>
+<table class="wide">
+<thead><tr><th class="l">組員</th><th class="l">技術負責項目與完成工作</th><th>比例</th></tr></thead>
+<tbody>
+<tr><td class="l">{{NAME1}}<br>{{ID1}}</td><td class="l">資料與評估：資料集下載與檢查、含洩漏檢查的資料切分、YOLO 標籤、TrackEval 真值與重複 ID 修正（<code>prep.py</code>、<code>common.py</code>），評估指標與含巢口區域的計數規則（<code>evaluate.py</code>、<code>zones.json</code>）。</td><td>25%</td></tr>
+<tr><td class="l">{{NAME2}}<br>{{ID2}}</td><td class="l">偵測與實驗 2：YOLO11-s 微調（<code>train.py</code>）、偵測指標、偵測快取與人工影像劣化（<code>detect.py</code>）、速度量測。</td><td>25%</td></tr>
+<tr><td class="l">{{NAME3}}<br>{{ID3}}</td><td class="l">追蹤、改進與實驗 1：ByteTrack 基準與 BeeTracker 第一階段（<code>track.py</code>）、小軌跡連結（<code>link.py</code>）、參數掃描與未採用想法的實驗（<code>sweep.py</code>）。</td><td>25%</td></tr>
+<tr><td class="l">{{NAME4}}<br>{{ID4}}</td><td class="l">計數、視覺化、demo 與報告：軌跡與計數分析（<code>analytics.py</code>）、失敗案例圖（<code>failures.py</code>）、demo 程式（<code>demo.py</code>）、報告與投影片整合。</td><td>25%</td></tr>
+</tbody>
+</table>
+
+<h2>參考文獻</h2>
+<ol class="refs">
+<li>J. Redmon, S. Divvala, R. Girshick and A. Farhadi, "You Only Look Once: Unified, real-time object detection," in <i>Proc. CVPR</i>, 2016.</li>
+<li>G. Jocher and J. Qiu, "Ultralytics YOLO11," 2024. [Online]. https://github.com/ultralytics/ultralytics</li>
+<li>Y. Zhao, W. Lv, S. Xu, J. Wei, G. Wang, Q. Dang, Y. Liu and J. Chen, "DETRs beat YOLOs on real-time object detection," in <i>Proc. CVPR</i>, 2024.</li>
+<li>A. Bewley, Z. Ge, L. Ott, F. Ramos and B. Upcroft, "Simple online and realtime tracking," in <i>Proc. ICIP</i>, 2016.</li>
+<li>R. E. Kalman, "A new approach to linear filtering and prediction problems," <i>J. Basic Engineering</i>, vol. 82, no. 1, pp. 35–45, 1960.</li>
+<li>H. W. Kuhn, "The Hungarian method for the assignment problem," <i>Naval Research Logistics Quarterly</i>, vol. 2, pp. 83–97, 1955.</li>
+<li>N. Wojke, A. Bewley and D. Paulus, "Simple online and realtime tracking with a deep association metric," in <i>Proc. ICIP</i>, 2017.</li>
+<li>Y. Zhang, P. Sun, Y. Jiang, D. Yu, F. Weng, Z. Yuan, P. Luo, W. Liu and X. Wang, "ByteTrack: Multi-object tracking by associating every detection box," in <i>Proc. ECCV</i>, LNCS 13682, pp. 1–21, 2022.</li>
+<li>N. Aharon, R. Orfaig and B.-Z. Bobrovsky, "BoT-SORT: Robust associations multi-pedestrian tracking," arXiv:2206.14651, 2022.</li>
+<li>J. Cao, J. Pang, X. Weng, R. Khirodkar and K. Kitani, "Observation-centric SORT: Rethinking SORT for robust multi-object tracking," in <i>Proc. CVPR</i>, 2023.</li>
+<li>P. Sun, J. Cao, Y. Jiang, Z. Yuan, S. Bai, K. Kitani and P. Luo, "DanceTrack: Multi-object tracking in uniform appearance and diverse motion," in <i>Proc. CVPR</i>, 2022.</li>
+<li>A. Milan, L. Leal-Taixé, I. Reid, S. Roth and K. Schindler, "MOT16: A benchmark for multi-object tracking," arXiv:1603.00831, 2016.</li>
+<li>P. Dendorfer et al., "MOT20: A benchmark for multi object tracking in crowded scenes," arXiv:2003.09003, 2020.</li>
+<li>F. Yang, S. Odashima, S. Masui and S. Jiang, "Hard to track objects with irregular motions and similar appearances? Make it easier by buffering the matching space," in <i>Proc. WACV</i>, 2023.</li>
+<li>K. Bozek, L. Hebert, A. S. Mikheyev and G. J. Stephens, "Towards dense object tracking in a 2D honeybee hive," in <i>Proc. CVPR</i>, 2018.</li>
+<li>X. Cao, Y. Zheng, Y. Yao, H. Qin, X. Cao and S. Guo, "TOPIC: A parallel association paradigm for multi-object tracking under complex motions and diverse scenes," <i>IEEE Trans. Image Processing</i>, vol. 34, pp. 743–758, 2025. (Introduces the BEE24 dataset.)</li>
+<li>K. Bernardin and R. Stiefelhagen, "Evaluating multiple object tracking performance: The CLEAR MOT metrics," <i>EURASIP J. Image and Video Processing</i>, 2008.</li>
+<li>E. Ristani, F. Solera, R. Zou, R. Cucchiara and C. Tomasi, "Performance measures and a data set for multi-target, multi-camera tracking," in <i>Proc. ECCV Workshops</i>, 2016.</li>
+<li>J. Luiten, A. Ošep, P. Dendorfer, P. Torr, A. Geiger, L. Leal-Taixé and B. Leibe, "HOTA: A higher order metric for evaluating multi-object tracking," <i>Int. J. Computer Vision</i>, vol. 129, no. 2, pp. 548–578, 2021.</li>
+<li>J. Luiten and A. Hoffhues, "TrackEval," 2020. [Online]. https://github.com/JonathonLuiten/TrackEval</li>
+<li>D. Hendrycks and T. Dietterich, "Benchmarking neural network robustness to common corruptions and perturbations," in <i>Proc. ICLR</i>, 2019.</li>
+<li>C. Lei et al., "A honey bee in-and-out counting method based on multiple object tracking algorithm," <i>Insects</i>, vol. 15, no. 12, art. 974, 2024. doi:10.3390/insects15120974</li>
+</ol>
+
+</body>
+</html>
