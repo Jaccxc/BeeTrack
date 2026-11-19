@@ -312,3 +312,36 @@ Clean, per video, sorted by GT bees per frame (mean of the 3 detectors; per-vide
 - Density has only two groups here: the two hive-33 segments and everything else. It cannot be separated from the hive effect (§153).
 - The four short videos (75 to 250 frames, 5 to 56 events) are shorter than one 30 s window, so each is one noisy number (§153).
 - Test versions of these conditions are registered as report-only in the §125 addendum (2026-11-19) and fill no row until the locked test run.
+
+## 9. Table F: window length (§154, report only)
+
+Window error % for windows of 10, 30, 60 and 120 s and for the whole video as one window. L s windows are scored at L start offsets one second apart, so 30 s is the main metric of every other table. The window grids nest, so no arm's error can grow with the window length. The main metric stays 30 s; this table makes no choice.
+
+val + dev (486 GT events), mean over the 3 detectors [range]:
+
+| Arm | 10 s | 30 s | 60 s | 120 s | Whole video | Bias |
+|---|---:|---:|---:|---:|---:|---:|
+| P0 | 23.93 [2.99] | 18.46 [1.81] | 15.55 [1.85] | 13.55 [1.57] | 11.57 [1.51] | −30.0 |
+| P0 with `m_dev_strict.json` | 24.95 [2.59] | 19.56 [0.29] | 16.09 [1.26] | 13.32 [1.48] | 10.97 [3.09] | −16.7 |
+| Calibrated ByteTrack | 47.95 [11.72] | 34.82 [12.51] | 31.55 [13.48] | 30.39 [14.61] | 29.48 [15.57] | +27.0 |
+| Default ByteTrack | 44.29 [4.57] | 40.18 [3.24] | 39.72 [3.41] | 39.37 [3.56] | 39.03 [3.70] | −177.7 |
+
+Leave-one-hive-out heads, single detector seeds, mean over 9 seeds [range]:
+
+| Fold | Arm | 10 s | 30 s | 60 s | 120 s | Whole video | Bias |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 留 35 (35-head, GT 129) | P0 | 27.73 [32.40] | 22.18 [33.80] | 20.40 [36.30] | 19.82 [37.13] | 19.38 [37.98] | +25.0 |
+| | Default ByteTrack | 33.80 [11.32] | 26.90 [10.90] | 24.79 [12.58] | 23.79 [13.62] | 22.22 [13.95] | −17.1 |
+| | Calibrated ByteTrack | 58.20 [40.22] | 47.38 [45.60] | 45.79 [46.06] | 44.73 [46.15] | 43.91 [46.25] | +56.6 |
+| 留 33 (33-head, GT 184) | P0 | 39.03 [12.07] | 23.90 [13.26] | 17.81 [12.37] | 14.35 [14.47] | 11.71 [17.39] | +3.6 |
+| | Default ByteTrack | 46.98 [13.04] | 33.13 [15.18] | 29.77 [19.24] | 28.24 [26.10] | 27.42 [29.89] | −50.4 |
+| | Calibrated ByteTrack | 64.80 [23.50] | 44.57 [28.84] | 39.72 [34.15] | 37.81 [34.85] | 35.87 [34.52] | +47.3 |
+
+Notes.
+- The 30 s column equals Table A and the §95 single-seed values (asserted). Reproduce: `PYTHONPATH=. uv run python tools/window_lengths.py [--heads]` (CPU, about 5 and 20 min).
+- P0 is the lowest arm at every length, on val + dev and on both heads. Calibrated ByteTrack is the worst arm at every length on both heads (§154).
+- On val + dev, calibrated ByteTrack is worse than default ByteTrack at 10 s and better from 30 s on: scaling the counts fixes the totals and also scales the noise of each short window (§154).
+- At long windows the remaining error is mostly the total-count bias. On 留 35 every seed over-counts, and P0's whole-video error (19.38) equals the mean over-count of 25 events / 129 (§154).
+- On 留 35 the whole-video gap between P0 and default ByteTrack (2.84) is far smaller than P0's seed range (37.98), so the two cannot be told apart there at long windows (§154).
+- Val videos are 3 to 40 s long and the two dev videos 158 s, so the 60 s, 120 s and whole-video columns differ mainly through the dev videos.
+- Test: the same lengths will be computed from the locked §125 test outputs, report only.

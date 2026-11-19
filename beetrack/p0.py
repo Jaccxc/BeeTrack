@@ -67,16 +67,20 @@ def per_window(E, nf, w):
     return np.c_[np.bincount(b[E[:, 1] > 0], minlength=nb), np.bincount(b[E[:, 1] < 0], minlength=nb)]
 
 
-def window_err(P, G, nf, k=(1, 1)):
-    """Sum over windows of |k x predicted - true| for in and out, mean over the 30 offsets. Offset o moves every event
-    and the video end o seconds later, so the first window is o seconds shorter."""
-    w = WIN * FPS
+def window_err(P, G, nf, k=(1, 1), win=WIN):
+    """Sum over windows of |k x predicted - true| for in and out, mean over the win offsets (windows of win seconds).
+    Offset o moves every event and the video end o seconds later, so the first window is o seconds shorter.
+    win=None: the whole video as one window, no offsets."""
+    if win is None:
+        return float(np.abs(per_window(P, nf, nf) * k - per_window(G, nf, nf)).sum())
+    w = win * FPS
     return float(np.mean([np.abs(per_window(P + [o * FPS, 0], nf + o * FPS, w) * k - per_window(G + [o * FPS, 0], nf + o * FPS, w)).sum()
-                          for o in range(WIN)]))
+                          for o in range(win)]))
 
 
 assert (per_window(np.array([[1, 1], [30, -1], [60, 1], [61, 1]]), 70, 50) == [[1, 1], [2, 0]]).all()
 assert window_err(np.array([[1, 1]]), np.array([[1, 1], [2, -1]]), 100) == 1.0
+assert window_err(np.array([[1, 1], [90, -1]]), np.array([[50, 1], [60, 1]]), 100, (2, 1), None) == 1.0
 
 
 @lru_cache(None)
@@ -108,11 +112,11 @@ def factor(ss):
     return np.sum([totals(s["G"]) for s in ss], 0) / np.maximum(1, np.sum([totals(s["P"]) for s in ss], 0))
 
 
-def calibrated(S):
+def calibrated(S, win=WIN):
     """Calibrated ByteTrack on val + dev, S = {'val': scores, 'dev': scores}: val counts x k fitted on dev and dev
     counts x k fitted on val, pooled (win %, bias). Also returns k fitted on val + dev together (frozen for test)."""
     k = {"val": factor(S["dev"]), "dev": factor(S["val"])}
-    e = sum(sum(window_err(s["P"], s["G"], s["nf"], k[sp]) for s in S[sp]) for sp in S)
+    e = sum(sum(window_err(s["P"], s["G"], s["nf"], k[sp], win) for s in S[sp]) for sp in S)
     n = sum(s["gt"] for sp in S for s in S[sp])
     b = sum(float((k[sp] * totals(s["P"])).sum()) - s["gt"] for sp in S for s in S[sp])
     return dict(win=100 * e / n, bias=b), factor(S["val"] + S["dev"])
