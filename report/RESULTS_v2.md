@@ -218,7 +218,7 @@ Criteria (§159):
 Notes.
 - P0 vs calibrated ByteTrack over the four folds: lower on the mean on all four, the §95 reading passes on two (留 35, 留 33), misses by 0.92 points on 留白板 and by 10.14 on 留灰板 (§157, §159). The report says "two of four folds".
 - Pre-registered checks of E3 x P1↓ x F8: 35-tail and 留灰板 pass both criteria, 33-tail fails criterion 2, 留白板 fails criterion 1: two of four (§152, §157, §159). No arm passes on every fold, so criterion (b) is not reached on the proxies (§159).
-- P0 under-counts exits here (75.6 vs 91 GT), entries are about right (62.4 vs 61); on the whiteboard it was the entries (§158, §159). Speed on the gray board was not measured.
+- P0 under-counts exits here (75.6 vs 91 GT), entries are about right (62.4 vs 61); on the whiteboard it was the entries (§158, §159). Side measurement after the result (`tools/whiteboard_speed.py gray`): exits are the faster direction here too (median 0.52 vs 0.41 body lengths / frame); P0 finds 35% of fast and 77% of slow exits, 47% / 68% of entries (§159).
 - No clip dominates: the largest P0 clip error is about 9% of the total (§159, per-clip check from the run's cache).
 - F8 lowers the counts (bias −21.7 vs −14.0) but its error is lower on 12 of 16 clips, so the §157 guess that part of F8's gain is "fewer counts" does not hold on this fold (§159).
 - Weak points (§159): 3 s clips; BEE24-24 and -28 are in val, where P0's settings were chosen; calibrated ByteTrack's factors were fitted on other hives and over-count here (+10.6).
