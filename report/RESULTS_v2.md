@@ -25,7 +25,7 @@ Status: draft. This file is the number source for the final report under the v2 
 | 33-head | BEE24-33, frames 1..3950 | 184 | §148 |
 | 35-tail | BEE24-35, frames 4001..5000 | 37 | §152 |
 | 33-tail | BEE24-33, frames 4001..5000 | 50 | §152 |
-| test | BEE24-12, 13, 16, 34, 36 (10,762 frames, about 10000 each for the long ones) | 405 (1/3, 10/11, 26/37, 84/88, 91/54 in/out per video) | §0, §2, §125 |
+| test | BEE24-12, 13, 16, 34, 36 (10,762 frames: 250, 258, 254, 5,000, 5,000) | 405 (1/3, 10/11, 26/37, 84/88, 91/54 in/out per video) | §0, §2, §125 |
 
 - "val + dev" measures the tracking side: the four-hive detectors saw these hives in training (§42).
 - "Leave-one-hive-out" (留一蜂箱) is the proxy for an unseen hive. Fold 留 35 trains without hive 35 and is scored on 35-head. Fold 留 33 trains without hive 33 and is scored on 33-head (§64, §95).
@@ -35,9 +35,9 @@ Status: draft. This file is the number source for the final report under the v2 
 ### 1.3 Main pipeline P0
 
 - Detector: YOLO11-s at fixed 640. Test detectors: `y11s_640`, `y11s4_s1`, `y11s4_s2` (four hives seen) (§91, §125).
-- First stage: continuous tracklets. A tracklet ends when it loses its box, then the tracklets are cut at holes after the fact (the "新二" version of §74, chosen by the registered rule in §74).
+- First stage: PASS1 as it is (`track.PRESETS['link']` without linking and minimum length; "v0" / "舊" of §74). A tracklet may survive a skip of 2 to 4 frames (33-head has 2016 skips) (§128). §74 picked the "cut at holes" version (新二, v2) as the base for the linker experiments, but the locked P0 numbers come from v0 (§91, the `q_t74_v0_*` files), and cutting at skips was tested again as S1 and not adopted (§129).
 - Linker: TrackletLink, threshold 0.15 (§74, §91). For test the linker is `m_dev_strict.json` (§125). For val + dev reproduction the three cross-fitted linkers of §74 are used, because `m_dev_strict.json` saw dev while fitting; on val + dev it gives 19.56% (report only) (§125, clarification 1).
-- Drop tracks of 3 frames or fewer; then the event rule locked in §92 (§91, §125).
+- Drop tracks with fewer than 3 boxes, so tracks of 1 or 2 boxes (`drop_short(rows, 3, 0.0)`; the log says "丟掉短於 3 的"); then the event rule locked in §92 (§91, §125).
 - Val + dev numbers per detector are the mean over the 3 cross-fitted linkers (§91).
 
 ### 1.4 Arms
