@@ -125,12 +125,17 @@ def merge_handovers(rows):
     return g[np.lexsort((g[:, 0], g[:, 1]))]
 
 
+def inside(rows, poly):
+    """Whether each row's box centre is inside the polygon (the boundary counts as inside): zone_tracks' side test."""
+    poly = np.asarray(poly, np.float32)
+    return np.array([cv2.pointPolygonTest(poly, (float(x), float(y)), False) >= 0 for x, y in rows[:, 2:4] + rows[:, 4:6] / 2], bool)
+
+
 def zone_tracks(rows, poly):
     """Entrance-zone protocol (same for GT and predictions), per track of `rows` (sorted by id, then frame):
     id -> (event, first row, end row, [(row, direction) of every boundary crossing]). event: first box centre outside
     the polygon and last centre inside = 'in', the reverse = 'out', same side at both ends = None."""
-    poly = np.asarray(poly, np.float32)
-    ins = np.array([cv2.pointPolygonTest(poly, (float(x), float(y)), False) >= 0 for x, y in rows[:, 2:4] + rows[:, 4:6] / 2], bool)
+    ins = inside(rows, poly)
     ids, start = np.unique(rows[:, 1], return_index=True)
     out = {}
     for tid, s, e in zip(ids, start, [*start[1:], len(rows)]):
