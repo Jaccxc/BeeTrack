@@ -19,18 +19,21 @@ this tool's scorer = p0.score where zones.json has the polygon; run: seed 0's BE
   PYTHONPATH=. uv run python tools/whiteboard_fold.py selfcheck|run [--out DIR]          (CPU only)
 selfcheck runs on the files that exist now; run needs every detection file of t157/job157.sh and stops, before reading
 any of them, if one is missing. Writes whiteboard_fold[_selfcheck].txt and .json to DIR (default D:/beetrack_runs/w157);
-tracker outputs are kept as MOT files in DIR/cache/<name>/<split>/<video>.txt and always scored as read back from there."""
+tracker outputs are kept as MOT files in DIR/cache/<name>/<split>/<video>.txt and always scored as read back from there.
+The fold is a parameter F (default WB, the whiteboard, output unchanged); tools/gray_fold.py (§159) passes the gray board."""
 import argparse
 import hashlib
 import json
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 
 from beetrack.common import RUNS, write_mot
 from beetrack.evaluate import load_tracks, match_events
+from beetrack.link import model
 from beetrack.p0 import (FPS, MODELS, WIN, ZONE, bytetrack, dets, events, factor, gt, link_model, nframes, p0, per_window,
                          pooled, score, stage1, totals, window_err)
 from window_lengths import EXP_HEADS, GROUPS, SHORT
@@ -56,6 +59,10 @@ K95 = ((1.988, 1.396), (1.964, 1.422), (2.062, 1.632), (1.941, 1.535), (1.988, 1
 E3_95, BT3_95 = (15.87, 17.81, 27.68), (42.84, 43.09, 52.09)
 assert sorted(POLY) == sorted(WB_TRAIN + WB_VAL) and not any(ev in ZONE for ev in WB_TRAIN)
 assert not any(ev in POLY or ev.startswith(("BEE24-12", "BEE24-13", "BEE24-16", "BEE24-34", "BEE24-36")) for _, ev in FIT_W)
+# the fold: its clips, frames, GT totals, polygons, fit B videos, detector tag, link model, rerun check, names
+WB = SimpleNamespace(name="whiteboard", tag="loho_noW", clips=CLIPS, nf=NF_W, gt=GT_W, frames=1600, poly=POLY, fit=FIT_W,
+                     linker=MODELS / "m_noW.json", sha=M_NOW_SHA, rerun=RERUN, cached=CACHED, p0c="p0w_",
+                     job="t157/job157.sh", file="whiteboard_fold", out=Path("D:/beetrack_runs/w157"), log="§157")
 
 
 def avg_err(Ps, G, nf, ks=None, win=WIN):
@@ -83,9 +90,9 @@ def mot(cdir, name, sp, ev, run):
     return load_tracks(f)
 
 
-def wscore(pr, sp, ev):
-    """p0.score with the polygon POLY[ev] (the whiteboard train clips have none in zones.json)."""
-    nf, poly, g = nframes(sp, ev), POLY[ev], gt(sp, ev)
+def wscore(pr, sp, ev, F=WB):
+    """p0.score with the polygon F.poly[ev] (the fold's train clips have none in zones.json)."""
+    nf, poly, g = nframes(sp, ev), F.poly[ev], gt(sp, ev)
     P, G = events(pr, poly), events(g, poly)
     m = match_events(g, pr, poly)
     assert (m["pred"], m["gt"]) == (len(P), len(G)), (sp, ev)
@@ -96,15 +103,15 @@ def same(a, b):
     return all(np.array_equal(a[x], b[x]) for x in ("err", "gt", "pred", "tp", "P", "G", "nf"))
 
 
-def dtag(s, sp, v="id"):
-    """Detection tag of loho_noW_s<s> at 640 on a whiteboard clip of split sp, symmetry v (job157.sh's names)."""
-    t = f"loho_noW_s{s}" + ("_tr_i640" if sp == "train" else "")
+def dtag(s, sp, v="id", F=WB):
+    """Detection tag of <F.tag>_s<s> at 640 on a clip of the fold of split sp, symmetry v (job157.sh's names)."""
+    t = f"{F.tag}_s{s}" + ("_tr_i640" if sp == "train" else "")
     return t if v == "id" else f"{t}_f{v}"
 
 
-def needed():
-    f = [RUNS / "dets" / dtag(s, sp, v) / sp / f"{ev}.npy" for s in SEEDS for sp, ev in CLIPS for v in VAR8]
-    return f + [RUNS / "dets" / f"loho_noW_s{s}" / sp / f"{ev}.npy" for s in SEEDS for sp, ev in FIT_W] + [RERUN]
+def needed(F=WB):
+    f = [RUNS / "dets" / dtag(s, sp, v, F) / sp / f"{ev}.npy" for s in SEEDS for sp, ev in F.clips for v in VAR8]
+    return f + [RUNS / "dets" / f"{F.tag}_s{s}" / sp / f"{ev}.npy" for s in SEEDS for sp, ev in F.fit] + [F.rerun]
 
 
 def rng(x):
@@ -115,22 +122,22 @@ def line(vals, fmt="6.2f"):
     return " / ".join(format(x, fmt) for x in vals)
 
 
-def gt_check(say):
-    """GT events per clip with POLY; GT scored as the prediction must be exact."""
+def gt_check(say, F=WB):
+    """GT events per clip with F.poly; GT scored as the prediction must be exact."""
     tot, n = np.zeros(2, int), 0
-    for sp, ev in CLIPS:
-        assert nframes(sp, ev) == NF_W[ev], (ev, nframes(sp, ev))
-        s = wscore(gt(sp, ev), sp, ev)
+    for sp, ev in F.clips:
+        assert nframes(sp, ev) == F.nf[ev], (ev, nframes(sp, ev))
+        s = wscore(gt(sp, ev), sp, ev, F)
         assert s["err"] == 0 and s["pred"] == s["tp"] == s["gt"], (ev, s["err"], s["tp"])
         tot += totals(s["G"])
         n += s["nf"]
-    assert tuple(tot) == GT_W and n == 1600, (tot, n)
-    say(f"whiteboard: {len(CLIPS)} clips, {n} frames, GT in {tot[0]} out {tot[1]} ({tot.sum()} events); GT as prediction: "
+    assert tuple(tot) == F.gt and n == F.frames, (tot, n)
+    say(f"{F.name}: {len(F.clips)} clips, {n} frames, GT in {tot[0]} out {tot[1]} ({tot.sum()} events); GT as prediction: "
         f"error 0, F1 1 on every clip")
     return int(tot.sum())
 
 
-def l35(cdir, say):
+def l35(cdir, say, F=WB):
     """§95 fold 35 on BEE24-35-head through this tool's scoring path (P0 with m_dev_strict.json there, as §95)."""
     strict, tgt, E = link_model("m_dev_strict"), "BEE24-35-head", EXP_HEADS["35"]
     fit = [("dev", "BEE24-33-head"), ("val", "BEE24-33-tail")] + [("val", ev) for ev in SHORT]
@@ -140,9 +147,9 @@ def l35(cdir, say):
         T.append(score(mot(cdir, f"p0s_{tag}", "dev", tgt, lambda: p0(stage1(dets(tag, "dev", tgt), nf), strict)), "dev", tgt))
         B.append(score(mot(cdir, f"bt_{tag}", "dev", tgt, lambda: bytetrack(dets(tag, "dev", tgt), nf)), "dev", tgt))
         R = {(sp, ev): mot(cdir, f"bt_{tag}", sp, ev, lambda: bytetrack(dets(tag, sp, ev), nframes(sp, ev))) for sp, ev in fit}
-        F = [score(r, sp, ev) for (sp, ev), r in R.items()]
-        assert all(same(wscore(r, sp, ev), score(r, sp, ev)) for (sp, ev), r in R.items() if ev in POLY)   # 10, 15
-        k = factor(F)
+        Fs = [score(r, sp, ev) for (sp, ev), r in R.items()]
+        assert all(same(wscore(r, sp, ev, F), score(r, sp, ev)) for (sp, ev), r in R.items() if ev in F.poly)  # 10, 15
+        k = factor(Fs)
         t, b, n = T[-1], B[-1], T[-1]["gt"]
         assert avg_err([t["P"]], t["G"], nf) == t["err"] and window_err(b["P"], b["G"], nf, (1, 1)) == b["err"], s
         cal = window_err(b["P"], b["G"], nf, k)
@@ -166,34 +173,37 @@ def l35(cdir, say):
         say(f"  {arm:7s} {line(V[arm])}  mean {np.mean(V[arm]):6.2f} [{rng(V[arm]):6.2f}]")
     say(f"  P0 bias {line(Bs, '+d')}; fit B k (in/out) {', '.join(f'{a:.3f}/{b:.3f}' for a, b in K)}")
     say(f"  groups: E3 {line(e3)}, calibrated BT E3 {line(bt3)}")
+    v1, v2 = [ev for _, ev in fit if ev in F.poly]               # the fold's two val clips: BEE24-10, 15 (whiteboard)
     say("  = §95 (per seed P0 / BT / calibrated BT at 2 decimals, P0 bias, k at 3 decimals, 9-seed mean and range, group "
-        "means, E3, calibrated BT E3); one-member and k = (1, 1) identities hold; this scorer = p0.score on BEE24-10 / 15")
+        f"means, E3, calibrated BT E3); one-member and k = (1, 1) identities hold; this scorer = p0.score on {v1} / "
+        f"{v2.removeprefix('BEE24-')}")
     return dict(target=tgt, fit=fit, arms={a: list(map(float, v)) for a, v in V.items()}, bias=Bs, k=[k.tolist() for k in K],
                 e3=e3, cal_bt_e3=bt3)
 
 
-def seed_w(cdir, s, prob):
-    """loho_noW_s<s> on the 13 clips: wscore of P0 for the 8 symmetries and of default ByteTrack per clip; fit B k."""
+def seed_w(cdir, s, prob, F=WB):
+    """<F.tag>_s<s> on the fold's clips: wscore of P0 for the 8 symmetries and of default ByteTrack per clip; fit B k."""
     P, B = {v: [] for v in VAR8}, []
-    for sp, ev in CLIPS:
+    for sp, ev in F.clips:
         nf = nframes(sp, ev)
         for v in VAR8:
-            t = dtag(s, sp, v)
-            P[v].append(wscore(mot(cdir, f"p0w_{t}", sp, ev, lambda: p0(stage1(dets(t, sp, ev), nf), prob)), sp, ev))
-        t = dtag(s, sp)
-        B.append(wscore(mot(cdir, f"bt_{t}", sp, ev, lambda: bytetrack(dets(t, sp, ev), nf)), sp, ev))
-    tag = f"loho_noW_s{s}"
+            t = dtag(s, sp, v, F)
+            P[v].append(wscore(mot(cdir, f"{F.p0c}{t}", sp, ev, lambda: p0(stage1(dets(t, sp, ev), nf), prob)), sp, ev, F))
+        t = dtag(s, sp, F=F)
+        B.append(wscore(mot(cdir, f"bt_{t}", sp, ev, lambda: bytetrack(dets(t, sp, ev), nf)), sp, ev, F))
+    tag = f"{F.tag}_s{s}"
     k = factor([score(mot(cdir, f"bt_{tag}", sp, ev, lambda: bytetrack(dets(tag, sp, ev), nframes(sp, ev))), sp, ev)
-                for sp, ev in FIT_W])
+                for sp, ev in F.fit])
     return P, B, k
 
 
-def whiteboard(cdir, say, n):
-    prob = link_model("m_noW")
+def whiteboard(cdir, say, n, prob, F=WB):
+    """The fold's arms and criteria (named for §157; F picks the fold)."""
+    CLIPS, FIT_W, GT_W = F.clips, F.fit, F.gt
     pct = lambda e: 100 * e / n
     S, t0 = [], time.time()
     for s in SEEDS:
-        P, B, k = seed_w(cdir, s, prob)
+        P, B, k = seed_w(cdir, s, prob, F)
         for c, (b, p) in enumerate(zip(B, P["id"])):          # one-member, k = (1, 1) identities, every clip
             assert avg_err([p["P"]], p["G"], p["nf"]) == p["err"] and window_err(b["P"], b["G"], b["nf"], (1, 1)) == b["err"], c
             assert abs(avg_err([b["P"]], b["G"], b["nf"], [k]) - window_err(b["P"], b["G"], b["nf"], k)) < 1e-9, c
@@ -204,11 +214,11 @@ def whiteboard(cdir, say, n):
                       bt=bo["win"], bt_bias=bo["bias"], bt_f1=bo["f1"],
                       cal=pct(sum(window_err(b["P"], b["G"], b["nf"], k) for b in B)),
                       cal_bias=sum(float((k * totals(b["P"])).sum()) for b in B) - n))
-        print(f"whiteboard seed {s}: done, {(time.time() - t0) / 60:.1f} min", flush=True)
+        print(f"{F.name} seed {s}: done, {(time.time() - t0) / 60:.1f} min", flush=True)
 
-    say(f"whiteboard fold: loho_noW_s0..8 at 640, link model m_noW.json; calibrated ByteTrack fit B on "
+    say(f"{F.name} fold: {F.tag}_s0..8 at 640, link model {F.linker.name}; calibrated ByteTrack fit B on "
         f"{', '.join(ev for _, ev in FIT_W)}")
-    say(f"  per seed (0..8): 30 s window error % (13 clips summed / {n}), 9-seed mean [range]")
+    say(f"  per seed (0..8): 30 s window error % ({len(CLIPS)} clips summed / {n}), 9-seed mean [range]")
     A = {"甲 P0": "p0", "丙 BT": "bt", "丁 cal BT B": "cal", "F8 (report)": "f8"}
     for name, key in A.items():
         v = [x[key] for x in S]
@@ -266,15 +276,16 @@ def whiteboard(cdir, say, n):
     return dict(clips=CLIPS, gt_events=n, fit=FIT_W, seeds=seeds, groups=G, group_bias=Gb, group_f1=Gf, criteria=C)
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Leave-whiteboard fold (log §157).")
+def main(F=WB):
+    ap = argparse.ArgumentParser(description=f"Leave-{F.name} fold (log {F.log}).")
     ap.add_argument("mode", choices=["selfcheck", "run"])
-    ap.add_argument("--out", type=Path, default=Path("D:/beetrack_runs/w157"), help="folder for the .txt, .json and cache/")
+    ap.add_argument("--out", type=Path, default=F.out, help="folder for the .txt, .json and cache/")
+    ap.add_argument("--linker", type=Path, default=F.linker, help=f"the link model file (its SHA-256 must be {F.sha[:16]}...)")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
-    miss = [p for p in needed() if not p.exists()]
+    miss = [p for p in needed(F) if not p.exists()]
     if a.mode == "run" and miss:
-        print(f"run: {len(miss)} of {len(needed())} detection files missing (t157/job157.sh makes them); nothing read. First:")
+        print(f"run: {len(miss)} of {len(needed(F))} detection files missing ({F.job} makes them); nothing read. First:")
         print("\n".join(f"  {p.relative_to(RUNS.parent).as_posix()}" for p in miss[:10]))
         raise SystemExit(1)
     t0, lines = time.time(), []
@@ -283,20 +294,21 @@ def main():
         print(s, flush=True)
         lines.append(s)
 
-    assert hashlib.sha256((MODELS / "m_noW.json").read_bytes()).hexdigest() == M_NOW_SHA
-    r = {"m_noW_sha256": M_NOW_SHA}
+    raw = a.linker.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == F.sha, f"{a.linker}: SHA-256 is not {F.linker.name}'s"
+    r = {f"{F.linker.stem}_sha256": F.sha}
     if a.mode == "run":
-        assert RERUN.read_bytes() == CACHED.read_bytes(), "seed 0's BEE24-10 rerun differs from the cached detections"
-        say(f"self-check: {RERUN.relative_to(RUNS.parent).as_posix()} byte-identical to {CACHED.relative_to(RUNS.parent).as_posix()}")
-    n = gt_check(say)
-    r["l35"] = l35(a.out / "cache", say)
+        assert F.rerun.read_bytes() == F.cached.read_bytes(), f"seed 0's {F.rerun.stem} rerun differs from the cached detections"
+        say(f"self-check: {F.rerun.relative_to(RUNS.parent).as_posix()} byte-identical to {F.cached.relative_to(RUNS.parent).as_posix()}")
+    n = gt_check(say, F)
+    r["l35"] = l35(a.out / "cache", say, F)
     if a.mode == "selfcheck":
-        say(f"run inputs: {len(needed()) - len(miss)} of {len(needed())} detection files exist, {len(miss)} missing")
+        say(f"run inputs: {len(needed(F)) - len(miss)} of {len(needed(F))} detection files exist, {len(miss)} missing")
         r["missing"] = [p.relative_to(RUNS.parent).as_posix() for p in miss]
     else:
-        r["whiteboard"] = whiteboard(a.out / "cache", say, n)
-    say(f"self-checks passed ({a.mode}); m_noW.json SHA-256 {M_NOW_SHA[:16]}...")
-    name = "whiteboard_fold" + ("_selfcheck" if a.mode == "selfcheck" else "")
+        r[F.name] = whiteboard(a.out / "cache", say, n, model(json.loads(raw)), F)
+    say(f"self-checks passed ({a.mode}); {F.linker.name} SHA-256 {F.sha[:16]}...")
+    name = F.file + ("_selfcheck" if a.mode == "selfcheck" else "")
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / f"{name}.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
     (a.out / f"{name}.json").write_text(json.dumps(r, indent=1, ensure_ascii=False), encoding="utf-8")

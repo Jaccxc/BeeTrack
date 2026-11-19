@@ -194,6 +194,35 @@ Notes.
 - Weak points (§157): 13 short clips, one clip dominates; the two whiteboard val clips were used before as do-no-harm checks (§84, §89, §90).
 - Why entries are lost (§158, diagnostic only): P0 (s0..s2) counts 58-60 in vs 77 GT, 57-60 out vs 60 GT. Entering bees cross in flight (median 1.19 body lengths / frame, 75% above 0.5), leaving bees walk (0.38). The strict first stage cuts fast bees into one-frame tracklets, so entries depend on TrackletLink: P0 finds 47% of fast and 75% of slow entries (53% / 83% of exits). GT boxes through P0 find fewer entries (29), because `m_noW.json` was fitted on real-detection tracklets, so they are not an upper bound here. No new fix registered: §90 and §129 already tried the label-free ones.
 
+### 4.2 Table C3: leave-gray-board fold (§159 result)
+
+Registered before the run and not changed (§159). Measurement only: whatever the result, §125 keeps P0 as the main setting (§159). The 16 gray-board clips (BEE24-17 to -32, val -24 and -28 included) have 75 frames each, so the 30 s window error is the per-clip count error. The 14 train clips use BEE24-28's polygon moved by phase correlation (§159). Clips under 1000 frames use 640 under P1, so E3 x P1↓ x F8 = E3 x F8 on this fold (§91, §159).
+
+| Row | Groups 0-2 / 3-5 / 6-8 | Mean | Range | 9-seed mean [range] | Bias | Event F1 |
+|---|---|---:|---:|---|---:|---:|
+| P0 single | 35.86 / 38.35 / 35.60 | 36.60 | 2.75 | 36.60 [7.81] | −14.0 | 0.596 |
+| E3 (report) | 33.96 / 32.25 / 29.94 | 32.05 | 4.02 | - | −14.0 | 0.596 |
+| E3 x F8 (= E3 x P1↓ x F8) | 30.98 / 30.90 / 31.06 | 30.98 | 0.16 | - | −21.7 | 0.547 |
+| Default ByteTrack single | 34.05 / 47.46 / 38.99 | 40.17 | 13.41 | 40.17 [25.96] | −47.0 | 0.398 |
+| Calibrated ByteTrack single | 42.16 / 43.92 / 44.04 | 43.37 | 1.87 | 43.37 [16.91] | +10.6 | 0.398 |
+| Calibrated ByteTrack E3 | 34.80 / 37.07 / 35.42 | 35.77 | 2.27 | - | +10.6 | - |
+
+(Source: §159, result tables. Bias = k x predicted minus GT events, mean over seeds or members; event F1 of E3-type rows is the mean over members.)
+
+Criteria (§159):
+- P0 vs calibrated ByteTrack, 9 seeds: P0 lower in 8 / 9 seeds, mean d −6.77, threshold 16.91 (range of calibrated ByteTrack): fail, short by 10.14 points.
+- P0 vs default ByteTrack, 9 seeds (report): mean d −3.56, threshold 25.96: fail.
+- Criterion 1, E3 x F8 vs P0 single: d = −4.88 / −7.45 / −4.54, mean −5.63, threshold 2.75: pass, margin 2.88.
+- Criterion 2, E3 x F8 vs calibrated ByteTrack E3: d = −3.83 / −6.18 / −4.36, mean −4.79, threshold 2.27: pass, margin 2.52.
+
+Notes.
+- P0 vs calibrated ByteTrack over the four folds: lower on the mean on all four, the §95 reading passes on two (留 35, 留 33), misses by 0.92 points on 留白板 and by 10.14 on 留灰板 (§157, §159). The report says "two of four folds".
+- Pre-registered checks of E3 x P1↓ x F8: 35-tail and 留灰板 pass both criteria, 33-tail fails criterion 2, 留白板 fails criterion 1: two of four (§152, §157, §159). No arm passes on every fold, so criterion (b) is not reached on the proxies (§159).
+- P0 under-counts exits here (75.6 vs 91 GT), entries are about right (62.4 vs 61); on the whiteboard it was the entries (§158, §159). Speed on the gray board was not measured.
+- No clip dominates: the largest P0 clip error is about 9% of the total (§159, per-clip check from the run's cache).
+- F8 lowers the counts (bias −21.7 vs −14.0) but its error is lower on 12 of 16 clips, so the §157 guess that part of F8's gain is "fewer counts" does not hold on this fold (§159).
+- Weak points (§159): 3 s clips; BEE24-24 and -28 are in val, where P0's settings were chosen; calibrated ByteTrack's factors were fitted on other hives and over-count here (+10.6).
+
 ## 5. Table D: test (filled once, after the locked run)
 
 Cells are 30 s window error in %, 5 test videos pooled over 405 GT events (§125). One run only; no setting is changed after seeing it (§125).
