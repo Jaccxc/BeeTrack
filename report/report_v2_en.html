@@ -548,6 +548,30 @@ table.split tr { break-inside: avoid; }
 </ul>
 <p>We were surprised by the flat reference. A rule that knows the true total of each video but nothing about timing gets 23.29% and 22.04% on the heads, close to P0's own numbers. On the crowded head P0 does not yet beat it. Our system does not know the total, so this is not a fair baseline, but it is a humbling one.</p>
 
+<h3>Window length</h3>
+<p>A beekeeper may care more about hourly or daily totals than about 30-second windows. Table 20 scores the same arms with windows from 10 seconds to the whole video. L-second windows are averaged over L start offsets, and the whole video is one window. The window grids nest, so no arm's error can grow with the window length.</p>
+<p class="tcap"><b>Table 20.</b> Window error in % by window length. Val + dev: mean over the 3 detectors; heads: mean over 9 single detector seeds. Ranges are in RESULTS_v2 Table F.</p>
+<table class="wide">
+<thead><tr><th class="l">Data</th><th class="l">Arm</th><th>10 s</th><th>30 s</th><th>60 s</th><th>120 s</th><th>Whole video</th></tr></thead>
+<tbody>
+<tr><td class="l">Val + dev</td><td class="l">P0</td><td>23.93</td><td>18.46</td><td>15.55</td><td>13.55</td><td>11.57</td></tr>
+<tr><td class="l"></td><td class="l">Calibrated ByteTrack</td><td>47.95</td><td>34.82</td><td>31.55</td><td>30.39</td><td>29.48</td></tr>
+<tr><td class="l"></td><td class="l">Default ByteTrack</td><td>44.29</td><td>40.18</td><td>39.72</td><td>39.37</td><td>39.03</td></tr>
+<tr class="sep"><td class="l">L35: 35-head</td><td class="l">P0</td><td>27.73</td><td>22.18</td><td>20.40</td><td>19.82</td><td>19.38</td></tr>
+<tr><td class="l"></td><td class="l">Default ByteTrack</td><td>33.80</td><td>26.90</td><td>24.79</td><td>23.79</td><td>22.22</td></tr>
+<tr><td class="l"></td><td class="l">Calibrated ByteTrack</td><td>58.20</td><td>47.38</td><td>45.79</td><td>44.73</td><td>43.91</td></tr>
+<tr class="sep"><td class="l">L33: 33-head</td><td class="l">P0</td><td>39.03</td><td>23.90</td><td>17.81</td><td>14.35</td><td>11.71</td></tr>
+<tr><td class="l"></td><td class="l">Default ByteTrack</td><td>46.98</td><td>33.13</td><td>29.77</td><td>28.24</td><td>27.42</td></tr>
+<tr><td class="l"></td><td class="l">Calibrated ByteTrack</td><td>64.80</td><td>44.57</td><td>39.72</td><td>37.81</td><td>35.87</td></tr>
+</tbody>
+</table>
+<ul>
+<li><b>The ranking does not depend on the window.</b> P0 is the lowest arm at every length, on val + dev and on both heads, so the 30-second main metric does not flatter it.</li>
+<li><b>Calibration fixes totals, not short windows.</b> On val + dev, calibrated ByteTrack is worse than default ByteTrack at 10 seconds (47.95% against 44.29%) and better from 30 seconds on. The scale factor makes the totals right and also scales the noise of each short window.</li>
+<li><b>On a new hive, long windows are mostly bias.</b> On L35 every seed over-counts, and P0's whole-video error (19.38%) is exactly the mean over-count of 25 events divided by 129. There the gap to default ByteTrack (2.84 points) is far below P0's seed range (37.98), so the two cannot be told apart at long windows. On L33 the gap grows with the window, from 7.95 points at 10 seconds to 15.71 for the whole video.</li>
+</ul>
+<p>The same window lengths on test: <span class="todo">[test]</span>.</p>
+
 <h3>Failure modes</h3>
 <ul>
 <li><b>Background tracks on a new hive.</b> A detector that fires on an unfamiliar background produces tracks on empty background that cross the zone edge (L35 seed 6: 87 false events).</li>

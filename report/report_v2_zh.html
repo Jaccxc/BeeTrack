@@ -548,6 +548,30 @@ table.split tr { break-inside: avoid; }
 </ul>
 <p>均分參考讓我們很意外。一條知道每支影片真實總數、但完全不知道時間分布的規則，在前段上得到 23.29% 與 22.04%，和 P0 自己的數字很接近。在擁擠的前段上，P0 還贏不了它。我們的系統不知道總數，所以這不是公平的基準，但它讓我們不得不謙虛。</p>
 
+<h3>窗長度</h3>
+<p>養蜂人在意的可能是每小時或每天的總量，而不是 30 秒的窗。表 20 用 10 秒到整段影片的窗，替同樣的方法算分。L 秒的窗在 L 個起點上平均，整段影片則是一個窗。不同窗長的格線一層包一層，所以每個方法的誤差都不會隨窗變長而變大。</p>
+<p class="tcap"><b>表 20.</b> 不同窗長度下的窗誤差（%）。val + dev：3 個偵測器的平均；前段：9 個單一偵測器種子的平均。全距見 RESULTS_v2 的表 F。</p>
+<table class="wide">
+<thead><tr><th class="l">資料</th><th class="l">方法</th><th>10 秒</th><th>30 秒</th><th>60 秒</th><th>120 秒</th><th>整段</th></tr></thead>
+<tbody>
+<tr><td class="l">val + dev</td><td class="l">P0</td><td>23.93</td><td>18.46</td><td>15.55</td><td>13.55</td><td>11.57</td></tr>
+<tr><td class="l"></td><td class="l">校正 ByteTrack</td><td>47.95</td><td>34.82</td><td>31.55</td><td>30.39</td><td>29.48</td></tr>
+<tr><td class="l"></td><td class="l">預設 ByteTrack</td><td>44.29</td><td>40.18</td><td>39.72</td><td>39.37</td><td>39.03</td></tr>
+<tr class="sep"><td class="l">L35：35-head</td><td class="l">P0</td><td>27.73</td><td>22.18</td><td>20.40</td><td>19.82</td><td>19.38</td></tr>
+<tr><td class="l"></td><td class="l">預設 ByteTrack</td><td>33.80</td><td>26.90</td><td>24.79</td><td>23.79</td><td>22.22</td></tr>
+<tr><td class="l"></td><td class="l">校正 ByteTrack</td><td>58.20</td><td>47.38</td><td>45.79</td><td>44.73</td><td>43.91</td></tr>
+<tr class="sep"><td class="l">L33：33-head</td><td class="l">P0</td><td>39.03</td><td>23.90</td><td>17.81</td><td>14.35</td><td>11.71</td></tr>
+<tr><td class="l"></td><td class="l">預設 ByteTrack</td><td>46.98</td><td>33.13</td><td>29.77</td><td>28.24</td><td>27.42</td></tr>
+<tr><td class="l"></td><td class="l">校正 ByteTrack</td><td>64.80</td><td>44.57</td><td>39.72</td><td>37.81</td><td>35.87</td></tr>
+</tbody>
+</table>
+<ul>
+<li><b>排名和窗長無關。</b>在 val + dev 和兩個前段上，P0 在每種窗長都是最低的，所以用 30 秒當主指標並沒有替它加分。</li>
+<li><b>校正修的是總數，不是短窗。</b>在 val + dev 上，10 秒窗的校正 ByteTrack 比預設 ByteTrack 差（47.95% 對 44.29%），30 秒以上才比較好。倍率把總數修對，也把每個短窗的雜訊一起放大。</li>
+<li><b>在新蜂箱上，長窗剩下的主要是偏差。</b>L35 的每個種子都多算，P0 的整段誤差（19.38%）正好等於平均多算的 25 次事件除以 129。這一折和預設 ByteTrack 的差距（2.84 點）遠小於 P0 的種子全距（37.98），長窗下兩者分不出來。L33 的差距隨窗長變大，從 10 秒的 7.95 點到整段的 15.71 點。</li>
+</ul>
+<p>測試集上同樣的窗長：<span class="todo">[test]</span>。</p>
+
 <h3>失敗模式</h3>
 <ul>
 <li><b>新蜂箱上的背景軌跡。</b>偵測器在不熟悉的背景上亂報，會在空背景上產生穿過區域邊界的軌跡（L35 種子 6：87 次錯誤事件）。</li>
