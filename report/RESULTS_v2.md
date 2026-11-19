@@ -81,6 +81,7 @@ Notes.
 - The three linkers in the E3-type rows are not the same thing as the three detectors in the other rows; do not compare columns across the two groups, compare the mean (§147, §148, §149, §151).
 - P0 per linker: `y11s_640` 18.74 / 19.01 / 18.93, `y11s4_s1` 17.48 / 16.49 / 18.07, `y11s4_s2` 19.25 / 18.16 / 20.04 (§91).
 - The "keeps seen hives safe" gate for every new arm was "mean over the 3 linkers not above 18.46%" (§147, §148, §149, §151).
+- Reproduce the P0, P0 with `m_dev_strict.json`, default and calibrated ByteTrack rows (and the test k) from the repo alone: `PYTHONPATH=. uv run python tools/repro_table_a.py` (CPU, about 5 min; asserts every number above, outputs byte-identical to the original pipeline).
 
 ## 3. Table B: leave-one-hive-out heads (9 seeds, 3 groups)
 
