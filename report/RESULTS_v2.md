@@ -25,12 +25,14 @@ Status: draft. This file is the number source for the final report under the v2 
 | 33-head | BEE24-33, frames 1..3950 | 184 | §148 |
 | 35-tail | BEE24-35, frames 4001..5000 | 37 | §152 |
 | 33-tail | BEE24-33, frames 4001..5000 | 50 | §152 |
+| whiteboard (留白板) | the 13 whiteboard clips: BEE24-01..09, 11, 14 (train) and BEE24-10, 15 (val), 1,600 frames, each under 15 s | 137 (77 in / 60 out) | §157 |
 | test | BEE24-12, 13, 16, 34, 36 (10,762 frames: 250, 258, 254, 5,000, 5,000) | 405 (1/3, 10/11, 26/37, 84/88, 91/54 in/out per video) | §0, §2, §125 |
 
 - "val + dev" measures the tracking side: the four-hive detectors saw these hives in training (§42).
 - "Leave-one-hive-out" (留一蜂箱) is the proxy for an unseen hive. Fold 留 35 trains without hive 35 and is scored on 35-head. Fold 留 33 trains without hive 33 and is scored on 33-head (§64, §95).
 - 9 detector seeds per fold, split into 3 groups by seed number: 0-2, 3-5, 6-8 (§95). The group range (max minus min of the 3 group values) is the noise scale (§95).
 - Tails are the same videos, 50 frames after the head. They were not used before §152 (§152).
+- Fold 留白板 trains without any whiteboard clip (detectors `loho_noW_s0..8`, linker `m_noW.json`, which was fitted without whiteboard GT). The 11 train clips had no entrance polygon; they reuse the BEE24-10 / 15 polygons, shifted by the camera offset found by phase correlation (§157).
 
 ### 1.3 Main pipeline P0
 
@@ -162,6 +164,34 @@ Notes.
 - On 33-tail P1 with large scales did not hurt: E3 x P1 16.10% is 3.03 points below E3 x P1↓ x F8. This is the opposite of head (21.95% vs 17.80%). The idea "shrinking is safe, enlarging is not" was not reproduced on 33-tail (§152).
 - Weak points (§152): only 37 and 50 events, one 40-second window is almost the whole video; tail and head are the same hive, so this does not test a new hive.
 - End-of-log status: criterion (b) was not cleanly reached on the proxy; only test can say more (§152, §153).
+
+### 4.1 Table C2: leave-whiteboard fold (§157 result)
+
+Registered before the run and not changed (§157). Measurement only: whatever the result, §125 keeps P0 as the main setting (§156, §157). Every clip is shorter than 30 s, so the 30 s window error is close to the per-clip count error (§157). Clips under 1000 frames use 640 under P1, so E3 x P1↓ x F8 = E3 x F8 on this fold (§91, §157).
+
+| Row | Groups 0-2 / 3-5 / 6-8 | Mean | Range | 9-seed mean [range] | Bias | Event F1 |
+|---|---|---:|---:|---|---:|---:|
+| P0 single | 34.53 / 35.57 / 31.79 | 33.97 | 3.78 | 33.97 [10.07] | −20.8 | 0.681 |
+| E3 (report) | 31.91 / 34.37 / 29.68 | 31.99 | 4.69 | - | −20.8 | 0.681 |
+| E3 x F8 (= E3 x P1↓ x F8) | 37.26 / 34.40 / 34.80 | 35.49 | 2.86 | - | −25.6 | 0.643 |
+| Default ByteTrack single | 58.98 / 54.21 / 55.41 | 56.20 | 4.77 | 56.20 [10.71] | −70.4 | 0.405 |
+| Calibrated ByteTrack single | 51.47 / 45.76 / 47.81 | 48.35 | 5.71 | 48.35 [15.30] | −40.5 | 0.405 |
+| Calibrated ByteTrack E3 | 50.04 / 42.95 / 43.66 | 45.55 | 7.09 | - | −40.5 | - |
+
+(Source: §157, result tables. Bias = k x predicted minus GT events, mean over seeds or members; event F1 of E3-type rows is the mean over members.)
+
+Criteria (§157):
+- P0 vs calibrated ByteTrack, 9 seeds: P0 lower in 9 / 9 seeds, mean d −14.38, threshold 15.30 (range of calibrated ByteTrack): fail, short by 0.92 points.
+- P0 vs default ByteTrack, 9 seeds (report): mean d −22.23, threshold 10.71: pass, margin 11.53. On 留 35 and 留 33 this difference did not pass (§95).
+- Criterion 1, E3 x F8 vs P0 single: d = +2.73 / −1.18 / +3.01, mean +1.52, threshold 3.78: fail (the arm is higher).
+- Criterion 2, E3 x F8 vs calibrated ByteTrack E3: d = −12.78 / −8.55 / −8.86, mean −10.06, threshold 7.09: pass, margin 2.97.
+
+Notes.
+- P0 vs calibrated ByteTrack over the three folds: lower on all three, but the §95 reading passes on two (留 35, 留 33) and misses by 0.92 points on 留白板 (§95, §157). The report must say "two of three folds", not "better than calibrated ByteTrack on every unseen hive" (§157).
+- Pre-registered checks of E3 x P1↓ x F8: 35-tail passes both criteria, 33-tail fails criterion 2, 留白板 fails criterion 1 (§152, §157). Criterion (b) is still not reached on the proxies (§157).
+- The whole P0 under-count comes from one clip: on BEE24-15 (56 GT events in 240 frames, the most crowded clip) P0 predicts 35.2 events on average. This clip is about 45% of P0's error; the bias of the other 12 clips sums to about zero (§157).
+- F8 lowers counts here (bias −25.5 vs −20.8 for single P0), which hurts on an under-counting fold. Whether F8's gain on the two heads is partly the same count reduction is an inference, not measured (§157).
+- Weak points (§157): 13 short clips, one clip dominates; the two whiteboard val clips were used before as do-no-harm checks (§84, §89, §90).
 
 ## 5. Table D: test (filled once, after the locked run)
 
