@@ -286,7 +286,7 @@ table.split tr { break-inside: avoid; }
 <li><b>Crowd density:</b> the crowded hive 33 against the sparse hive 35, and per-video results.</li>
 <li><b>New hives:</b> the leave-one-hive-out proxy above.</li>
 </ul>
-<p>Corruptions and frame dropping run on val + dev with the three seen-hive detectors, for P0, calibrated ByteTrack (clean-fitted <i>k</i>) and default ByteTrack. The test set stays locked. The clean condition must reproduce Table 7 (18.46 / 34.82 / 40.18%).</p>
+<p>Corruptions and frame dropping run on val + dev with the three seen-hive detectors, for P0, calibrated ByteTrack (clean-fitted <i>k</i>) and default ByteTrack. The test set stays locked during development; the same conditions are registered as report-only for the single test run. The clean condition must reproduce Table 7 (18.46 / 34.82 / 40.18%).</p>
 
 <!-- ============================================================ 11 -->
 <h2>Quantitative Results</h2>
@@ -489,32 +489,33 @@ table.split tr { break-inside: avoid; }
 <!-- ============================================================ 13 -->
 <h2>Robustness and Failure Analysis</h2>
 <h3>Image corruptions</h3>
-<p>The corruption run (Section 10.5) is in progress. Table 17 shows its locked format. The clean column must reproduce Table 7; if it does not, the run is invalid.</p>
+<p>Table 17 shows the corruption run of Section 10.5. Its clean column reproduces Table 7 exactly, and P0's clean tracks are byte-identical to the stored ones, so the run is valid. Bias per cell is in the experiment log. The same conditions on test are registered as report-only and run once with the locked test run: <span class="todo">[test]</span>.</p>
 <p class="tcap"><b>Table 17.</b> Val + dev under synthetic corruptions (3 detectors, not retrained). Cell: mean window error in % (range over detectors). Event F1@0.5 and bias per cell are in the log.</p>
 <table class="wide">
 <thead><tr><th class="l">Arm</th><th>clean</th><th>dark (× 0.4)</th><th>bright (× 1.6 + 20)</th><th>blur (1 × 9)</th><th>noise (σ = 15)</th></tr></thead>
 <tbody>
-<tr><td class="l">P0</td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td></tr>
-<tr><td class="l">Calibrated ByteTrack (clean <i>k</i>)</td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td></tr>
-<tr><td class="l">Default ByteTrack</td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td></tr>
+<tr><td class="l">P0</td><td>18.46 (1.81)</td><td>18.02 (1.16)</td><td>19.23 (3.68)</td><td>19.88 (2.79)</td><td>22.61 (0.89)</td></tr>
+<tr><td class="l">Calibrated ByteTrack (clean <i>k</i>)</td><td>34.82 (12.51)</td><td>34.39 (6.73)</td><td>37.14 (14.27)</td><td>37.22 (9.47)</td><td>40.48 (13.05)</td></tr>
+<tr><td class="l">Default ByteTrack</td><td>40.18 (3.24)</td><td>41.32 (4.83)</td><td>40.81 (1.93)</td><td>39.74 (2.98)</td><td>46.63 (3.55)</td></tr>
+<tr><td class="l">P0 event F1@0.5</td><td>0.740</td><td>0.738</td><td>0.710</td><td>0.694</td><td>0.681</td></tr>
 </tbody>
 </table>
-<p><b>Reading.</b> <span class="todo">[§153]</span> (to be written from the numbers only; we will say which arm degrades least per corruption and whether calibrated ByteTrack's fixed factors still fit when the detector changes its behaviour).</p>
+<p><b>Reading.</b> P0 is the lowest arm under all four corruptions, more than 15 points below both ByteTrack baselines. Noise hurts it most (+4.15 points, event F1 from 0.740 to 0.681). Darkening changes almost nothing (−0.44), and bright and blur add less than 1.5 points. Over the four corruptions, calibrated ByteTrack loses a little more than P0 on average (+2.49 against +1.47 points). Its range over detectors stays wide (6.73 to 14.27 points), as it already is on clean video (12.51): one factor per detector, fitted on clean detections, is a rough fix, and we did not refit it per corruption because a deployed system could not either.</p>
 
 <h3>Frame dropping</h3>
 <p class="tcap"><b>Table 18.</b> Val + dev when only every <i>k</i>-th frame is processed (GT events at the full frame rate; linker not refitted). Cell: mean window error in % (range).</p>
 <table class="wide">
 <thead><tr><th class="l">Arm</th><th><i>k</i> = 1 (25 fps)</th><th><i>k</i> = 2 (12.5 fps)</th><th><i>k</i> = 3 (8.3 fps)</th><th><i>k</i> = 5 (5 fps)</th></tr></thead>
 <tbody>
-<tr><td class="l">P0</td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td></tr>
-<tr><td class="l">Calibrated ByteTrack (clean <i>k</i>)</td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td></tr>
-<tr><td class="l">Default ByteTrack</td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td><td><span class="todo">[§153]</span></td></tr>
+<tr><td class="l">P0</td><td>18.46 (1.81)</td><td>22.81 (3.21)</td><td>33.69 (2.57)</td><td>47.47 (1.35)</td></tr>
+<tr><td class="l">Calibrated ByteTrack (clean <i>k</i>)</td><td>34.82 (12.51)</td><td>35.96 (3.30)</td><td>43.85 (2.15)</td><td>54.22 (0.57)</td></tr>
+<tr><td class="l">Default ByteTrack</td><td>40.18 (3.24)</td><td>51.56 (2.18)</td><td>60.06 (3.55)</td><td>63.84 (2.51)</td></tr>
 </tbody>
 </table>
-<p><b>Reading.</b> <span class="todo">[§153]</span>. One thing to keep in mind: the linker was fitted at 25 fps. Its gap and jump features mean something different when frames are dropped, so P0 is at a disadvantage here by design. We kept it that way because a deployed system would not refit for every frame rate.</p>
+<p><b>Reading.</b> Frame dropping is P0's weakest condition. Keeping every second frame already adds 4.35 points, and at 5 fps the error is 47.47%. Most of it is under-counting: the bias goes from −30.0 events (of 486) at full rate to −87.4, −153.3 and −223.9 at <i>k</i> = 2, 3 and 5. P0 is still below calibrated ByteTrack at every <i>k</i>, but its lead shrinks from 16.4 points to 13.2, 10.2 and 6.8. Our explanation, which we did not measure separately: stage one only joins boxes with a buffered IoU of at least 0.7 and forgets a track after 2 missed frames, so when a bee moves further between two kept frames its track breaks into short pieces, and pieces with fewer than 3 boxes are dropped. In practice the pipeline needs 25 fps video. One thing to keep in mind: the linker was fitted at 25 fps. Its gap and jump features mean something different when frames are dropped, so P0 is at a disadvantage here by design. We kept it that way because a deployed system would not refit for every frame rate.</p>
 
 <h3>Crowd density</h3>
-<p>The two unseen-hive folds are also a density comparison: hive 33 is crowded (37.3 bees per frame on average in its tail) and hive 35 sparse (9.8). The pattern in Tables 11–15 is consistent: on the sparse hive, changes that touch detection (the scale pick, frozen features) move the error a lot, mostly down; on the crowded hive, almost nothing moves P0 by more than the seed noise, and event F1 drops to 0.324. The upper bounds in Section 13.5 show why: on the crowded head, even perfect boxes leave 29.17%. Per-video results under the corruption and frame-drop conditions, sorted by density, will be added from the same run: <span class="todo">[§153]</span>.</p>
+<p>The two unseen-hive folds are also a density comparison: hive 33 is crowded (37.3 bees per frame on average in its tail) and hive 35 sparse (9.8). The pattern in Tables 11–15 is consistent: on the sparse hive, changes that touch detection (the scale pick, frozen features) move the error a lot, mostly down; on the crowded hive, almost nothing moves P0 by more than the seed noise, and event F1 drops to 0.324. The upper bounds in Section 13.5 show why: on the crowded head, even perfect boxes leave 29.17%. Sorted by density, the clean per-video errors on val + dev fall into only two groups. The two hive-33 segments have 37.3 and 40.2 bees per frame, and P0 gives 21.10% and 19.48% there (calibrated ByteTrack 27.83% and 32.27%). The other six videos have 9.8 to 13.5 bees per frame. Among them hive 35 is the easiest (12.61% and 8.83%), while the four short videos (75 to 250 frames, 5 to 56 events, each shorter than one window) range from 21.48% to 56.30%. So in our data density cannot be separated from the hive: "crowded" simply means hive 33. We report per-video numbers for the clean condition only.</p>
 
 <h3>New hives</h3>
 <p>The leave-one-hive-out results of Experiments 1–3 are our main robustness result. In short: P0 stays ahead of every tracker baseline, but it is less accurate on a hive the detector never saw (22.18% and 23.90% against 18.46% on seen hives), and its error on a new hive depends strongly on the detector seed. On test, the five videos are new hives too: <span class="todo">[test]</span>.</p>

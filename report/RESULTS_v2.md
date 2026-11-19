@@ -272,3 +272,42 @@ Grouped by the four research issues. "Not adopted" means the registered rule sai
 - With all links correct, the base detector plus scale pick still has 18.6% on 33-head (three seeds): missed bees cannot be counted (§72, §81).
 - The thresholds used for these bounds: 留 35 needs a mean below 5.05% and 留 33 below 20.95% (§122, §123).
 - Window error of a flat "true total spread over the windows" reference: 留 35 23.29%, 留 33 22.04%, val + dev 18.28% (§94).
+
+## 8. Table E: robustness on val + dev (§153, report only)
+
+Same 3 detectors at 640, not retrained; P0 uses the 3 cross-fitted linkers as in Table A; calibrated ByteTrack keeps the clean cross-fitted factors (not refitted per condition). Cell: 30 s window error in %, mean over the 3 detectors [range], then the change from clean (§153). The clean row reproduces Table A exactly (§153).
+
+| Condition | P0 | Calibrated ByteTrack | Default ByteTrack | P0 event F1@0.5 |
+|---|---|---|---|---:|
+| clean | 18.46 [1.81] | 34.82 [12.51] | 40.18 [3.24] | 0.740 |
+| dark (x 0.4) | 18.02 [1.16], −0.44 | 34.39 [6.73], −0.43 | 41.32 [4.83], +1.13 | 0.738 |
+| bright (x 1.6 + 20) | 19.23 [3.68], +0.76 | 37.14 [14.27], +2.32 | 40.81 [1.93], +0.63 | 0.710 |
+| blur (1 x 9) | 19.88 [2.79], +1.42 | 37.22 [9.47], +2.40 | 39.74 [2.98], −0.44 | 0.694 |
+| noise (sigma 15) | 22.61 [0.89], +4.15 | 40.48 [13.05], +5.66 | 46.63 [3.55], +6.45 | 0.681 |
+| frame drop k = 2 (12.5 fps) | 22.81 [3.21], +4.35 | 35.96 [3.30], +1.14 | 51.56 [2.18], +11.38 | |
+| frame drop k = 3 (8.3 fps) | 33.69 [2.57], +15.22 | 43.85 [2.15], +9.02 | 60.06 [3.55], +19.88 | |
+| frame drop k = 5 (5 fps) | 47.47 [1.35], +29.01 | 54.22 [0.57], +19.40 | 63.84 [2.51], +23.65 | |
+
+Notes.
+- Bias (predicted − GT events, 486 events): P0 clean −30.0; frame drop k = 2, 3, 5: −87.4, −153.3, −223.9; corruptions −13.9 to −25.3. Default ByteTrack clean −177.7 (§153).
+- Default ByteTrack event F1: clean 0.545, corruptions 0.495 to 0.540 (§153).
+- P0's lead over calibrated ByteTrack: 16.4 points clean, 13.2 / 10.2 / 6.8 at k = 2 / 3 / 5 (§153).
+- In frame drop, P0 drops tracks with fewer than 3 kept boxes; the linker was fitted at 25 fps and is not refitted (§153).
+- Cause of the frame-drop loss (tracks breaking into short pieces) is an inference, not measured (§153).
+
+Clean, per video, sorted by GT bees per frame (mean of the 3 detectors; per-video output of the §153 run):
+
+| Video | Split | Frames | Bees / frame | GT events | P0 | Calibrated ByteTrack | Default ByteTrack |
+|---|---|---:|---:|---:|---:|---:|---:|
+| BEE24-35-tail | val | 1000 | 9.83 | 37 | 12.61 | 20.59 | 29.73 |
+| BEE24-35-head | dev | 3950 | 9.89 | 129 | 8.83 | 31.45 | 31.35 |
+| BEE24-10 | val | 250 | 9.93 | 13 | 21.48 | 45.48 | 62.22 |
+| BEE24-15 | val | 240 | 12.89 | 56 | 32.08 | 54.77 | 62.54 |
+| BEE24-24 | val | 75 | 13.28 | 5 | 56.30 | 94.31 | 60.44 |
+| BEE24-28 | val | 75 | 13.51 | 12 | 30.80 | 53.68 | 15.19 |
+| BEE24-33-tail | val | 1000 | 37.31 | 50 | 21.10 | 27.83 | 39.47 |
+| BEE24-33-head | dev | 3950 | 40.24 | 184 | 19.48 | 32.27 | 41.39 |
+
+- Density has only two groups here: the two hive-33 segments and everything else. It cannot be separated from the hive effect (§153).
+- The four short videos (75 to 250 frames, 5 to 56 events) are shorter than one 30 s window, so each is one noisy number (§153).
+- Test versions of these conditions are registered as report-only in the §125 addendum (2026-11-19) and fill no row until the locked test run.
