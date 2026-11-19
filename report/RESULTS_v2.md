@@ -192,6 +192,7 @@ Notes.
 - The whole P0 under-count comes from one clip: on BEE24-15 (56 GT events in 240 frames, the most crowded clip) P0 predicts 35.2 events on average. This clip is about 45% of P0's error; the bias of the other 12 clips sums to about zero (§157).
 - F8 lowers counts here (bias −25.5 vs −20.8 for single P0), which hurts on an under-counting fold. Whether F8's gain on the two heads is partly the same count reduction is an inference, not measured (§157).
 - Weak points (§157): 13 short clips, one clip dominates; the two whiteboard val clips were used before as do-no-harm checks (§84, §89, §90).
+- Why entries are lost (§158, diagnostic only): P0 (s0..s2) counts 58-60 in vs 77 GT, 57-60 out vs 60 GT. Entering bees cross in flight (median 1.19 body lengths / frame, 75% above 0.5), leaving bees walk (0.38). The strict first stage cuts fast bees into one-frame tracklets, so entries depend on TrackletLink: P0 finds 47% of fast and 75% of slow entries (53% / 83% of exits). GT boxes through P0 find fewer entries (29), because `m_noW.json` was fitted on real-detection tracklets, so they are not an upper bound here. No new fix registered: §90 and §129 already tried the label-free ones.
 
 ## 5. Table D: test (filled once, after the locked run)
 
