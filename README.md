@@ -64,7 +64,7 @@ TrackletLink finds twice as many true events; its count error does not fall on Y
 ```
 beetrack/   common (paths, split, MOT I/O) · prep · train · detect · track · link · evaluate · sweep · analytics · demo
             p0 (the locked v2 pipeline P0 and its 30 s window scorer) · models/ (P0's link models)
-tools/      fetch_bee24.py · repro_table_a.py (rebuilds Table A of report/RESULTS_v2.md from cached detections) · window_lengths.py (Table F)
+tools/      fetch_bee24.py · repro_table_a.py (rebuilds Table A of report/RESULTS_v2.md from cached detections) · window_lengths.py (Table F) · field_calibration.py (§155)
 proposal/   proposal deck generator (make_figs.py, build_deck.js, build.ps1)
 ```
 

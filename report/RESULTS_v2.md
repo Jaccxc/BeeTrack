@@ -254,6 +254,7 @@ Grouped by the four research issues. "Not adopted" means the registered rule sai
 - A box-based counting rule from the literature: worse for every tracker, TrackletLink 10-20 points worse in three places (§134).
 - Cross-detector support to drop extra events: 留 35 E3 20.45 → 11.49 but 留 33 19.29 → 39.46, so only one fold (§108).
 - Raising the tracking score threshold on new hives: not adopted (§70).
+- Field calibration, a person counts the first 60 s of the new hive and the later counts are scaled by that minute's true / predicted ratio: 留 35 25.05 → 19.42 (7 of 9 seeds) but inside the seed range 37.88; 留 33 20.72 → 24.15; seen hives (dev) 8.71 points worse. Default ByteTrack with the same field factor: 29.03 against 46.09 for calibrated ByteTrack (mean of the two folds), still above P0 without calibration (22.89) (§155).
 
 ### Issue #4 error decomposition (what the errors are made of)
 
