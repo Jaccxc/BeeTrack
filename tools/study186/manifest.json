@@ -1,0 +1,19 @@
+{
+  "prereg_sha": "01fb9c21a3565c16df7884f66a03d2dc1b9e4073",
+  "files": {
+    "check186.py": "0268bedb23f13a087f5b04b78c53a7f85884c2f3e29988173f0b1890d34c3988",
+    "evidence.json.gz": "1e9b18849e5133cf0b42c3189bdbb3e213012c2e3214a500313fec973cefd12f",
+    "independent.json.gz": "b738aa5ff435f96cafe549630c45ca8a27eff3b31bbe73962c4e6053aacca832",
+    "permutation_fixture.py": "4eaa8b02e75ac9f510fa974d9955fdca464f1a62cdec2ce9aef855aa2f965a03",
+    "README.md": "83e21a4bec60b4e6e53c04f52323a3a9167a0f685de065a784a64451e9d34268",
+    "replay186.py": "f541afa87d9a6adadb4c78f71501f48e6acc9c6bb16dfbd15512a85d7509b986",
+    "results.md": "796600334256bd398af7f120e7cfa0da37c6d09f59b6e2701fa7a7a7ea65a431",
+    "run186.py": "dc9342f157cb91b43440f4094186260fa0f0a5e4658993502e5ee059e5503741"
+  },
+  "upstream": {
+    "freeze.json": "74740511162c5d03184d543abab50763302a666d95dee9a2799e8cc19c87e968",
+    "scored_seal.json": "35e5b97a71eef856dd10db2ee0305b422a63f141ecee1c2951a902c2cd933c02",
+    "evidence.json": "2a82c8ca3d41abd56c2058340e1b969235278b1e9e6da396ba9e0da123a1f462",
+    "independent.json": "81a6a971a1281a0af935f9c59df1d77f5394d165367fdece596f733ad0f49ecc"
+  }
+}
