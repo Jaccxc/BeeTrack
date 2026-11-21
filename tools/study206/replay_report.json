@@ -1,0 +1,120 @@
+{
+  "distinct_GT_runs": {
+    "35": {
+      "0.5": {
+        "confirmed": 0,
+        "selected": 0
+      },
+      "0.3": {
+        "confirmed": 1,
+        "selected": 1
+      }
+    },
+    "33": {
+      "0.5": {
+        "confirmed": 9,
+        "selected": 3
+      },
+      "0.3": {
+        "confirmed": 8,
+        "selected": 5
+      }
+    },
+    "W": {
+      "0.5": {
+        "confirmed": 2,
+        "selected": 1
+      },
+      "0.3": {
+        "confirmed": 2,
+        "selected": 1
+      }
+    },
+    "G": {
+      "0.5": {
+        "confirmed": 1,
+        "selected": 0
+      },
+      "0.3": {
+        "confirmed": 1,
+        "selected": 0
+      }
+    }
+  },
+  "queries": 4169,
+  "units": 20,
+  "unique_physical_graphs": 85,
+  "fresh_graphs": 25,
+  "greedy_steps": 26,
+  "main35_investment": false,
+  "classes": {
+    "35": {
+      "0.5": {
+        "unknown": 971,
+        "interpretable_nonzero_GT_event": 435,
+        "ineligible": 154,
+        "interpretable_no_return": 8
+      },
+      "0.3": {
+        "unknown": 622,
+        "interpretable_nonzero_GT_event": 780,
+        "ineligible": 154,
+        "interpretable_no_return": 8,
+        "return_evidence_no_legal_candidate": 3,
+        "confirmed_legal_return": 1
+      }
+    },
+    "33": {
+      "0.5": {
+        "unknown": 1579,
+        "ineligible": 296,
+        "interpretable_nonzero_GT_event": 107,
+        "interpretable_no_return": 37,
+        "confirmed_legal_return": 14,
+        "return_evidence_no_legal_candidate": 21
+      },
+      "0.3": {
+        "unknown": 1292,
+        "ineligible": 296,
+        "interpretable_nonzero_GT_event": 322,
+        "return_evidence_no_legal_candidate": 51,
+        "interpretable_no_return": 64,
+        "confirmed_legal_return": 29
+      }
+    },
+    "W": {
+      "0.5": {
+        "unknown": 151,
+        "interpretable_nonzero_GT_event": 189,
+        "ineligible": 41,
+        "confirmed_legal_return": 9,
+        "return_evidence_no_legal_candidate": 10,
+        "interpretable_no_return": 5
+      },
+      "0.3": {
+        "unknown": 164,
+        "interpretable_nonzero_GT_event": 175,
+        "ineligible": 41,
+        "confirmed_legal_return": 8,
+        "return_evidence_no_legal_candidate": 11,
+        "interpretable_no_return": 6
+      }
+    },
+    "G": {
+      "0.5": {
+        "unknown": 99,
+        "ineligible": 37,
+        "interpretable_nonzero_GT_event": 5,
+        "confirmed_legal_return": 1
+      },
+      "0.3": {
+        "unknown": 96,
+        "ineligible": 37,
+        "interpretable_nonzero_GT_event": 8,
+        "confirmed_legal_return": 1
+      }
+    }
+  },
+  "probe_group_observations": 633,
+  "scope": "numeric query/certificate/window/annotated graph replay; external full-frame/native geometry audit remains separate"
+}

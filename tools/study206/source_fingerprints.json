@@ -1,0 +1,62 @@
+[
+  {
+    "file": "queries.py",
+    "original_sha256": "6dfb7d9d7a02bd521745fcc68358d7f108f836eb3fbe574976fa80fbccded2aa",
+    "published_sha256": "e8f27bdf966f86f16084b764eb6bd12dcbce5529ff30d7ba2537dec2fa019ec0"
+  },
+  {
+    "file": "freeze206.py",
+    "original_sha256": "6d1ae2adf42c3134d0af08ac99bc7cb611d8f5bc43d8e4dd1ef2084eaad25f81",
+    "published_sha256": "706777828a37e845434bb0401cbbd1b035abe595778af4f07e6cb2223aba06af"
+  },
+  {
+    "file": "owners206.py",
+    "original_sha256": "c23fc8be838e0ef6d759c0dccc93d463d66c00d33e4a0fca10e19632b53e5e94",
+    "published_sha256": "d42f2de7808eb3116905211930e4335fc330ee076f97fa7cd273660593e16b07"
+  },
+  {
+    "file": "score206.py",
+    "original_sha256": "5b428853b3683d6b7d6a27e1e6062bd9926fc6f04038b43287ed93491a0085eb",
+    "published_sha256": "963d981b5ccb0f385341487b4115932f5029ca6ef5aa128ff9597c8bec7c4282"
+  },
+  {
+    "file": "stage206.py",
+    "original_sha256": "ceef9813e637c7fb95192215d8244c5c34a9c1c6a5ff912a8a8a822a020796d9",
+    "published_sha256": "2dae184a8415ce95f48dcb05fba150099fceecb3a7af6054cd799a7bbe731081"
+  },
+  {
+    "file": "verify206.py",
+    "original_sha256": "3c78bbfced2385afc1877ed6c1a386f7f7e3104f58c443b0dbbae8502e664ef4",
+    "published_sha256": "83a06b736aeec09bf7a81c736bcba4c374ed8786c37de8eba075c0daa7c88cdf"
+  },
+  {
+    "file": "verify206_field.py",
+    "original_sha256": "f2b544f695ebff48dcc5792205a7725ae4b2fbdce8d32e42f9408ee9ea8711ac",
+    "published_sha256": "67fdead3d1151bf4c971961c1a245aa7a5b5e5ce35ea64a9de922b76313dae2d"
+  },
+  {
+    "file": "verify206_owners.py",
+    "original_sha256": "7451f32d188433f9879c2c20aa3cb94a5184c40391d70ebfaaba4f48f20e1d0a",
+    "published_sha256": "5c6a5f2c54cfcaa48e41c8fec18ce77835ebe5a5ead52445a8810ca3d696fea5"
+  },
+  {
+    "file": "verify206_scores.py",
+    "original_sha256": "812d3f6db2b4efc6d6d25abda24312deef7e6759db2aa0d7b7c6949f879cdeb1",
+    "published_sha256": "021396494dfc82fdb9136fecb92e8396570da4c40a7d508490f103bf4ce1bafc"
+  },
+  {
+    "file": "verify206_links.py",
+    "original_sha256": "dab369878b16b033c81733d90e02fad1137b852b1bb81c57ad993d699bf27f82",
+    "published_sha256": "662b2b11f24475e05c369c87fd84b8b9fc13b26ba7d1abfcdddb4c5cf8d94d46"
+  },
+  {
+    "file": "posthoc206_identity.py",
+    "original_sha256": "3349bc7c7575c13102fa3065595a3ba206cd161317287edbbdd7f0c3fad1634c",
+    "published_sha256": "0347e549e02b92200fcdfdea6a3da3f99e8c6f31eb54816285a9856fa41d92b9"
+  },
+  {
+    "file": "selftest206_owners.py",
+    "original_sha256": "ddcdee22c7ab9928f111c02f4e287f7f967402c1dfd655307e5e8993d278c43b",
+    "published_sha256": "b6e46eb48b80724c896488b77f13da12e6fd3c3eb10dab0f44068b9545c8e953"
+  }
+]
