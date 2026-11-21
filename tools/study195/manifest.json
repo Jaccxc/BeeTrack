@@ -1,0 +1,26 @@
+{
+  "schema": "study195-public-manifest-v1",
+  "prereg": "b7e85bb9679d771394a578c6962b4b870f15b5b9",
+  "upstream": {
+    "frozen": "4f78f24d7fd13dc2eca9b206501a5326b4e42d476e1a9c4dd1ba98fe4bf61377",
+    "predictions": "109c21a507305b393c2672cc6e1682e56e8610bc2566ce7213ec4df681f202b9",
+    "score": "bb0b7412a73e616583362c95d036f440389ed98403617c53153bf68363ca6710"
+  },
+  "independent_sha256": "330f68848850b20a6ef91ddad6f7db75982e7de26374983e636bffbc3ee30d02",
+  "serialization": {
+    "original_inflated_sha256": "f063d0624a20945c1a7b758c1fe6dd6b1def0681576857969b39d3a95fef7e5a",
+    "public_inflated_sha256": "896f6569a0d27803d676319884c2192ef801e3f62605c8098c79499df24e0511",
+    "parsed_equal": true,
+    "decoded_strings_strict": true
+  },
+  "files": {
+    "evidence.json.gz": "7e7a4d55c8baed2133083a1349dfe5ab21056bf1c89780e9e515ae702e3365ae",
+    "freeze.py": "3497c45d20d306ef832af5b9ef8cb5c0c50eb22de283d4c2bd1bed3e577ae7d7",
+    "model.py": "41f0d72712e5623290b51e63c4ed34b8419d420bfd9dd30ca23d2e2010efb399",
+    "README.md": "228ab19c900524a249ef3590e831fce105b23182a89ac532adda91160e50f68f",
+    "replay195.py": "d6a759185268f6bdc5c64fba7cb194b849b5e2b70d323314c7d1537243028779",
+    "results.md": "3671eb1bc5ad719720b94425ef12f70056afd0176796fe45dd1474f482338111",
+    "run.py": "b9b6b46e691498e6d71ef5a1521bf6ede79f09c6343b51d0825377c31701253d",
+    "verify.py": "e0fa2581c7106a3544c54e207299ef72874f3c9919dac3559da1379a2cb2c16e"
+  }
+}
