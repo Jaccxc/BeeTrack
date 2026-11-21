@@ -1,0 +1,33 @@
+{
+  "prereg": "f161c64a6310c663d6cb079e83abee335d90e324",
+  "files": {
+    "compatibility193.json": "e2139fda195caf0d0845b5c5468d97bfe754e06f8dbf65265f3fe3bafeb7056d",
+    "e2e_selfcheck.py": "b134a366a7cc5b2e75bb4b641652e5d24c27b4298107ad9ab27aef44a83ee871",
+    "field_score193.py": "ea7cad9cbdbeb85f784b8fb0a7f98cc17b64d5e1367e8d9f9da1c8a8cd3dd0bc",
+    "field_train193.py": "4ab938f94b2ebe13ac86423fd6c1fc39c2ac326186c3f8798e9e5aac40c06266",
+    "freeze193.py": "01d2d297e96c0762f27a511f58fe3e1bb26cb1c674cd72ccfeb04cc98357a469",
+    "harm_budget.py": "a157e44755fa4ef21d7ccec7fea837f40f107414cde606dd4a629900503112fd",
+    "identity_flow.py": "484b3b3fd459607040bb5ee1196aadb18e514ca30fe72a2820cd55f0bcc01754",
+    "identity_rank.py": "f1940084612eec4e157b05d270e04049f2d24446fa7826a21868cbb580b0f763",
+    "independent193.json.gz": "e3a2c11da6191ecc5ac857150ef153733ab39e5769c207fae41c7b0082d8dc8e",
+    "models193.json.gz": "5005f7e230fb691e20ab8ca29928661114e349526bf64a2355784329a33c8890",
+    "physical.py": "d3ede5fc887d4cf9f0b888a17a6e7818e57a6ffd1148f4cbcf546cd180513679",
+    "README.md": "7a9b3f75ec7c6dadb1fb75bc732acc263f984e04c447f1fd15463e2253b290df",
+    "references193.md": "ad64667e00be280eca52c548ef47e38cf12d8e6ae3663a30ef1f3171b70fc62c",
+    "replay193.py": "a6292b81b5183994b9272c2802fdcdd0aa2adcb3fd13b9ee4c6aee2fc3476681",
+    "results.md": "a30b872636e0be3f44a71e9fa89cddefc59b3b3670239bbabe0a530261eea37a",
+    "score193.json.gz": "7a75109a578bcff1c973e55c54769a55f62acdf2ee1473d97b4b4ae48f8f74d8",
+    "source193.py": "08fb3037edbc6041e79afa110196930fb80f13102cbd2f3d8797da02456688b0",
+    "support193.json.gz": "0f570ec2222cddb7f7137706e3924651d39a379c4f054453ef1596d0e3d2f1cf",
+    "verify193.py": "51961b11c79b425be83190b06bd9f094657925057f4f2ace91d3385c6737831b"
+  },
+  "upstream": {
+    "score_manifest_sha256": "32b308e44d9e1999e64df7b2be70351ef484fdb3f95e0f3579cdb09e46064fca",
+    "all_four_sha256": "7725d63a321afc43700076dc2785b61211323bdb33d7f9cc095e45f4e41c2753",
+    "freeze_sha256": "e885efcd3952abb988f385b00681f22550faf2259ec3f3e496cb26e4bbacc9e5",
+    "independent_sha256": "88e349ee16fd25eb429bb8eaa3f917080f2385e80e86fe80a144f432c1a87601",
+    "models_original_sha256": "941368dff50b03ac2806149aa511ec046e2c406c26c9240f0cf7023b4e58c8e6",
+    "models_public_sha256": "ceb6e407497ab028ba0342f116a1e46d72af861aa669a47808622ec6e7341d17",
+    "source_diagnostic_sha256": "f0f1844644b19b3622998c5b60e985bdb652d8d150b542684660d179bf64f728"
+  }
+}
