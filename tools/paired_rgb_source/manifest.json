@@ -1,0 +1,50 @@
+{
+  "prereg": "adab39fbcef0d7cb3e4507d7934598f30a4db388",
+  "marker": "[paired-rgb-v1]",
+  "files": {
+    "evidence.json.gz": "1575dd8ad22244d76ea99fbbed08869a3f13bfbf798c3d8e2dbeda1dbbcf94b3",
+    "README.md": "d125c6ad8af3b8870ba4815ab7a504c21b297ba455d76406ab4bf198842f8f7f",
+    "replay_rgb.py": "b62bc28d5201e4333b3f65d1ee356c915bf340dd48509c30237188cfba07b43f",
+    "results.md": "faa618e33430acc2daf57c3320c89bcb7ccc23f1c11a2fb77e2db4025595ebb9",
+    "track_choice_features.py": "b34a54cf46378ba7b7a513548bc50fa8aa0285c4e9b14be065f291bde473ea8a",
+    "track_choice_source_probe.py": "f9232c5f7158b8c6faa4bedfa377d4c832c5d08f3c4adef1b6feb27e71e96912",
+    "verify_track_choice_source.py": "359980123681f4f9396b7864a53e5527faa1b601dfc8eccf26baea1b7e54bee1"
+  },
+  "upstream": {
+    "selection_sha256": "027e127674826303042df7074b3b855bb282b7caaf2e7205da3030cb6a4943a4",
+    "measurement_sha256": "0d7e4e1faa2be235c127642e7e760536b68234016fd9e9a31f18fcfaadddb04f",
+    "summary_sha256": "c4f3b8a98987af430a8d7c02c9edea3b44b9734568d7c4a9accf6e08b89a7cf7",
+    "manifest_sha256": "e7b2a56c93eba882342a12f6b7c95a8cbb85896745f3edebf0406d5d65d1a956",
+    "independent_manifest_sha256": "6cb3c7d528ee550b6c7bc05b6e28786f2d96c2c65fa3f143b2e3a80ab3b21069",
+    "independent_numerics_sha256": "f5f6e6b16a19b474fb66a9526aaebb8d8b2279d151fe1b13425dc745355aec45",
+    "independent_receipt_sha256": "24502ab5b708ea19832220a63ce8751c3942667ba227dbdfde63faf66fddc3ab"
+  },
+  "serialization": {
+    "original_numeric_sha256": "7cc5f462602fc55dca7ddceecb9ff9898fdffa10158a14514b64445770e48d6f",
+    "public_numeric_sha256": "17006eb9428f7b38c1b567301f1f080a06201fed9e2ca358619e3ea1e6a8da03",
+    "parsed_json_equal": true,
+    "decoded_privacy_audit_sha256": "ad3f668e9dc75fbe2e26cdb0eb03d6bfdb189c3e4570d8122afaf5d5c22ae813"
+  },
+  "excluded": [
+    "original RGB",
+    "individual pixels",
+    "full GT run rows",
+    "models",
+    "manual videos"
+  ],
+  "fresh_source_rebuild": {
+    "same_producer_files": {
+      "selection.json": true,
+      "measurements.json": true,
+      "summary.json": true,
+      "manifest.json": true
+    },
+    "producer_manifest_sha256": "e7b2a56c93eba882342a12f6b7c95a8cbb85896745f3edebf0406d5d65d1a956",
+    "selection_sha256": "027e127674826303042df7074b3b855bb282b7caaf2e7205da3030cb6a4943a4",
+    "fresh_independent_manifest_sha256": "503a6f70fb81f8d58d2db6c22deac3d05fe2631b1df5775e6edca1f1e79f0a16",
+    "independent_numeric_sha256": "f5f6e6b16a19b474fb66a9526aaebb8d8b2279d151fe1b13425dc745355aec45",
+    "public_verifier_sha256": "359980123681f4f9396b7864a53e5527faa1b601dfc8eccf26baea1b7e54bee1",
+    "all_passed": true,
+    "new_samples": false
+  }
+}
