@@ -1,0 +1,28 @@
+{
+  "prereg": "aeaf95b76e99baef940dddbdbdb91d33611bf3dd",
+  "files": {
+    "bounds190.py": "d3fea409180402c84daaf8d38657fa16fc90003dcc18ae8a119a250151cd3ea5",
+    "candidates190.py": "d14ff636c220aef7e43ac5a8333812a6299a1d928ee444c3c29041d27c45874f",
+    "coherent.json.gz": "dedf6422293b4c6e07fef7c1057b41678853e63aa74d97a85a70e470352592f5",
+    "coherent190.py": "3e4086ba7056d62c663fe0596f96a6c5fe1a336637a1c60ab04f4828560aa399",
+    "evidence.json.gz": "cdf5a77fef156b947129823838a0ca8515dbfca535358350b63a1fbfa86829ab",
+    "exhaust190.py": "5637fd7b064777cbabe707dc0732a23966ab14341c2ce294b2659e8ae47de0ea",
+    "freeze190.py": "0e00907ce701d5c477f3ee0df9a635e8ede098bb45ff05f49fa19cec7068a996",
+    "geometry.json.gz": "c6fb91da767d5d07e7535f5187738ad1391bcdc59f9c311fe9d043bfce0053ec",
+    "geometry190.py": "53ff5121a26048f2793d0b814d6aa6ef5b859a91664def345fc809f53ee5270c",
+    "independent.json.gz": "7a8ee78716d5443ed5b5387fdeeb212ee9807f49138501e1a8448a662fe6304d",
+    "independent190.py": "d29d564cce5fd0e5b08b4c938ea3d1341378882aec46ae1a3260f53db5702ff2",
+    "labels190.py": "dd9ff22a1a25636c08211ec8220f7716f64f5d4dbf7b769c98ce52de56a923a6",
+    "README.md": "0c0187f0fe381ff5fe3a64c89b3f6dc5bb8932a395f2c4daac33031ad689b63e",
+    "replay190.py": "e5ba995fa685fba297f12ff94c03092b0f24b1e46a0f08920a4bea07189c1858",
+    "results.md": "08429675afb2a39581be786f80a7a4fc2c2d19631373319c5902f850e480e6ea",
+    "run_freezes190.py": "ebd0be6a4f6a43a693d2f30cbcdc344d9d19764bb1d81f5225c74c0b68eae49a",
+    "score190.py": "e5b191b3b1db37d4956c4df2cd63a839600ef8681b104ba84a8db83c45ef3f0c"
+  },
+  "upstream": {
+    "freeze_manifest_sha256": "e483a192551b48cd099fc815fdc82faaf74ab094d095dd58d33b5a5abfe94e88",
+    "score_hashes_sha256": "e352f72e20165289559b8f9808e3a95b74b5774396dd73e6dfd7666821ac9f50",
+    "original_geometry_sha256": "f8173fa732eb9df1e81cd2952af54a40297f3c647774a888fcec6d499d594389",
+    "public_geometry_sha256": "3c931b9ecb5187fd8b92facc476a47a9333b5a51d31678959a54dd9dc446ac90"
+  }
+}
