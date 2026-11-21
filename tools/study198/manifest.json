@@ -1,0 +1,36 @@
+{
+  "schema": "study198-public-manifest-v1",
+  "prereg": "48f6e45bb27c5513d52ecf46f16775cab3d6f534",
+  "upstream": {
+    "frozen": "d53e70b757984aa42a7d2e8b6c6ea0f287bedfe564d3a6a1fde685dc2d85765f",
+    "stage1": "77769e992ad3a4ee6381b3d56f9316326fec1a391a5055098a7cc18e4689514a",
+    "predictions": "9adafc2ecc6dff3ba85b674653bd3a55ce91183bf0917ce34bfea2e5c14c5843",
+    "score": "16a24796d6acfd11acd7e5a3b233c99eccb4c055814a60a860232e2014958299"
+  },
+  "reference197_gzip_sha256": "1d5d742e01956b13877657772ace8cc1f99f36793e1a7f6d3271bad0fb567e41",
+  "independent_phase1_sha256": "b710c799e66e3e2a3d640a3709cefc40da7c31ba21c12ff246cb198669ff49e9",
+  "independent_phase2_sha256": "a618a2f746430eff395b2a408705c8856fbdfe1106c0aad5ee1effe3331908d3",
+  "serialization": {
+    "original_inflated_sha256": "547f88193b3c97c00d4be7a1a08bc9b734c3ebe03da87c1e50f1e9df91a3dcd3",
+    "public_inflated_sha256": "d83e03c1105addf8a3cef66fc9600d7065dbba9843dfff859d3ff377a96ca728",
+    "parsed_equal": true,
+    "decoded_strings_strict": true
+  },
+  "files": {
+    "capacity.py": "63433dff9717e2bc90eb34dc76c6bda1b3ac242d245227acd18f4a3ec3737b85",
+    "evidence.json.gz": "ec2490fe20a979519e94e4bff5a0332668b8ff213a4eaa40e65f8498e31911cd",
+    "freeze.py": "de075a0d796445c4c3d83881a744f584755f0796e46757bb86cd2a039ad13fd8",
+    "graph198.py": "a9018cd00cfa2916ce61b927a7d9ff378f8a57c7118140ccd64cb9d2c5e7707f",
+    "model198.py": "0001124803e5ed88e4a9426a67882dea84e81fc96f46016c3050af4092c46a0f",
+    "peers.py": "4f14fc6136fa4f0cd1debec843e76666e8a5142eb60a561cd6126ded03e393e2",
+    "phase1.py": "d2a52672ed2ae61e4223b13b913c3b3147d284fb0c5520c7c65fe944a4ff1f52",
+    "physical198.py": "7b99f2b36093d6ee8ac3bebfc5dedea721a55af78b24263b6b1c5b9aa808e143",
+    "README.md": "3a151567ece7e1f7333d4a72df64d58378e0b47dc8725047c8d12f85246dd073",
+    "replay198.py": "c1875e92aaadfa8297cbbd1457c699fce3740afd925688ef120551fbf2e845f4",
+    "results.md": "3b940a28e13f3f1e55ab2a6dce3303eee23a3249b54f0c26d5fa63f5fc399384",
+    "run198.py": "72f4251c845201904a12cba7db6f1ab6e22e33805f4bc7d2b781eab4df3c43f2",
+    "split_inputs198.py": "877e8e122c835ebef5f18ea6a60db0ecfc263f8dd6747185899e80d8ba4f4b80",
+    "verify198.py": "c507e53bd0e27c6dcc887c3d71d76c4ce4370a53bcbc92467e25d9b82e86d3d2",
+    "verify198_phase1sealed.py": "e10acd6081f74a52e6210402b63abbf049d6441085fa43a42ab7dc33915b4d1a"
+  }
+}
