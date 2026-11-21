@@ -1,0 +1,37 @@
+{
+  "registrations": [
+    "e90ae7df2d8d07eb0924f030c6f46834be8a5a4f",
+    "08bdcb78f8ce482f9c028d6c8e5122c2c4d60384"
+  ],
+  "files": {
+    "donor.py": "bf3f29f6f86d9bcd12913813903cd035946a3bc66a3ec9d87a5ecad148255b31",
+    "evidence.json.gz": "cd524c658c177530737d1951066b73726c378d26775754e735601bdd33656c33",
+    "prepare_assets.py": "a59ae4d286b448f1ed1b1bd41593cfe8af843d45a568fc10514103af933e2833",
+    "README.md": "c4b8592a10dae5d46e0b656fa394cb87e7dec52f2bb8eede029d072b970ce532",
+    "recheck_background.py": "b8e0049a37031c5a2fe733ef8d9d8386834298a82c640da9399535b046d711c7",
+    "replay_assets.py": "edfd95b102b726198066ca91d1a35cd5565ee718efdcbdd7b9a8a21105de6cd3",
+    "results.md": "f810ddd1121a02cbc7020c7a98554813ca8ee0e2a79d6d5aa1e9b5fddb8e8246",
+    "verify_assets.py": "deb4f773c6c867ea910bcee35fce1c110fd623655c1bade74c380f8be81c37b3",
+    "verify_assets_supplement.py": "0ffd8d7229b88c4a6dd7afb233dcd60f4af827048328e857b1bd2c0316b23a96"
+  },
+  "upstream": {
+    "original_manifest_sha256": "96561379ba7bc1a3d09dd08bf52771f2b7b94e43335528b18bbdeb2d99015119",
+    "selection_sha256": "9c5d63d5868c4d561ee8a2a8d7bb395516b9e335fe62183c29c2767f1106c5e8",
+    "original_independent_manifest_sha256": "513c0262c409f03d8a25f0e805894be83753504d2262d709dbccd97769c283bc",
+    "visual_review_sha256": "5e17a2b6cd0f0c8ac15174cf2d1501a0bd934a752d0ce28ba6de04be4c0af63c",
+    "recheck_manifest_sha256": "c1f4e16dccb035682ae170140703850028717cba44187bc0ad7114daf6557f6c",
+    "recheck_independent_manifest_sha256": "73c7e7b6b94eb361a021669edc725665371c4b5875ebf41dd80daa0b4012dc58"
+  },
+  "serialization": {
+    "original_numeric_sha256": "6acc3f913c854a94bae0ba9e4cb80a86bf69c20eaf5566c90d9c79beae6781ec",
+    "public_numeric_sha256": "490842ec365cf8ecdbe16b8a77b6e6f37669253378ccc8e449743c617e74fe3c",
+    "parsed_json_equal": true
+  },
+  "excluded": [
+    "source RGB",
+    "RGBA masks",
+    "contact sheets",
+    "background NPZ arrays",
+    "downstream models/results"
+  ]
+}
