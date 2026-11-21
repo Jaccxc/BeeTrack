@@ -1,0 +1,296 @@
+{
+  "capacity_certificates": 24,
+  "source_refits": 12,
+  "unique_physical_graphs": 191,
+  "physical_scope": {
+    "fresh_unique_physical": 0,
+    "historical_reused": 0,
+    "prior_attempt_completed_unique_physical": 191,
+    "requested_arm_members": 432,
+    "resumed_unique_physical": 191,
+    "same_job_shared": 241,
+    "study_fresh_unique_physical": 191,
+    "unique_streams": 191
+  },
+  "registered_control_descriptive": {
+    "35": {
+      "members": 12,
+      "different_selections": 5,
+      "edge_symmetric_difference": 12,
+      "equal_full_windows": 12,
+      "different_TP_05": 1
+    },
+    "33": {
+      "members": 12,
+      "different_selections": 9,
+      "edge_symmetric_difference": 38,
+      "equal_full_windows": 12,
+      "different_TP_05": 1
+    },
+    "W": {
+      "members": 18,
+      "different_selections": 2,
+      "edge_symmetric_difference": 4,
+      "equal_full_windows": 18,
+      "different_TP_05": 0
+    },
+    "G": {
+      "members": 18,
+      "different_selections": 2,
+      "edge_symmetric_difference": 4,
+      "equal_full_windows": 18,
+      "different_TP_05": 0
+    }
+  },
+  "control_supply": {
+    "35": {
+      "hosts": 922,
+      "two_nonempty_destinations": 302,
+      "two_destinations_different_full_windows": 3,
+      "different_windows_with_one_keep_equivalent": 3,
+      "hash_permutation_entries": 1224,
+      "hash_moved_entries": 314,
+      "hash_reassigned_hosts": 157
+    },
+    "33": {
+      "hosts": 5951,
+      "two_nonempty_destinations": 2302,
+      "two_destinations_different_full_windows": 22,
+      "different_windows_with_one_keep_equivalent": 21,
+      "hash_permutation_entries": 8253,
+      "hash_moved_entries": 2296,
+      "hash_reassigned_hosts": 1148
+    },
+    "W": {
+      "hosts": 179,
+      "two_nonempty_destinations": 67,
+      "two_destinations_different_full_windows": 5,
+      "different_windows_with_one_keep_equivalent": 5,
+      "hash_permutation_entries": 246,
+      "hash_moved_entries": 54,
+      "hash_reassigned_hosts": 27
+    },
+    "G": {
+      "hosts": 129,
+      "two_nonempty_destinations": 36,
+      "two_destinations_different_full_windows": 0,
+      "different_windows_with_one_keep_equivalent": 0,
+      "hash_permutation_entries": 165,
+      "hash_moved_entries": 30,
+      "hash_reassigned_hosts": 15
+    }
+  },
+  "owner_counts": {
+    "35|0.3|U": 568,
+    "35|0.5|U": 873,
+    "35|0.3|S": 654,
+    "35|0.5|S": 342,
+    "35|0.5|D": 9,
+    "35|0.3|D": 2,
+    "33|0.3|U": 3018,
+    "33|0.5|U": 5921,
+    "33|0.3|D": 234,
+    "33|0.3|S": 5001,
+    "33|0.5|S": 2245,
+    "33|0.5|D": 87,
+    "W|0.3|U": 62,
+    "W|0.5|S": 176,
+    "W|0.3|S": 178,
+    "W|0.5|U": 63,
+    "W|0.3|D": 6,
+    "W|0.5|D": 7,
+    "G|0.3|S": 104,
+    "G|0.5|S": 83,
+    "G|0.3|D": 6,
+    "G|0.5|U": 79,
+    "G|0.3|U": 55,
+    "G|0.5|D": 3
+  },
+  "probe": {
+    "all_GT_runs": 1958,
+    "distinct_eligible_runs": 164,
+    "group_probe_observations": 633,
+    "distributions": {
+      "0.5": {
+        "geometric": {
+          "0": 169,
+          "1": 49,
+          "2": 68,
+          "3": 347
+        },
+        "confirmed": {
+          "0": 173,
+          "1": 49,
+          "2": 67,
+          "3": 344
+        }
+      },
+      "0.3": {
+        "geometric": {
+          "0": 64,
+          "1": 37,
+          "2": 66,
+          "3": 466
+        },
+        "confirmed": {
+          "0": 88,
+          "1": 42,
+          "2": 60,
+          "3": 443
+        }
+      }
+    },
+    "member_status_counts": {
+      "0.5": {
+        "confirmed_same_GT": 1215,
+        "zero_hit": 673,
+        "competing_or_nonunique": 11
+      },
+      "0.3": {
+        "confirmed_same_GT": 1491,
+        "zero_hit": 332,
+        "competing_or_nonunique": 76
+      }
+    },
+    "domains": {
+      "35": {
+        "distinct_GT_runs": 29,
+        "group_observations": 116,
+        "distributions": {
+          "0.5": {
+            "geometric": {
+              "0": 21,
+              "1": 10,
+              "2": 15,
+              "3": 70
+            },
+            "confirmed": {
+              "0": 21,
+              "1": 10,
+              "2": 15,
+              "3": 70
+            }
+          },
+          "0.3": {
+            "geometric": {
+              "0": 1,
+              "1": 2,
+              "2": 8,
+              "3": 105
+            },
+            "confirmed": {
+              "0": 1,
+              "1": 2,
+              "2": 8,
+              "3": 105
+            }
+          }
+        }
+      },
+      "33": {
+        "distinct_GT_runs": 112,
+        "group_observations": 448,
+        "distributions": {
+          "0.5": {
+            "geometric": {
+              "0": 144,
+              "1": 30,
+              "2": 42,
+              "3": 232
+            },
+            "confirmed": {
+              "0": 148,
+              "1": 30,
+              "2": 41,
+              "3": 229
+            }
+          },
+          "0.3": {
+            "geometric": {
+              "0": 60,
+              "1": 25,
+              "2": 51,
+              "3": 312
+            },
+            "confirmed": {
+              "0": 83,
+              "1": 28,
+              "2": 42,
+              "3": 295
+            }
+          }
+        }
+      },
+      "W": {
+        "distinct_GT_runs": 13,
+        "group_observations": 39,
+        "distributions": {
+          "0.5": {
+            "geometric": {
+              "0": 3,
+              "1": 3,
+              "2": 7,
+              "3": 26
+            },
+            "confirmed": {
+              "0": 3,
+              "1": 3,
+              "2": 7,
+              "3": 26
+            }
+          },
+          "0.3": {
+            "geometric": {
+              "0": 3,
+              "1": 3,
+              "2": 6,
+              "3": 27
+            },
+            "confirmed": {
+              "0": 3,
+              "1": 3,
+              "2": 7,
+              "3": 26
+            }
+          }
+        }
+      },
+      "G": {
+        "distinct_GT_runs": 10,
+        "group_observations": 30,
+        "distributions": {
+          "0.5": {
+            "geometric": {
+              "0": 1,
+              "1": 6,
+              "2": 4,
+              "3": 19
+            },
+            "confirmed": {
+              "0": 1,
+              "1": 6,
+              "2": 4,
+              "3": 19
+            }
+          },
+          "0.3": {
+            "geometric": {
+              "0": 0,
+              "1": 7,
+              "2": 1,
+              "3": 22
+            },
+            "confirmed": {
+              "0": 1,
+              "1": 9,
+              "2": 3,
+              "3": 17
+            }
+          }
+        }
+      }
+    },
+    "scope": "dates/annotated-side denominator and annotated complete-neighbor counts; full IoU geometry remains native independent scope"
+  },
+  "scope": "numeric contexts/masks/windows/annotated event graphs; original full-evidence SHA and native geometry audit are distinct"
+}

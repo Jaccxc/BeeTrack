@@ -1,0 +1,19 @@
+{
+  "manifest_sha256": "c22bc11d816c9042c62501c02fbbab6df1451709fcbac271ade3d58ebdd9a5d5",
+  "parts": [
+    {
+      "bytes": 78643200,
+      "file": "evidence.zip.001",
+      "sha256": "b74f1ad0523f3489d075a604f0173c77e4792057e562a0f72fcf58c3c13336d7"
+    },
+    {
+      "bytes": 62401127,
+      "file": "evidence.zip.002",
+      "sha256": "24ac9f9d3a473907cd3a07edf026f24a016598056f7bc2523a88f1297b8012f9"
+    }
+  ],
+  "schema": "peer-suffix203-split-zip-v1",
+  "zip_bytes": 141044327,
+  "zip_entries": 2554,
+  "zip_sha256": "ef84315ba8611c7685c899714d38e9d35c43838825ae4de1a6f027bf119d59dd"
+}
