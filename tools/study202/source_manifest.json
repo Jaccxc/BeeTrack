@@ -1,0 +1,80 @@
+{
+  "freeze_orphans.py": {
+    "original_sha256": "0bdc6fc7c81ffbdf7f4f8fde26cacd3d8ed621df8212e05f97b9f214d0b5eaff",
+    "portable_sha256": "8f9c4bc5c20efc745d6dd33843f4846b6ba0ce02b468c38ba93509bcdbc2f587",
+    "scope": "portable entry"
+  },
+  "source_rows.py": {
+    "original_sha256": "c8310e0d706ae0a2af5ac768f2f5b9be40088b4848c7af3274fa0cbce2671028",
+    "portable_sha256": "c8310e0d706ae0a2af5ac768f2f5b9be40088b4848c7af3274fa0cbce2671028",
+    "scope": "portable entry"
+  },
+  "prototype.py": {
+    "original_sha256": "9e2cffd3af45c5e0ce41e4d2657da9aa3fc13bee0ca437c1f747ea5cf543750d",
+    "portable_sha256": "8777b35c850438479806811984435b7d8c9422f22bb8b42aaae1fa4e5c1f83d4",
+    "scope": "portable entry"
+  },
+  "owners_orphans.py": {
+    "original_sha256": "adbefdb891385f0cfb9460eea88e8b6449d324937724a2df459f2e547009f38c",
+    "portable_sha256": "70c164858736b63e73c3f565a6b917204dc117154c827aef23f7b3b73ef4b1bd",
+    "scope": "portable entry"
+  },
+  "fit_orphans.py": {
+    "original_sha256": "abf16c236f25accd16b89b672d0c24305a42661e9051e68ee7e5f7032689ae7e",
+    "portable_sha256": "154875b20bb4c42779c32c09b220cad77e4ce01cb3c558efe7dcf4f188b2c4cd",
+    "scope": "portable entry"
+  },
+  "cap_orphans.py": {
+    "original_sha256": "2bb99e705a4dd3ae26365551392bde4c61db1ae976a8bf70f59b0c0f64c8736e",
+    "portable_sha256": "2bb99e705a4dd3ae26365551392bde4c61db1ae976a8bf70f59b0c0f64c8736e",
+    "scope": "portable entry"
+  },
+  "matching_bound.py": {
+    "original_sha256": "f65f31b470c869beb89bd395fa684e0408e26b9b82610d4d4516e2206fb0c11b",
+    "portable_sha256": "f65f31b470c869beb89bd395fa684e0408e26b9b82610d4d4516e2206fb0c11b",
+    "scope": "portable entry"
+  },
+  "capacity_stage.py": {
+    "original_sha256": "3feedbf6ce56d1d18759989a124a39a21ff6a27ac1166970a17b04b5fb0f436f",
+    "portable_sha256": "3feedbf6ce56d1d18759989a124a39a21ff6a27ac1166970a17b04b5fb0f436f",
+    "scope": "portable entry"
+  },
+  "score_orphans.py": {
+    "original_sha256": "2a0aeeb7a0dba5eea771966dd765cae951d17e2d938c490fe35568414a7dd779",
+    "portable_sha256": "74a3cfc3ba058d70ef616afcbc40266208ffd7ddf1f57c4cf253e9c1d1a5f16a",
+    "scope": "portable entry"
+  },
+  "verify_orphans.py": {
+    "original_sha256": "20c88a3b9090eb6101a2b43d6e99b52ad92398621242229c9cc2a7d34e50a257",
+    "portable_sha256": "651d78ae6a5da886974cc13b1ff336a39c55c1ff702c07a9518119c9f1982a22",
+    "scope": "portable entry",
+    "original_archive_entry": "verify_orphans_final_original.py"
+  },
+  "verify_orphans_run.py": {
+    "original_sha256": "88af40cd5bf4770df587d7873002d3938b9a7d599a50c87c5e0e12e596ef1d27",
+    "archive": "execution_sources.zip",
+    "archive_entry": "verify_orphans_run.py",
+    "scope": "exact historical execution bytes; not the portable native entry"
+  },
+  "verify_orphans_resume.py": {
+    "original_sha256": "5ed4a2c64bc4d0ab39bf804fc8cc3884e6bfffc35b09b8bc4e30d16a8d5809e3",
+    "archive": "execution_sources.zip",
+    "archive_entry": "verify_orphans_resume.py",
+    "scope": "exact historical execution bytes; not the portable native entry"
+  },
+  "verify_orphans_scores.py": {
+    "original_sha256": "1efc2da7daffdb7fdd078f0be12e6396741dccddbd924a24270e42549e0da842",
+    "archive": "execution_sources.zip",
+    "archive_entry": "verify_orphans_scores.py",
+    "scope": "exact historical execution bytes; not the portable native entry"
+  },
+  "execution_sources.zip": {
+    "sha256": "86613a192de51ea81211fd70811c9ef7bf9a7aaa4ef7913060df62a1b530d54d",
+    "entries": [
+      "verify_orphans_final_original.py",
+      "verify_orphans_resume.py",
+      "verify_orphans_run.py",
+      "verify_orphans_scores.py"
+    ]
+  }
+}

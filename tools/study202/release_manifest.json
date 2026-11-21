@@ -1,0 +1,29 @@
+{
+  "evidence_zip_entries": 1536,
+  "files": {
+    "docs/experiment_log.md": "145bb01a56fc79f0f23ebbf85f331c599fc45997c2ba13f6bf71e3d4a2c36b78",
+    "tools/study202/README.md": "a5f2708b25596d3070272bb451404f693733549ae7cbe16ae53db8db095ec35d",
+    "tools/study202/cap_orphans.py": "2bb99e705a4dd3ae26365551392bde4c61db1ae976a8bf70f59b0c0f64c8736e",
+    "tools/study202/capacity_stage.py": "3feedbf6ce56d1d18759989a124a39a21ff6a27ac1166970a17b04b5fb0f436f",
+    "tools/study202/evidence.zip": "ef5fd41a7ebadf1425fa840cc73b1c412f5b5f76d049c7c58f0f4c66196d6788",
+    "tools/study202/execution_sources.zip": "86613a192de51ea81211fd70811c9ef7bf9a7aaa4ef7913060df62a1b530d54d",
+    "tools/study202/fit_orphans.py": "154875b20bb4c42779c32c09b220cad77e4ce01cb3c558efe7dcf4f188b2c4cd",
+    "tools/study202/freeze_orphans.py": "8f9c4bc5c20efc745d6dd33843f4846b6ba0ce02b468c38ba93509bcdbc2f587",
+    "tools/study202/matching_bound.py": "f65f31b470c869beb89bd395fa684e0408e26b9b82610d4d4516e2206fb0c11b",
+    "tools/study202/owner_numeric202.py": "97a3c749aeda20ca0e68b42f706ee6a19d87a01d03ec39ff05edcfd80fe4f358",
+    "tools/study202/owners_orphans.py": "70c164858736b63e73c3f565a6b917204dc117154c827aef23f7b3b73ef4b1bd",
+    "tools/study202/prototype.py": "8777b35c850438479806811984435b7d8c9422f22bb8b42aaae1fa4e5c1f83d4",
+    "tools/study202/replay202.py": "7be918595ee3e284ba5b62e996785a8336f7da61fd1b8c675d50c2c617948693",
+    "tools/study202/replay_sharded202.py": "58f2467489c87d9479b43dadf3953d45aef083798d75cbe46d9805ff8a7de68a",
+    "tools/study202/results.md": "2e19cb9745f9905fc953f5e90ca86af121c0b0e9635d0024faf53750ea179fec",
+    "tools/study202/score_orphans.py": "74a3cfc3ba058d70ef616afcbc40266208ffd7ddf1f57c4cf253e9c1d1a5f16a",
+    "tools/study202/source_manifest.json": "84bbdd4937ca32e109dda011a279045d65d277f5753d737d86c6f551b232e23d",
+    "tools/study202/source_rows.py": "c8310e0d706ae0a2af5ac768f2f5b9be40088b4848c7af3274fa0cbce2671028",
+    "tools/study202/stream202.py": "66cb68eeae2a41a60752a4750584d920dc378894d2324d5bb7fb4cdbbeaaf107",
+    "tools/study202/transport202.py": "926d7d6f3a2523e0ddaa9e74c09301a22fac41165cf46976fda1abffb8e7acb9",
+    "tools/study202/verify_orphans.py": "651d78ae6a5da886974cc13b1ff336a39c55c1ff702c07a9518119c9f1982a22"
+  },
+  "independent_sha256": "aab2a77771d1d3fff4211e926bfc6bad612c4eee3b0a35219f6749e666c27153",
+  "manifest_self": "Authenticated by the containing Git commit; external private Git-byte seal includes this file.",
+  "schema": "study202-release-v1"
+}
