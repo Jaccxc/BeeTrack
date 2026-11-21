@@ -1,0 +1,31 @@
+{
+  "schema": "study196-public-manifest-v1",
+  "prereg": "c5c55868165aa944f76c9a383597d3a0c519cd63",
+  "upstream_seals": {
+    "features": "9767cfc39f5bd9414c7d78f5019610a9d5d63dd1ece25cfe91699f6b20e96e2a",
+    "physical": "4c0baf71bd8f88a5aeff98072523e57f9395dda312ae7b6f2d08b38c371bd02c",
+    "predictions": "b8bc067840b5da016c61eba389c408b591af500ace06f62b3c04d583187150f5",
+    "score": "5ce54426661efd7cfc831c859657d4e52ea6071ffca4c82327cf64170768ee45"
+  },
+  "independent_sha256": "e1a386db77ac323ac0e3789880705c4d3977b3f3b84a7eb9d7c1ed6ff9041c1c",
+  "impact_sha256": "86f0a42d8e76601ffc295583f7203c5966ac2d5643eeb8e43593829cc8a1ecac",
+  "serialization": {
+    "original_inflated_sha256": "230854b5745844f985d621a5503884593b5a5e407da480db35e8fab8824f796a",
+    "public_inflated_sha256": "3d9c05efa6298f23454dc042ca19bb8f414ab6019bedeae3e37b140e65f8d946",
+    "parsed_equal": true,
+    "decoded_strict_and_source_hash_recomputed": true
+  },
+  "files": {
+    "check_texture.py": "e81ed4b43a56610b24de1945a9c7c05c6b35932b07f53493933f5c7ca3c69209",
+    "evaluate.py": "758102a6c735a1a563db4b0d78504e7dda34a1842d7f864fc1fc94c591de4cb2",
+    "evidence.json.gz": "aa7cf7801261db4d612557391b2003b9c43eb34a0158bd4f9fc9b5b96f377d24",
+    "features.py": "5bfa247084249d080b521d4ef52e4db3b76f5185c7c432dc4c0a3a85bfaeb3d4",
+    "impact.py": "fb11584322bae6f706d1826d466d93df95ec44b670fb614c25b4d7bac1916389",
+    "independent_support.py": "96a9bf33e881016d7203b37aaa0532d4efaee16979d53e1d1cea8167279d3298",
+    "model.py": "a7751407f55fc916043d80014859ee84afb5bf396cb8b8e7b562357f419e3005",
+    "physical.py": "844aa69111633fa256b4a0f0c229f09760626664f97d980c55a6575d009d8149",
+    "README.md": "e35def67c370fbc17e196d313f2b9664459225458ccaa390c465558697651074",
+    "replay196.py": "c55f522f6ec49bfe48494b900187c574752b69a4727e021239f2fd7ad807ec73",
+    "results.md": "00147e8092e9d3e71ec8c526bb7006eeca0d90331ab1c80e80ab620d2db5eb33"
+  }
+}
