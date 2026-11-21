@@ -1,0 +1,19 @@
+{
+  "prereg": "8ceeeae5f749e348f4a9b760b65639068bbfe436",
+  "files": {
+    "evidence.json.gz": "76aad196b2cbe572ef58dc2cacd5211f8722a2388551979d057b5bb6c8a2244d",
+    "independent.json.gz": "8553cb18fb9e168890c665f2649ed36d03baa7aa762d07e49a0054576a11e4cf",
+    "mix_check.py": "8d858fbc2f015fd340ab01727eb92597c03f2afd8cb324614375790227760d61",
+    "README.md": "4b5f7b4d8f75c60374ac79ebb4fcb76f89149a260b42fc28fc8923ac723f55f1",
+    "rebuild191.py": "28883d5dc70bbc76e760c9cc44cca1be7ad6f49a411324a94a1723e916d25002",
+    "replay191.py": "54a4863ab00287002f2ea61f53c7b42d9919c9e8b7f3aa94cedffadb79dc2cc9",
+    "results.md": "ccc01628fb3bee60f7685ff78a72bad31205e3f7eb6e5b8b3981a27e4b42da28",
+    "score191.py": "18e11c60a0faa4e22c316482cd52bb4160bdc0df43f13c34ae6dc2217ee6d093",
+    "verify191.py": "dcb44b82f75636b4af3c5f75328d22d4687d195b57399a2fad583e67a5bddbfe"
+  },
+  "upstream": {
+    "freeze_manifest_sha256": "3ecf3edbf4464843172389abb0054d3153f26ce083640b7e58983b55bd68b3c3",
+    "score_hashes_sha256": "868e8a43f9fb4c2e4e7031e5e1944f51e7cfc306b719abc860545988effb78bd",
+    "independent_sha256": "41c37d2648d41e4a2fddf570b0b5ba4abc19b6ca9cbecfc39d23df9a2509e2da"
+  }
+}
