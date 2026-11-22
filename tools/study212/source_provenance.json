@@ -1,0 +1,91 @@
+{
+  "files": {
+    "audit212.py": {
+      "changes": [],
+      "original_sha256": "6bfced8c20f978f5204d45b4a26fe339268f4b0f55829eafda8b8a48b04ba730",
+      "published_sha256": "6bfced8c20f978f5204d45b4a26fe339268f4b0f55829eafda8b8a48b04ba730"
+    },
+    "evaluate212.py": {
+      "changes": [],
+      "original_sha256": "ec290d03f26c79689aa63f6ed2927c7fd58f5e8c8c7d434aeef9fcff3261dce3",
+      "published_sha256": "ec290d03f26c79689aa63f6ed2927c7fd58f5e8c8c7d434aeef9fcff3261dce3"
+    },
+    "features212.py": {
+      "changes": [],
+      "original_sha256": "a6d5a17af04f6e4e6e5211c882166978782c2efe52ca740f9762d8bd8b9e9f70",
+      "published_sha256": "a6d5a17af04f6e4e6e5211c882166978782c2efe52ca740f9762d8bd8b9e9f70"
+    },
+    "field212_features.py": {
+      "changes": [
+        "Public study211 sibling",
+        "Explicit external artifact paths"
+      ],
+      "original_sha256": "fb2e22aa99ad4a4a855e5a9592ad72690252baa90cccfccdb99cb45a8ec27e82",
+      "published_sha256": "1147ad131a5c9795b5f992cad45016e1b219ad46434b64aab34d024de4641c64"
+    },
+    "field212_models.py": {
+      "changes": [
+        "Explicit external artifact paths"
+      ],
+      "original_sha256": "5d4f466c60a020895276a6c13eaaee2b71bd644b98770e959c554ee96a6b9369",
+      "published_sha256": "3da7c17d170c588b5e2009d47e5a46173b3b59253f3025b454b21edbdd2ae348"
+    },
+    "field212_truth.py": {
+      "changes": [
+        "Explicit external artifact paths"
+      ],
+      "original_sha256": "cbe060364da444bfea65a70492111520007f3cc522a83993af3da374c5429db2",
+      "published_sha256": "b9162f921ed77131e9579c91858a5a69d385ae5d3b8f15e88503c943b050af7b"
+    },
+    "finalize212.py": {
+      "changes": [
+        "Explicit external artifact paths"
+      ],
+      "original_sha256": "fd3c5d47e2f17116306424e7a0d1c94a1a5689d279f6c48b0d9b742ce69716d6",
+      "published_sha256": "8e8bdfaf9d44e10bcf099b8ef0b5104c74162a43765c345fe3f1a696e4554397"
+    },
+    "fit212.py": {
+      "changes": [],
+      "original_sha256": "30e298278fea802e132b86191aaf02f94f20e207ee5ac834a86bb9d9664dfcea",
+      "published_sha256": "30e298278fea802e132b86191aaf02f94f20e207ee5ac834a86bb9d9664dfcea"
+    },
+    "pack212.py": {
+      "changes": [],
+      "original_sha256": "09ed31023f16ca5e0df5a860f7ce8180190af6232475d2f341c65410a38fdb1b",
+      "published_sha256": "09ed31023f16ca5e0df5a860f7ce8180190af6232475d2f341c65410a38fdb1b"
+    },
+    "prepare212.py": {
+      "changes": [
+        "Public study211 sibling"
+      ],
+      "original_sha256": "95df62ad1fbcf7dd3e04256c5912351afb8277ba73502d76e718efc6e3774274",
+      "published_sha256": "1e679932194240123a6c6f1cfe24bf9a649c47a1b01cd69ca03e81b768f06a9e"
+    },
+    "replay212.py": {
+      "changes": [],
+      "original_sha256": "0f238cf70081008a933bca823644a9bf1ab63bc56a7b59c46d948d1db2fd59e4",
+      "published_sha256": "0f238cf70081008a933bca823644a9bf1ab63bc56a7b59c46d948d1db2fd59e4"
+    },
+    "truth212.py": {
+      "changes": [],
+      "original_sha256": "313a90c0931fb53bd792bde666713e62e0ca1f2c2b21dc9018a879f7d63e744c",
+      "published_sha256": "313a90c0931fb53bd792bde666713e62e0ca1f2c2b21dc9018a879f7d63e744c"
+    },
+    "truth212_late.py": {
+      "changes": [],
+      "original_sha256": "dbed4929c7c247253c0011c57aeb14d0579e4feecebbf1188280a137833fd83b",
+      "published_sha256": "dbed4929c7c247253c0011c57aeb14d0579e4feecebbf1188280a137833fd83b"
+    }
+  },
+  "historical_verification_sha256": {
+    "evaluation.json": "d633f4c1908a3893501caf6ed80ce7a1d62258d364242070bebc7eb5c7f8ab11",
+    "features.json": "83dab64baaa87cc463dab5d270793791da6278a1c2eb3dae49eb147a4892657d",
+    "independent.json": "d32e925c1e84bc17fb9ee95df63a8f1caa9406d0f067c8ae8dc2ecb84ee56a52",
+    "labels.json": "84b32e543c4f2dc1d7ad0165d1a86a0e09176f15fd29d259525b4054b94e175f",
+    "models.json": "3ec56d6deece52dd579beb90cd86afe85dd2bc2699719a22ea205fda33c00cd1",
+    "selections.json": "f722dbb4e7bec5df6773b4ee95d640fd288e06e2d434aa51a5a9d449732419dd",
+    "supplement.json": "8ec1db456a9c12a858edecdcf631b5b7eb3e1b1a6b7cfc7a306524e077848195"
+  },
+  "note": "Portable sources are separately hashed; historical code pins remain enforced.",
+  "schema": "study212-source-provenance-v1"
+}
