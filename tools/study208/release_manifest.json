@@ -1,0 +1,47 @@
+{
+  "evidence_zip_sha256": "39518405cff045a17620f1cac2b4976321e4019782f020a2dfbdf073b8d14149",
+  "files": {
+    "README.md": "fe170368f41018b1e97d097022fde3b3a9fe0676bc40b31f0e3f9d2ff02dc89a",
+    "audit208.py": "fa468e9eb60efd23d003e90c610a29ea9644425649aac570fd5e1f88aedd1042",
+    "data208.py": "58f32f417115f35e49cb9c394b1d830bc4c244e0794874055ea2809a6322fd3a",
+    "duplicate208.py": "0cf822eeb2ae81a537084aa35d7542231a721ccb66ffb189cf081f7cf562ef4f",
+    "duplicate_census.json": "4b8908b055e70f0d410f141aa0422cf5f42758f1820bcb4727a4158c20a29088",
+    "evidence.zip": "39518405cff045a17620f1cac2b4976321e4019782f020a2dfbdf073b8d14149",
+    "export208_diagnostics.py": "3b2c07df886edc414788c15a07601953bb75ffa5d811214cb2afe1f991e8b451",
+    "fit208.py": "4ac2103ad00a8ef5d817bb7cd98473feb3573487857509665219574fc19b7ff2",
+    "label208.py": "3208311e78708f1c6227a8594230a5002f9d766a48cd8d273fafdce74fc8cff5",
+    "normalize208_stage.py": "e332fa297b5292746625b023da79759a9e69983de181c694b4fae073dd4b087f",
+    "numeric208_paths.py": "1a5e1d34751f5121978239ad68090b51808d9073a18b709c31e231474f8eed05",
+    "physical208.py": "a5014c629bb4aa38e1e3ca4fdb4c46c254c1bab243b8cd63a857c229c8972358",
+    "prepare208_release.py": "d1ee527fc3b615c0ba1d2d247afefae51f80811d276c077fa0300547b63c9758",
+    "replay208.py": "453a754e63a4320c9d171961e3801832837d69dac9088418aafcf15a27405b95",
+    "results.md": "74cf2772e607d9a9062029b89ffe6c5e721f0e64f7be8f69563d4ecdd28b573e",
+    "switch_head.py": "5ecdf89248ddb0ab718752df5d89d44f9161f049919e24e60d7223e28d84c35a",
+    "switch_inputs.py": "bc32c05cbe44db6741692cca22a03c345b549abff569b1419e346643151004e4",
+    "switch_interval_loss.py": "e9991429551f15f8e8996509f50529df6c1e2d4cbfa00abf857a8a74304f8515",
+    "target_metrics208.py": "8a191556b57bebeccdf1d8ea358717a199338d999cf447dcd68ccbdf6e929b43",
+    "verification_sources.zip": "5f1cd4a0345dacc66e3759cea0a7acef95fc3d5c50cc7109e9ce04d4f9ec8b6f",
+    "verify208.py": "f08cb9f67fcd3958fcb1507a60f7d74f6104ee5891c4c98f2c2db55e9b73a274"
+  },
+  "original_completion_sha256": "2559f9e3e7895b76e2f4f83f1085d7fd9467247e5e80799a8d97bfe2de72d306",
+  "original_independent_sha256": "3beffc3d5c7337795566e9c27aa574afaeb46518315df1bdad68c9c019b450c1",
+  "privacy": {
+    "decoded_strings": 22426733,
+    "distinct_full_SHA_coincidences_recomputed": 1,
+    "integer_hits": 0,
+    "nonhash_string_hits": 0,
+    "numeric_and_string_values_unchanged": true,
+    "preprivacy_float_lexical_coincidences": 4612,
+    "private_paths": 0
+  },
+  "schema": "switch208-release-files-v1",
+  "scope": {
+    "original_independent_frame_comparisons": {
+      "requested": 76860,
+      "unique": 8804
+    },
+    "physical_states": 54,
+    "public_CNN_refit": false,
+    "public_frame_IoU_recomputation": false
+  }
+}
