@@ -1,0 +1,26 @@
+{
+  "files": {
+    "README.md": "3dd2a4d26b6d3cac8b1b80b9bf4f7a10a5e07cf11de583c641641a8e0388942d",
+    "audit211.py": "db5323cb16ca7045a98c2570aaa9ebc8adf2e74e3bdd49ba0e95690f93038ebf",
+    "build_joint_job211.py": "f28b393209f59d9d4ef8913e37dcb1a012a9aaf2cff2a77c29c841cd9567a77c",
+    "evidence211.json.gz": "4bc397f359905a9df770f15af755d4bf7148af762c1f0ed9f694aaedfd69f7a0",
+    "field211.py": "ca0e3d5d8fe134e1a31952dd580078debce8b5d2f3f8374357ffe963aa91b517",
+    "fit211.py": "3b466d1d12cf5573b6fbb0140f8b10d5a4b43313d4390f670f51a9904da0659e",
+    "freeze211.py": "0b8586801c10a32fe01100a946b36d7864b03eb8a161e08c18e19434ba0dcf6d",
+    "graphs211.py": "68afdb5dc43b43d9b26d8e2355c62f2bcbdcba54741c1dc9a94782ed47f2701a",
+    "joint211.json.gz": "4f61018500e43e3bfd058ed4acb86bb51d0f66abe1827b46905b52752e5e262c",
+    "joint_actions211.py": "f804e0a79b31f6d7a0b2c4ca3d04a56028fcbdfcf1e73a33ba13aef1f6b2a4d1",
+    "joint_deploy211.py": "bccae69ecc5fa38a120b1345be668b39df54198b90fe337e66dd280f86d8c0a3",
+    "pack211.py": "c318eb8648955ba473cfc57e09cf21729eccf30fc476813579c53a5bfee5e5e0",
+    "pack_joint211.py": "60694e8e09163af066239d58e2b815428985b4a949159365155f30a004544c8a",
+    "replay211.py": "ef67734e0aadc811cace401313cc715bf94476d4f6cc45419d048e1d46bae73d",
+    "results.md": "3fecbb52e4779f18c384cfb2c7e5bda5d5311ef56f5ca8f8fedc2b5f725b9088",
+    "run_joint211.py": "8e6af1b1ef986a11fb624e70d0c4bb3291f58ab513340d8212d88a525c214baa",
+    "source_provenance.json": "b7758af3fc5464eccb0d3a828d0defb385ac929373099b6fc52311224d0b5886",
+    "true211.py": "4352aa1f90dda1901b7633083454361f1e5fce746a765cd19caaa096cb6e499a",
+    "verify_joint211.py": "397eb499031492f5e4cea245de7688ab51d1549641fbade141338f1af580ec5b",
+    "verify_joint_numeric211.py": "efb5aa7850b7db64ec1068d8986a598b119ae68ef3d9b96c5139d6dabb8edd99",
+    "verify_joint_stage211.py": "8f87a2e5b21713b310fa85c8aef0153f64fb4a6c7cd65a90837674888f47283d"
+  },
+  "schema": "study211-release-v1"
+}
