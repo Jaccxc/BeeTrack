@@ -296,7 +296,7 @@ Cells are 30 s window error in %, 5 test videos pooled over 405 GT events (§125
 
 Per video and total, report also: event F1 at IoU 0.5 and 0.3 (matched / false / missed) and bias = predicted events minus GT events (§125). The bias is report-only, not judged (§125). Also report which scale P1 picks for each of 3 detectors x 5 videos; if all picks are 640 or above, E3 x P1↓ x F8 equals E3 x F8 and this is stated (§125, addendum for §151).
 
-F and E3₅₀ are also reported separately for BEE24-12, 13, 16 (the addendum calls them seen hives) and for BEE24-34, 36 (unseen): F on 12 / 13 / 16 —, F on 34 / 36 —, E3₅₀ on 12 / 13 / 16 —, E3₅₀ on 34 / 36 —. Also print F − E3₅₀ (—) and F − E3 (—) (§125 addendum, 2026-11-23).
+F and E3₅₀ are also reported separately for the short videos BEE24-12, 13, 16 and the long videos BEE24-34, 36 (the addendum first called them seen and unseen; corrected before the lock: 12 has a frame size no training video has, 13 and 16 share the 950 x 600 size of training hives, so they may or may not be seen hives): F on 12 / 13 / 16 —, F on 34 / 36 —, E3₅₀ on 12 / 13 / 16 —, E3₅₀ on 34 / 36 —. Also print F − E3₅₀ (—) and F − E3 (—) (§125 addendum, 2026-11-23).
 
 ### 5.1 Reading rules (set before test, §125)
 
@@ -310,7 +310,7 @@ F and E3₅₀ are also reported separately for BEE24-12, 13, 16 (the addendum c
 - F and E3₅₀ (§125 addendum, 2026-11-23) are read like the other E3-type arms, report only; the main setting does not change.
   - F − E3₅₀ is the difference from distillation alone. It is read with the same three phrasings; the threshold is P0's range on the same videos.
   - F − E3 is printed as a number only, with no sentence. On val + dev the 0.50 box cut alone moves E3 from 18.40 to 19.79, which is why E3₅₀ was added.
-  - Whether F harms the seen hives is shown on 12, 13, 16 separately.
+  - The short videos 12, 13, 16 are reported separately; 13 and 16 may come from a training hive, so possible harm on seen hives would show there.
 - How F runs on test (§125 addendum, method details):
   - The CS scale and the pseudo-labels come from the scored video itself, without labels. This is transductive and may favour F.
   - 12, 13 and 16 have about 250 frames each; all of them are used as pseudo-labels.
