@@ -57,6 +57,18 @@ Status: draft. This file is the number source for the final report under the v2 
 | Calibrated ByteTrack (校正 ByteTrack) | default ByteTrack; in and out counts multiplied by k = true total / predicted total, fitted once per detector on val + dev and then frozen. Test k_in / k_out: 2.016 / 1.396, 1.866 / 1.364, 1.969 / 1.192 for the 3 detectors | §93, §125 |
 | Default ByteTrack | Ultralytics `bytetrack.yaml` defaults, no calibration | §93, §96, §125 |
 | Paper's tracker A (論文的 tracker A) | the paper's tracker with its ReID loading fixed ("二修"), threshold 0.2, min_hits 3; the setting was picked on the proxy, not on test | §96, §99, §102, §125 |
+| F (distilled-student committee) | 3 members. Each member's detector is fine-tuned on its own pseudo-labels (teacher scale picked by the rule CS), runs at 640, keeps boxes >= 0.50, then runs the unchanged P0 tracking and events. The 3 members' in and out counts are averaged per 30 s window, as in E3. Details below. Report only | §177, §181, §183, §201, §125 addendum (2026-11-23) |
+| E3 with the 0.50 box cut (E3₅₀) | control for F: the same 3 detectors at 640, boxes >= 0.50, the same member pipeline as F, no distillation; counts averaged as in E3. Report only | §125 addendum (2026-11-23) |
+
+How F is built (§177, §181, §201, §125 addendum 2026-11-23):
+- Members: 3 detectors. On test they are the 3 test detectors of P0. On the proxy they are leave-one-hive-out detectors (§125 addendum, §177).
+- Teacher scale, rule CS (§181). It uses no labels and has no parameters. The 3 members run at the 6 scales of P1 on unlabeled frames (every 5th frame, boxes with score >= 0.25). For each scale, take the 3 pairs of members, measure how well their boxes agree (F1 of the two-way coverage at IoU >= 0.5) and average the pairs. Pick the scale with the highest mean; an exact tie goes to the smaller scale. All 3 members use that scale (§181).
+- Why CS: it mainly avoids teachers that break down at large scales. Under the P1 rule two 35-head teachers picked 1280 and 960 and gave 37.5 and 21.1 boxes per frame, where the truth has 9.8 (§177, §181).
+- Pseudo-labels: 600 random frames; the teacher is the member's own detector at the CS scale, and its boxes with score >= 0.25 become the labels (§177, §125 addendum).
+- Fine-tune: from the same detector, 15 epochs, with the pseudo-label frames mixed into the detector's own training list; the last checkpoint is used; inference at 640 (§177, §125 addendum).
+- Member pipeline: keep boxes >= 0.50, then the unchanged P0 tracking: first stage, TrackletLink `m_dev_strict.json`, drop tracks with fewer than 3 boxes, P0 event rule (§177, §201, §125 addendum).
+- Count: average the 3 members' in and out counts per 30 s window, as in E3 (§125 addendum).
+- Frames: on the proxy the unlabeled frames come from the tail of the same video (§177, §181). On test they come from the scored video itself (all frames if it has fewer than 600), sampling seed 0 (§125 addendum).
 
 ## 2. Table A: val + dev (seen hives, 486 GT events)
 
@@ -134,6 +146,46 @@ Reading notes.
 - On 留 33 all 9 seeds go back to 640 under P1↓, so the arm equals E3 x F8 there; the 留 33 pass comes entirely from F8 (§151).
 - On 留 35 only seeds 4 and 8 change (picked 1280 and 960, now 640): window error at those scales 20.56 and 19.96, at 640 11.88 and 14.10 (§151).
 - Seen-hive gate for E3 x P1↓ x F8: 15.74% (P0 18.46%) (§151).
+
+### 3.2 Table B2: distilled-student committee F (§188, §201, §204)
+
+F is the main result of the model direction. It is report-only on test and does not replace P0 (§125 addendum 2026-11-23, §201).
+
+These runs use new leave-one-hive-out detector seeds, not the seeds of Table B. Design groups 2-5 are seeds 3-14 (§188); groups 6-7 are seeds 15-20 (§201); groups 8-11 are seeds 21-32 (§204). Every cell is an E3-type number: the members' window counts are averaged. For groups 8-11 the cell is the mean over the 6 committees of 6 members (two groups each), with the jackknife standard error in brackets (§204). "TrackletLink" is the P0 pipeline (640, all boxes) on the same base detectors, counts averaged the same way (§95, §204). The bars are 5.05 on 35-head and 20.95 on 33-head (§122).
+
+| Row | 35-head groups 2-5 | 35-head groups 6-7 | 35-head groups 8-11 | 33-head groups 2-5 | 33-head groups 6-7 | 33-head groups 8-11 | Source |
+|---|---:|---:|---:|---:|---:|---:|---|
+| F (CS students, boxes >= 0.50) | 4.34 | 6.37 | 5.51 (0.30) | 19.07 | 20.40 | 20.05 (1.11) | §188, §201, §204 |
+| Same students, boxes >= 0.40 | 6.83 | 7.92 | 6.91 (1.66) | 19.36 | 20.82 | 19.41 (0.74) | §188, §201, §204 |
+| 640 direct inference, boxes >= 0.40, no distillation ("control ii" in §204) | 7.92 | 11.67 | 6.90 (0.88) | 25.88 | 28.50 | 33.43 (2.74) | §188, §201, §204 |
+| TrackletLink (P0 pipeline, base detectors) | - | 27.30 | 27.07 (7.80) | - | 21.11 | 20.62 (2.12) | §201, §204 |
+| Calibrated ByteTrack | - | 55.06 | 49.44 (6.00) | - | 41.71 | 34.64 (1.85) | §201, §204 |
+| P0 single | - | 28.01 | - | - | 23.45 | - | §201 |
+
+Per group, F is 4.72 / 3.84 / 4.58 / 4.20 on 35-head and 19.18 / 21.61 / 16.49 / 19.00 on 33-head for groups 2-5 (§125 addendum, §188), and 5.24 / 7.51 and 19.29 / 21.52 for groups 6 / 7 (§201). The 6 committees of groups 8-11 give 4.88 / 5.67 / 5.38 / 5.56 / 5.67 / 5.91 on 35-head; only groups 8+9 is below 5.05 (§204).
+
+Paired differences on groups 8-11; beyond noise means an absolute value above 2.0 (§204):
+
+| Difference | 35-head | 33-head |
+|---|---:|---:|
+| F − control ii | −1.39 (0.96) | −13.37 (1.88) |
+| F − TrackletLink | −21.56 (7.77) | −0.57 (1.32) |
+| F − calibrated ByteTrack | −43.93 (5.84) | −14.59 (2.79) |
+
+On groups 6-7 the differences were: F − 640 direct at 0.40 −5.30 / −8.09; F − TrackletLink −20.92 / −0.70 (on 33-head the two groups had opposite signs, +0.75 / −2.15); F − calibrated ByteTrack −48.69 / −21.30 (§201).
+
+Reading notes.
+- 35-head: F is clearly lower than TrackletLink and calibrated ByteTrack, beyond seed noise, on both new seed sets (§201, §204).
+- 35-head: F is still above the 5.05 bar: 6.37 on groups 6-7 and 5.51 on groups 8-11. The registered sentence is "above the bar" (§201, §204).
+- 35-head: against the same committee without distillation (control ii), F is −1.39, "within the seed differences". So the distillation gain on 35-head did not reproduce in the 6-member committee on new seeds (§204). In the 3-member groups 6-7 it was −5.30 (§201).
+- 33-head: F 20.05 is below the bar but not below the noise line 19.25. The TrackletLink committee (20.62) is also below the bar, and F − TrackletLink is −0.57 (SE 1.32). The registered sentence is "the 33-head bar cannot separate F and TrackletLink" (§204). Groups 6-7 gave the same picture: 20.40 against 21.11 (§201).
+- 33-head: F is 13.37 below control ii, beyond noise, so on 33-head distillation helps against direct inference (§204).
+- The new seeds are worse than the design groups. Two-group committees of F gave 3.99 / 18.77 on the design groups and 5.51 / 20.05 on groups 8-11, so 1.52 / 1.28 higher (§204).
+- The 0.50 box cut was chosen while looking at the labels of these two videos (§183, §188, §204). At 0.50 the design split was the best of 15,400 ways to split the seeds (4.34; the mean over all splits is 5.03), so the design numbers are optimistic (§188). The new-seed check only asks whether the result comes back with other detector seeds; it does not test unseen hives (§204).
+- Do-no-harm of the 0.50 cut (§188): on the whiteboard hive all three detector types got 2.25 to 4.25 points worse, and on the seen hives (486 events) the error went from 17.97 to 19.23. The gain at 0.50 belongs to the 35-head CS students; it is not a general rule (§188).
+- Criterion (b): §204 never writes "criterion (b) passed" (§204). On 35-head every known method family is above 5.05 in the 6-member committee (F 5.51, control ii 6.90, TrackletLink 27.07, calibrated ByteTrack 49.44). On 33-head the bar does not separate F from TrackletLink (§204). The known families fell short by these numbers. This does not show that the bar cannot be reached.
+- Error left in F (E12, all 12 members of groups 8-11): 35-head 5.01, two thirds of it over-counts, mostly exits; 33-head 19.70, nearly nine tenths under-counts (§204).
+- Seeds 21-32 count as seen from §204 on. No new seeds are trained for the committee (§204).
 
 ## 4. Table C: unseen-hive tails (§152 result)
 
@@ -239,8 +291,12 @@ Cells are 30 s window error in %, 5 test videos pooled over 405 GT events (§125
 | E3 x F8 (report only) | one number | one number | one number | — | P0 range is the threshold | — |
 | E3 x P1 (report only) | one number | one number | one number | — | P0 range is the threshold | — |
 | E3 x P1↓ x F8 (report only) | one number | one number | one number | — | P0 range is the threshold | — |
+| F (report only) | one number | one number | one number | — | P0 range is the threshold | — |
+| E3 with the 0.50 box cut (report only) | one number | one number | one number | — | P0 range is the threshold | — |
 
 Per video and total, report also: event F1 at IoU 0.5 and 0.3 (matched / false / missed) and bias = predicted events minus GT events (§125). The bias is report-only, not judged (§125). Also report which scale P1 picks for each of 3 detectors x 5 videos; if all picks are 640 or above, E3 x P1↓ x F8 equals E3 x F8 and this is stated (§125, addendum for §151).
+
+F and E3₅₀ are also reported separately for BEE24-12, 13, 16 (the addendum calls them seen hives) and for BEE24-34, 36 (unseen): F on 12 / 13 / 16 —, F on 34 / 36 —, E3₅₀ on 12 / 13 / 16 —, E3₅₀ on 34 / 36 —. Also print F − E3₅₀ (—) and F − E3 (—) (§125 addendum, 2026-11-23).
 
 ### 5.1 Reading rules (set before test, §125)
 
@@ -251,6 +307,16 @@ Per video and total, report also: event F1 at IoU 0.5 and 0.3 (matched / false /
 - P1 against P0 is read the same way, report only; the main setting does not change.
 - F8 is read like P1 (threshold = larger range of the two arms over 3 detectors), report only.
 - E3-type arms are one number each (no range between detectors). Compare with the P0 mean of the 3 detectors; the difference is compared with P0's range over the 3 detectors, with the same three phrasings.
+- F and E3₅₀ (§125 addendum, 2026-11-23) are read like the other E3-type arms, report only; the main setting does not change.
+  - F − E3₅₀ is the difference from distillation alone. It is read with the same three phrasings; the threshold is P0's range on the same videos.
+  - F − E3 is printed as a number only, with no sentence. On val + dev the 0.50 box cut alone moves E3 from 18.40 to 19.79, which is why E3₅₀ was added.
+  - Whether F harms the seen hives is shown on 12, 13, 16 separately.
+- How F runs on test (§125 addendum, method details):
+  - The CS scale and the pseudo-labels come from the scored video itself, without labels. This is transductive and may favour F.
+  - 12, 13 and 16 have about 250 frames each; all of them are used as pseudo-labels.
+  - The fine-tune mixes the pseudo-label frames into the base detector's own training list (train 3,740 images plus the pseudo-label frames, val 839 images). The fine-tune seed is the base detector's own training seed (0 / 1 / 2).
+  - There is one committee (seeds 0-2), so there is no spread between groups.
+  - A unit that fails is rerun once. If it fails again, F is recorded as missing; it is not replaced by 2 members.
 - Whatever the result, report and slides use this number set; every old /341 number is replaced (§125).
 
 ### 5.2 Expectations written before test (§125 and its addenda)
@@ -274,7 +340,16 @@ Probabilities are the main controller's own guesses, written before test.
 | E3 x P1↓ x F8 | lower than E3 x F8 | 45% | same |
 | E3 x P1↓ x F8 | lower than E3 x P1 | 55% | same |
 | E3 x P1↓ x F8 | difference larger than P0's range | 35% | same |
+| F | lower than the P0 mean of the 3 detectors | 60% | §125 addendum (2026-11-23) |
+| F | lower than E3 | 55% | same |
+| F | difference larger than P0's range | 30% | same |
+| F | on 34 and 36 only, lower than E3 | 60% | same |
+| F | lower than E3₅₀ | 60% | same, method details |
+| F | on 34 and 36 only, lower than E3₅₀ | 65% | same, method details |
+| F | on 12, 13 and 16 only, lower than E3₅₀ | 45% | same, method details |
 
+- Tooling for F (§125 addendum, method details): `score_ftest.py`. Rerun on val + dev, it gives P0 (`m_dev_strict.json`) 19.53 / 19.71 / 19.42 and E3 18.40, and F on groups 2-5 4.34 (35-head) and 19.07 (33-head); it matches `ana.py` to under 1e-9.
+- Schedule (§125 addendum, 2026-11-23): the §125 lock moved to 11/25 23:59; the test runs once on 11/26-27.
 - Tooling (§125, last addendum): `t152/arms125x.py` computes F8, E3 x F8, E3 x P1, E3 x P1↓ x F8 and prints P0 and E3 as reference. The self-check on val + dev matched the logged values to under 1e−9 (§125).
 - The paper's tracker A only runs on test as report-only; its wrapper reproduced the 35.25 on val + dev bit for bit (§125, clarification 2 and the note after it).
 - Planned GPU: P1 scales about 4 hours, 7 extra symmetries at 640 about 4.7 hours, extra symmetries at 352 / 448 up to about 3.8 hours (§125).
@@ -294,6 +369,8 @@ Grouped by the four research issues. "Not adopted" means the registered rule sai
 - Distilled pseudo-label detector on a third hive: event F1 −0.031 / −0.035 and +9.2 points count error, so not a fixed pipeline (§84, §80).
 - Choosing the scale without labels (P1) is unstable on unseen hives: another 1000-frame clip flips the pick; 5 bad picks in 24 (§92). Shrinking helped 7 of 7 seeds, enlarging 5 of 11 (§150).
 - Later checkpoints: the trend with training is not stable, so `best.pt` stays (§101).
+- Committee line for F (§201, §204): the 0.50 cut on the same students was confirmed on groups 6-7 (35-head −1.55, 5 of 6 members lower), but F stayed above the 35-head bar (6.37) (§201). On seeds 21-32 the 6-member committees gave 5.51 / 20.05, and on 35-head F was only −1.39 against the same committee without distillation, within noise. The committee line was closed; no new seeds are trained for it (§204).
+- TC student, pseudo-labels picked by the teacher's own tracks (§215): stopped at the CPU gate, not trained. Entrance-band recall changed by −0.043 / +0.000 (needed +0.03) and precision by −0.040 / −0.054 (allowed −0.02). The first stage is a fragmenter, so a "trusted track" meant a slow bee. Even fixing the box scores of F's members with GT (oracle) made E3 worse, by +1.93 / +1.24 (§215).
 
 ### Issue #2 tracking and linking
 
@@ -304,6 +381,17 @@ Grouped by the four research issues. "Not adopted" means the registered rule sai
 - Perfect linking on real detections is worse than P0: 17.76 → 21.58 and 23.27 → 25.97, because P0's links also absorb noise fragments (§123).
 - Cutting tracklets at skipped frames before linking: 17.76 → 15.90 (range 18.40), 23.27 → 25.10, val + dev +1.17 (§129).
 - Better linking after changing the detector: even with refitting the linker, 留 33 never gets below P0's own swept 21.87% (§137).
+- Identity patches on F's fixed tracks (§202, §203, §206, §208-§212, §214): none of the nine passed its own registered investment line. Most helped one head and hurt the other, so patching F's fixed tracks stopped (§207, §213). Numbers are F's E3 on the design groups (unpatched 4.34 / 19.07) unless marked "single member":
+  - §202, reattach dropped detections to the same bee (model J): 33-head 1.21 lower, 35-head 1.71 higher. Only 4 of 541 (35) and 39 of 607 (33) same-bee short tracks change any window (§202, §207).
+  - §203, borrow another member's later track part: best 35-head E3 4.07, at most 0.26 better, which rules out a 1.4-point gain for this family (§203).
+  - §206, withdraw a false event with one same-bee return box: 35-head 0 of 1,568 queries confirmed, E3 unchanged; 33-head 19.07 → 18.90 (§206).
+  - §208, a model for bee switches inside a track (single member): 35-head 9.10 → 8.89 and F1 0.868 → 0.851, so not the 1-point gain and the F1 guard failed (§208).
+  - §209, cross-part motion (single member): 35-head 0.31 worse (§209).
+  - §210, alternating offset (single member): the source folds had no training cases, so the correction was 0; 35-head only 0.47 better (§210).
+  - §211, event capacity of the peer members (single member): 35-head 9.10 → 6.82, 33-head unchanged at 20.98; whiteboard and gray board worse, 39.52 / 30.59 → 40.97 / 36.08 (§211).
+  - §212, phase of the frame dates (single member): 35-head unchanged, 33-head 0.43 better, gray board 30.59 → 36.08 (§212).
+  - §214, re-centre track end boxes from the image (seeds 3-5 only, unpatched E3 4.72 / 19.18): 35-head about 0.35 better, 33-head about 0.60 worse (§214, §207).
+  - §208-§212 use one fixed member per clip on six old clips, so their window error is not the 3-member E3 (§211, §212, §213).
 
 ### Issue #3 counting logic
 
@@ -314,6 +402,7 @@ Grouped by the four research issues. "Not adopted" means the registered rule sai
 - A box-based counting rule from the literature: worse for every tracker, TrackletLink 10-20 points worse in three places (§134).
 - Cross-detector support to drop extra events: 留 35 E3 20.45 → 11.49 but 留 33 19.29 → 39.46, so only one fold (§108).
 - Raising the tracking score threshold on new hives: not adopted (§70).
+- Local crossing counter without track identity, CrossNet (§207): stopped before a registered run. Even with GT boxes and GT identities, cancelling back-and-forth crossings within 8 frames leaves 27.91 / 90.22; it needs a 75-frame (3 s) window to reach 5.27 / 19.06, about F's 4.34 / 19.07. One trained CrossNet-G (about 100k parameters, GT boxes of ±4 frames, leave-one-scene) gave 30.19 / 42.90 (§207).
 - Field calibration, a person counts the first 60 s of the new hive and the later counts are scaled by that minute's true / predicted ratio: 留 35 25.05 → 19.42 (7 of 9 seeds) but inside the seed range 37.88; 留 33 20.72 → 24.15; seen hives (dev) 8.71 points worse. Default ByteTrack with the same field factor: 29.03 against 46.09 for calibrated ByteTrack (mean of the two folds), still above P0 without calibration (22.89) (§155).
 
 ### Issue #4 error decomposition (what the errors are made of)
@@ -322,6 +411,8 @@ Grouped by the four research issues. "Not adopted" means the registered rule sai
 - 留 35 error is about half bias: 10.41 of 22.18 (9-seed mean) and all 9 seeds over-count. 留 33 is mostly window noise (20.90 of 23.90) (§95).
 - Averaging removes only random window noise; a bias needs a signal from the target hive, and the only one that helped is the P1 flicker, which has a direction (§150).
 - One detector seed can be far off: 留 35 seed 6 gives 46.51% with 87 false events, mostly tracks on empty background (§95).
+- Oracle split of F's errors (§205, after the fact, seeds 3-20, no prediction written before): on 33-head each member misses 79.6 events; 53.6 had a box at the crossing (lost by tracking or linking) and 25.9 had none (detector); over-counts are 64.2, mainly returns 20.2 and bee switches 22.0. On 35-head over-counts are 11.7 (returns 5.2, duplicates 4.1) and misses 8.9 (7.8 of them had a box; 52% split into two tracks); fake-box tracks are only 0.2. So on 33-head the main error is identity, on 35-head duplicates and returns (§205, §207).
+- Over-counts and misses of F cancel inside windows: deleting all over-counts makes it worse, 4.34 → 6.79 and 19.07 → 41.76 (§205). A one-sided fix moves the two heads in opposite directions, because 35-head over-counts and 33-head under-counts (§207).
 
 ## 7. Error decomposition and upper bounds
 

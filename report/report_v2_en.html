@@ -199,8 +199,18 @@ table.split tr { break-inside: avoid; }
 <tr><td class="l">E3×P1</td><td class="l">each of the 3 detectors runs P0 at the scale P1 picks for it; counts averaged</td></tr>
 <tr><td class="l">E3×P1×F8</td><td class="l">each detector runs the 8 symmetries at its P1 scale; 24 members averaged</td></tr>
 <tr><td class="l">E3×P1↓×F8</td><td class="l">like E3×P1×F8, but a P1 pick above 640 (960, 1280, 1600) becomes 640. Designed after looking at results (post hoc).</td></tr>
+<tr><td class="l">F</td><td class="l">distilled-student committee: each of 3 detectors is fine-tuned on its own pseudo-labels, runs at 640 and keeps boxes with score ≥ 0.50; then P0's tracking and event rule unchanged; the 3 members' window counts are averaged as in E3. Report only.</td></tr>
+<tr><td class="l">E3 with the 0.50 box cut</td><td class="l">control for F: the same 3 detectors at 640, boxes ≥ 0.50, the same member pipeline as F, but no distillation; counts averaged as in E3. Report only.</td></tr>
 </tbody>
 </table>
+<p><b>How F is built.</b> F is the main result of our model direction. It has four steps, and none of them looks at labels.</p>
+<ul>
+<li><b>Teacher scale (rule CS).</b> The 3 members run at the 6 scales of P1 on unlabeled frames of the video (every 5th frame, boxes with score ≥ 0.25). For each scale we take the 3 pairs of members and measure how well their boxes agree: the F1 of the two-way coverage at IoU ≥ 0.5. We average the 3 pairs and pick the scale with the highest mean; an exact tie goes to the smaller scale. The rule has no parameters. Its main job is to avoid teachers that break down at large scales. Under P1, two hive-35 teachers picked 1280 and 960 and produced 37.5 and 21.1 boxes per frame, where the truth has 9.8.</li>
+<li><b>Pseudo-labels.</b> We draw 600 random frames. The teacher is the member's own detector at the CS scale, and its boxes with score ≥ 0.25 become the labels.</li>
+<li><b>Fine-tune.</b> Each detector is fine-tuned from itself for 15 epochs, with the pseudo-label frames mixed into its own training list. We use the last checkpoint and run it at 640.</li>
+<li><b>Count.</b> Each member keeps boxes with score ≥ 0.50 and runs P0's tracking unchanged: first stage, TrackletLink (<code>m_dev_strict.json</code>), the short-track filter and P0's event rule. The 3 members' in and out counts are averaged per 30 s window, as in E3.</li>
+</ul>
+<p>On the leave-one-hive-out proxy the unlabeled frames come from the tail of the same video. On test they come from the scored video itself. The 0.50 cut was chosen on the two proxy heads, and it made the seen hives worse (Experiment 3), so F stays report-only. The extra control "E3 with the 0.50 box cut" separates the effect of distillation from that of the cut.</p>
 
 <!-- ============================================================ 7 -->
 <h2>Implementation Details</h2>
@@ -280,6 +290,8 @@ table.split tr { break-inside: avoid; }
 <li>P0 against each baseline: take the mean difference over the 3 detectors and compare it with the larger of the two arms' ranges. Negative and larger than the range: "more accurate on test". Negative but smaller: "lower, but within the differences between detectors". Otherwise we write the numbers as they are.</li>
 <li>P1 and F8 against P0 are read the same way, report only. E3-type arms are one number each; their difference from the P0 mean is compared with P0's range, with the same three phrasings.</li>
 <li>Bias and event F1 are reported per video and in total, but not judged.</li>
+<li>F and "E3 with the 0.50 box cut" (added before the lock) are E3-type arms, report only. F minus the 0.50-cut E3 is the effect of distillation alone; it is read with the same three phrasings, with P0's range on the same videos as the threshold. F minus E3 is printed as a number only, with no sentence, because on val + dev the 0.50 cut alone moves E3 from 18.40% to 19.79%.</li>
+<li>For F on test, the CS scale and the pseudo-labels come from the scored video itself, without labels. This is transductive and may favour F. BEE24-12, 13 and 16 have about 250 frames each, and all of them are used. The fine-tune uses each detector's own training list and seed. There is one committee, so there is no spread between groups. A unit that fails is rerun once; if it fails again, F is missing and is not replaced by 2 members.</li>
 </ul>
 <h3>Robustness conditions</h3>
 <ul>
@@ -329,8 +341,11 @@ table.split tr { break-inside: avoid; }
 <tr><td class="l">E3×F8 (report only)</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0's</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
 <tr><td class="l">E3×P1 (report only)</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0's</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
 <tr><td class="l">E3×P1↓×F8 (report only)</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0's</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr class="sep"><td class="l">F (report only)</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0's</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr><td class="l">E3 with the 0.50 box cut (report only)</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0's</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
 </tbody>
 </table>
+<p>F and the 0.50-cut E3 are also given separately for the three short videos BEE24-12, 13, 16 (<span class="todo">[test]</span>), which the plan for F groups as seen hives, and for BEE24-34, 36 (<span class="todo">[test]</span>). F minus the 0.50-cut E3: <span class="todo">[test]</span>. F minus E3, number only: <span class="todo">[test]</span>.</p>
 <p class="tcap"><b>Table 9.</b> P0 on test per video (detector <code>y11s_640</code>; the other two detectors in the log). Bias = predicted − GT events.</p>
 <table class="wide">
 <thead><tr><th class="l">Video</th><th>GT in / out</th><th>P0 in / out</th><th>Window error</th><th>Event F1@0.5 (matched / false / missed)</th><th>Event F1@0.3</th><th>Bias</th></tr></thead>
@@ -344,7 +359,7 @@ table.split tr { break-inside: avoid; }
 </tbody>
 </table>
 <p>We will also list which scale P1 picks for each of the 3 detectors × 5 videos (<span class="todo">[test]</span>). If every pick is 640 or above, E3×P1↓×F8 equals E3×F8 on test, and we will say so.</p>
-<p><b>What we expected before the run.</b> We wrote down guesses before the test run, so that we cannot reinterpret the result afterwards. They are our own guesses, nothing more. Probability that the mean is lower than P0's: F8 70%, E3×F8 75%, E3×P1 70%, E3×P1↓×F8 70%. Probability that the difference is also larger than P0's range: E3×F8 35%, E3×P1 30%, E3×P1↓×F8 35%. F8 read as "lower, but within the differences between detectors": 55%. E3×P1↓×F8 lower than E3×F8: 45%. Outcome: <span class="todo">[test]</span>.</p>
+<p><b>What we expected before the run.</b> We wrote down guesses before the test run, so that we cannot reinterpret the result afterwards. They are our own guesses, nothing more. Probability that the mean is lower than P0's: F8 70%, E3×F8 75%, E3×P1 70%, E3×P1↓×F8 70%. Probability that the difference is also larger than P0's range: E3×F8 35%, E3×P1 30%, E3×P1↓×F8 35%. F8 read as "lower, but within the differences between detectors": 55%. E3×P1↓×F8 lower than E3×F8: 45%. For F: lower than the P0 mean 60%; lower than E3 55%; difference larger than P0's range 30%; on BEE24-34 and 36 only, lower than E3 60%; lower than the 0.50-cut E3 60%; the same on 34 and 36 only 65%, and on 12, 13 and 16 only 45%. Outcome: <span class="todo">[test]</span>.</p>
 <p><b>Interpretation.</b> <span class="todo">[test]</span> (to be written with the reading rules of Section 10.4 only).</p>
 
 <h3>Tracking metrics</h3>
@@ -484,6 +499,21 @@ table.split tr { break-inside: avoid; }
 <p><b>Four folds together.</b> P0 is below calibrated ByteTrack on the mean in all four folds, but passes the seed-range bar in only two (L35, L33). The pre-registered checks of E3×P1↓×F8 now confirm it on two of four (35-tail and the gray board; 33-tail fails criterion 2 and the whiteboard criterion 1).</p>
 <p><b>What we conclude.</b> In Tables 13 and 15 the mean of every averaging arm is lower than that of P0 single, at the price of 3 to 24 pipeline runs per video. But no rule that we registered in advance beat P0 cleanly on both unseen folds, and the one rule that did pass both heads was built from those heads and then confirmed on only two of four fresh checks (35-tail and the gray-board fold; 33-tail failed criterion 2 and the whiteboard fold criterion 1). We could keep trying rules until one passes; that is exactly what the registration is meant to stop. Success criterion (b) is not reached on the proxy. This is a negative result, and we report it as one.</p>
 <p><b>Failure cases.</b> Averaging only removes random window noise. It cannot remove a bias that every member shares. On L35 about half of P0's error is bias (10.41 of 22.18 over the 9 seeds), and all 9 seeds over-count. Averaging 24 members that all over-count still over-counts.</p>
+<p><b>A model instead of a rule: the distilled-student committee F.</b> After the averaging rules we moved to training models. F (Table 4) changes the detector, not the tracker: each member is fine-tuned on its own pseudo-labels and keeps boxes with score ≥ 0.50. These runs use new leave-one-hive-out detector seeds: seeds 3–14 (design groups 2–5, where the 0.50 cut was chosen), seeds 15–20 (groups 6–7) and seeds 21–32 (groups 8–11). Groups 6–7 and 8–11 were read with rules registered before the runs. For groups 8–11 we built 6 committees of 6 members (two groups each) and report their mean with a standard error. Here "TrackletLink" is the P0 pipeline (640, all boxes) on the same base detectors, averaged the same way. The bars of criterion (b) are 5.05% on 35-head and 20.95% on 33-head.</p>
+<p class="tcap"><b>Table 15d.</b> Distilled-student committee F on the two heads, window error in %. Every cell averages the members' window counts. Groups 8–11: mean over 6 six-member committees (standard error).</p>
+<table class="wide">
+<thead><tr><th class="l">Row</th><th>L35 groups 2–5</th><th>L35 groups 6–7</th><th>L35 groups 8–11</th><th>L33 groups 2–5</th><th>L33 groups 6–7</th><th>L33 groups 8–11</th></tr></thead>
+<tbody>
+<tr class="best"><td class="l">F (students, boxes ≥ 0.50)</td><td>4.34</td><td>6.37</td><td>5.51 (0.30)</td><td>19.07</td><td>20.40</td><td>20.05 (1.11)</td></tr>
+<tr><td class="l">Same students, boxes ≥ 0.40</td><td>6.83</td><td>7.92</td><td>6.91 (1.66)</td><td>19.36</td><td>20.82</td><td>19.41 (0.74)</td></tr>
+<tr><td class="l">640 direct, boxes ≥ 0.40 (no distillation)</td><td>7.92</td><td>11.67</td><td>6.90 (0.88)</td><td>25.88</td><td>28.50</td><td>33.43 (2.74)</td></tr>
+<tr class="sep"><td class="l">TrackletLink</td><td>–</td><td>27.30</td><td>27.07 (7.80)</td><td>–</td><td>21.11</td><td>20.62 (2.12)</td></tr>
+<tr><td class="l">Calibrated ByteTrack</td><td>–</td><td>55.06</td><td>49.44 (6.00)</td><td>–</td><td>41.71</td><td>34.64 (1.85)</td></tr>
+<tr><td class="l">P0 single</td><td>–</td><td>28.01</td><td>–</td><td>–</td><td>23.45</td><td>–</td></tr>
+</tbody>
+</table>
+<p><b>Results for F.</b> On 35-head F is clearly lower than both baselines on both new seed sets. On groups 8–11 it is 21.56 points below TrackletLink (standard error 7.77) and 43.93 below calibrated ByteTrack (5.84), well beyond the noise line of 2.0. But F is still above the 5.05% bar: 6.37% on groups 6–7 and 5.51% on groups 8–11, and only one of the 6 committees (4.88%) is below it. Against the same committee without distillation F is only 1.39 points lower, within noise. So on 35-head the gain from distillation did not reproduce with six members on new seeds. On 33-head F (20.05%) is below the bar, but so is TrackletLink (20.62%). The difference is −0.57 with a standard error of 1.32, so the two cannot be separated within the seed noise. Groups 6–7 gave the same picture (20.40% against 21.11%). On 33-head distillation does help against direct inference (13.37 points lower). The new seeds were also harder than the design groups: two-group committees of F were 1.52 and 1.28 points worse.</p>
+<p><b>What this result does not show.</b> The 0.50 cut was chosen while looking at the labels of these two videos. At 0.50 the design split was the best of 15,400 possible splits (4.34% against a mean of 5.03%), so the design numbers are optimistic. The new-seed check only asks whether the result comes back with other detector seeds; it does not test unseen hives. The cut did not carry over to other hives: on the whiteboard all three detector types got 2.25 to 4.25 points worse at 0.50, and on the seen hives the error rose from 17.97% to 19.23%. On 35-head every known method family stays above 5.05% (F 5.51%, the same committee without distillation 6.90%, TrackletLink 27.07%, calibrated ByteTrack 49.44%). On 33-head the bar cannot separate F from TrackletLink. So the known families fell short of criterion (b) by these numbers; this does not prove that the bar is out of reach. The error left in F is mostly over-counting on 35-head (two thirds, mostly exits) and under-counting on 33-head (nearly nine tenths). F runs on test as a report-only arm.</p>
 
 <h3>What did not work</h3>
 <p>We tried many more ideas, grouped by our four research questions. Table 16 lists them briefly. Unless said otherwise the numbers are window errors in % on 35-head / 33-head with seed group 0–2, where P0 has 17.76 / 23.27. "Not adopted" means the registered rule said so.</p>
@@ -514,6 +544,28 @@ table.split tr { break-inside: avoid; }
 </tbody>
 </table>
 <p>The Lei et al. rule deserves a sentence. It counts a bee that enters a box around the entrance and removes the count if the same ID leaves again. It was designed for a tracker that keeps IDs; with our tracks it was worse in every place we tried. The A1 and A3 detectors show the pattern of the whole project: a big gain on the sparse hive 35 and a big loss on the crowded hive 33.</p>
+<p>Table 16b lists the later ideas around F. Unless said otherwise, the numbers are F's E3 window errors in % on 35-head / 33-head with the design groups, where F has 4.34 / 19.07. Rows marked "one member" use one fixed member per clip on six old clips; that error is not E3, and the unpatched member has 9.10 / 20.98.</p>
+<p class="tcap"><b>Table 16b.</b> Ideas around the distilled-student committee F that did not work.</p>
+<table class="wide split">
+<thead><tr><th class="l">Question</th><th class="l">Idea</th><th class="l">What happened</th></tr></thead>
+<tbody>
+<tr><td class="l" rowspan="2">#1 Detector on new hives</td><td class="l">More seeds for F (six-member committees, seeds 21–32)</td><td class="l">5.51 / 20.05; on 35-head only 1.39 below the same committee without distillation, within noise; line closed</td></tr>
+<tr><td class="l">Student trained on pseudo-labels picked by the teacher's own tracks</td><td class="l">stopped at the CPU check before training: entrance-band recall −0.043 / +0.000 (needed +0.03), precision −0.040 / −0.054 (allowed −0.02); the strict first stage cuts fast bees, so a "trusted track" meant a slow bee; even oracle box scores made E3 worse (+1.93 / +1.24)</td></tr>
+<tr class="sep"><td class="l" rowspan="9">#2 Identity fixes on F's fixed tracks</td><td class="l">Reattach dropped detections to the same bee</td><td class="l">33-head 1.21 lower, 35-head 1.71 higher; only 4 of 541 and 39 of 607 same-bee short tracks change any window</td></tr>
+<tr><td class="l">Borrow another member's later track part</td><td class="l">best 35-head 4.07, at most 0.26 better</td></tr>
+<tr><td class="l">Withdraw a false event with one same-bee return box</td><td class="l">35-head: 0 of 1,568 queries confirmed, no change; 33-head 19.07 → 18.90</td></tr>
+<tr><td class="l">Model for bee switches inside a track (one member)</td><td class="l">35-head 9.10 → 8.89, but event F1 0.868 → 0.851</td></tr>
+<tr><td class="l">Cross-part motion (one member)</td><td class="l">35-head 0.31 worse</td></tr>
+<tr><td class="l">Alternating offset between track parts (one member)</td><td class="l">no training cases in the source folds, so the correction was 0; 35-head only 0.47 better</td></tr>
+<tr><td class="l">Event capacity of the other members (one member)</td><td class="l">35-head 9.10 → 6.82, 33-head no change; whiteboard 39.52 → 40.97, gray board 30.59 → 36.08</td></tr>
+<tr><td class="l">Phase of the frame dates (one member)</td><td class="l">35-head no change, 33-head 0.43 better, gray board 30.59 → 36.08</td></tr>
+<tr><td class="l">Re-centre track end boxes from the image (seeds 3–5, unpatched 4.72 / 19.18)</td><td class="l">35-head about 0.35 better, 33-head about 0.60 worse</td></tr>
+<tr class="sep"><td class="l">#3 Counting logic</td><td class="l">Local crossing counter without track identity</td><td class="l">with GT boxes and GT identity, cancelling back-and-forth crossings within 8 frames still leaves 27.91 / 90.22; a 75-frame window is needed for 5.27 / 19.06; one trained network gave 30.19 / 42.90; stopped before a registered run</td></tr>
+<tr class="sep"><td class="l" rowspan="2">#4 Error decomposition</td><td class="l">Oracle split of F's errors (after the fact)</td><td class="l">33-head: each member misses 79.6 events, 53.6 with a box at the crossing (lost by tracking or linking) and 25.9 without (detector); 64.2 over-counts. 35-head: 11.7 over-counts (returns 5.2, duplicates 4.1), 8.9 misses. Main error: identity on 33-head, duplicates and returns on 35-head</td></tr>
+<tr><td class="l">Delete all over-counts</td><td class="l">4.34 → 6.79 and 19.07 → 41.76: over-counts and misses cancel inside windows</td></tr>
+</tbody>
+</table>
+<p>None of the nine identity fixes passed its own registered bar, and most helped one head while hurting the other. The reason is the cancellation in the last row: 35-head over-counts and 33-head under-counts, so a fix that only removes or only adds events moves the two heads in opposite directions. We stopped patching F's tracks. The two model ideas that would avoid this, the local crossing counter and the track-based pseudo-labels, both stopped before a full run.</p>
 
 <!-- ============================================================ 13 -->
 <h2>Robustness and Failure Analysis</h2>
