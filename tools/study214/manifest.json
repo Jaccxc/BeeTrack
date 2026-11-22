@@ -1,0 +1,22 @@
+{
+  "files": {
+    "README.md": "44b4037811db0c28aad5396715f466a2c23523069e39dc0ce371b335f34a2f1e",
+    "audit214.py": "3a1e6d6c5178c68d17180e1d6e1f17bf9f2495cf0c52f536e1c4a5bc0ccaf0f7",
+    "bound214.py": "f45881ce55e77a19679728a708094f7bb9aa5e83fdd06a6d5546f8a8967bad25",
+    "eval214.py": "fb0025921db713ed73df757fb05fa018beff604e13aa39a19e7f31093862acbf",
+    "evidence214.json.gz": "47abd69c57e2a39c1ca1146885480c107e7789c1459524c7bf6f3eafbec5fa78",
+    "features214.py": "63ff00043717c889d6ff674cf44851d72ca44f7b1ee6aa144b6aa6a8609d2165",
+    "field214.py": "dd388cfe23d20e3cc2952dea3d0062dc361b9e4f8a6b7dbccbb48b9b6179349b",
+    "finalize214.py": "def65047ad2a5afad7f746dc5fb36925f66bd499860b07481f3587d8ac8a1dc3",
+    "fit214.py": "c0eb0efd41d079bf30547737b7a6b351df728188eaf63e1c9b1dea1aa18d6570",
+    "labels214.py": "aeab65c0f174abceb52bf2e58e0dff220e4b8f271aa31db9f85c471df64fa651",
+    "pack214.py": "230cc312a15a0ede4913b9e6610bc62a7fb2f3fb3351e2222caf65cf33cb6e7b",
+    "physical_audit214.py": "e60f7e1ff807184f6bf66dde84593cd92c8d34992132d9faae805e1aec136ab7",
+    "prepare214.py": "37bea0de4987bb7b41c5b05946fc90ec83f2f53859cdd52789663deb08047177",
+    "replay214.py": "c98594f46cb44f3557eed1123807f1165836644ecad90ebb8ca2c47719f391ea",
+    "results.md": "3842f7b460ce4f6f21ed5e5005dcb7a8576e4d72da6c9c96af1fdcdc48e1d759",
+    "source_provenance.json": "e7bd2c0930c66f69824969df2d5c950df3995b2ef6ad08d86ae1747280e3a4e4",
+    "supplement214.py": "6fe40b95816df0ae2eca22b6982b0ec563b90b026829887356409a661601d504"
+  },
+  "schema": "study214-release-v1"
+}

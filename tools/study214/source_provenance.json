@@ -1,0 +1,83 @@
+{
+  "files": {
+    "audit214.py": {
+      "changes": [],
+      "original_sha256": "3a1e6d6c5178c68d17180e1d6e1f17bf9f2495cf0c52f536e1c4a5bc0ccaf0f7",
+      "portable_sha256": "3a1e6d6c5178c68d17180e1d6e1f17bf9f2495cf0c52f536e1c4a5bc0ccaf0f7"
+    },
+    "bound214.py": {
+      "changes": [],
+      "original_sha256": "f45881ce55e77a19679728a708094f7bb9aa5e83fdd06a6d5546f8a8967bad25",
+      "portable_sha256": "f45881ce55e77a19679728a708094f7bb9aa5e83fdd06a6d5546f8a8967bad25"
+    },
+    "eval214.py": {
+      "changes": [
+        "Portable synthetic temporary directory"
+      ],
+      "original_sha256": "57fa3d61833f15687f207d8e99f425db45f1f920ad36aad047b8665e51df9c6c",
+      "portable_sha256": "fb0025921db713ed73df757fb05fa018beff604e13aa39a19e7f31093862acbf"
+    },
+    "features214.py": {
+      "changes": [],
+      "original_sha256": "63ff00043717c889d6ff674cf44851d72ca44f7b1ee6aa144b6aa6a8609d2165",
+      "portable_sha256": "63ff00043717c889d6ff674cf44851d72ca44f7b1ee6aa144b6aa6a8609d2165"
+    },
+    "field214.py": {
+      "changes": [
+        "Public study212 sibling helper",
+        "Require explicit historical input/output paths"
+      ],
+      "original_sha256": "8979e7bdd2eaa5f079c5dc054e7baac9a5ba91d9dc6b03c26d25a0423961a49c",
+      "portable_sha256": "dd388cfe23d20e3cc2952dea3d0062dc361b9e4f8a6b7dbccbb48b9b6179349b"
+    },
+    "finalize214.py": {
+      "changes": [
+        "Require explicit historical input/output paths",
+        "Explicit registered source212 path"
+      ],
+      "original_sha256": "c3a6138965981d1a68dc2ec255a5744590c9594220d08a9b2829a590edd41fac",
+      "portable_sha256": "def65047ad2a5afad7f746dc5fb36925f66bd499860b07481f3587d8ac8a1dc3"
+    },
+    "fit214.py": {
+      "changes": [],
+      "original_sha256": "c0eb0efd41d079bf30547737b7a6b351df728188eaf63e1c9b1dea1aa18d6570",
+      "portable_sha256": "c0eb0efd41d079bf30547737b7a6b351df728188eaf63e1c9b1dea1aa18d6570"
+    },
+    "labels214.py": {
+      "changes": [],
+      "original_sha256": "aeab65c0f174abceb52bf2e58e0dff220e4b8f271aa31db9f85c471df64fa651",
+      "portable_sha256": "aeab65c0f174abceb52bf2e58e0dff220e4b8f271aa31db9f85c471df64fa651"
+    },
+    "pack214.py": {
+      "changes": [],
+      "original_sha256": "230cc312a15a0ede4913b9e6610bc62a7fb2f3fb3351e2222caf65cf33cb6e7b",
+      "portable_sha256": "230cc312a15a0ede4913b9e6610bc62a7fb2f3fb3351e2222caf65cf33cb6e7b"
+    },
+    "physical_audit214.py": {
+      "changes": [
+        "Require explicit historical input/output paths"
+      ],
+      "original_sha256": "f68f66cd2af9b47c0d5276a40d87cdaecd2f1437a0e7c6e50e4e0abce40f1e6f",
+      "portable_sha256": "e60f7e1ff807184f6bf66dde84593cd92c8d34992132d9faae805e1aec136ab7"
+    },
+    "prepare214.py": {
+      "changes": [],
+      "original_sha256": "37bea0de4987bb7b41c5b05946fc90ec83f2f53859cdd52789663deb08047177",
+      "portable_sha256": "37bea0de4987bb7b41c5b05946fc90ec83f2f53859cdd52789663deb08047177"
+    },
+    "replay214.py": {
+      "changes": [],
+      "original_sha256": "c98594f46cb44f3557eed1123807f1165836644ecad90ebb8ca2c47719f391ea",
+      "portable_sha256": "c98594f46cb44f3557eed1123807f1165836644ecad90ebb8ca2c47719f391ea"
+    }
+  },
+  "historical_verification_sha256": {
+    "independent.json": "8c8ba40f673b06389fc8440719163f2a9315b42f9e77c82fa838706879693eb8",
+    "labels.json": "a4948c2464982704df98a410f66b032bb276b3f066e180e3f4acd6979223e723",
+    "manifest.json": "c984d268bcf36fa1228ced8d4e5e7eb3e12afff40e830a2e2341b1f4da4d65cc",
+    "models.json": "c4528eadcba42b66252e269c29038f156dc1faef53720aec8f5323199d7f6990",
+    "physical.json": "92601c69564c99796e2826b756d787225e198faa5f8d9703e5f8952b7e262e87",
+    "pixels.json": "f01d9d015585cc207be7c7cf34b1db8591835990f3414146182393f03da6719f"
+  },
+  "schema": "study214-source-provenance-v1"
+}
