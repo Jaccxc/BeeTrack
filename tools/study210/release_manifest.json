@@ -1,0 +1,117 @@
+{
+  "actual_G_refits": 4,
+  "files": {
+    "README.md": "2bffbe987f702c51d3ecde444be4a945ba56d1bfed99690edfa36ffd63d0648a",
+    "all_disjoint210.json": "e830f7b515170134fd649c945d645849c938891b4a9663f34d3af6454dc656b6",
+    "audit210.py": "1789554b023579fd026453642ff6c3ccf50b5c7b65a729d7571296d96fab25b1",
+    "capacity210.py": "1c0faf2a7a3abf2a607f795d1cc6667c881d80731b7095dfca1eb8c91f5a94ac",
+    "catalog210.py": "c9dcfab16a0e1a20db1a377d576db350cd278f02428502c63914e03eebdc3478",
+    "evidence210.json.gz": "91a9d3e4e2f09fbba1b856e5a79972152af10a48319ca2f3ee002d716e399037",
+    "feature210.py": "a4f78eacdb520926a761ddb57ecfb73cafaadd2550e02d4de86a51ec0faccbaf",
+    "field210.py": "e9ab01b91c8fd8ef048f9fd55c831e57fc12a7e276dc3015b6be40e4dfcce612",
+    "fit210.py": "5f994776ce677239cc871f2c23e6f8c9b321be6e4e0e6cec2e9eb0d6dc000b6a",
+    "global210.py": "153c8ac9e99a06c12aad3d1c0f2919f215fdcb8c155a01be1cc7c7163e08baaa",
+    "labels210.py": "56061866e137d69a9f00d65cf9c273f4d8e5b575964a7a5fbd980e6b35926ebe",
+    "pack210.py": "b52a654dd06c597df74d05b16b4f27b3b9acf7bced071b28a2fe27ec2b04aa47",
+    "physical210.py": "441445d95af13b04eef89a4cb1b378962d17f37f29b09069b5cabc0d2b7c7889",
+    "release210.py": "6db38dc08543a69cabedec7a4732bfd7fff48508feb3846923d6eb7502a7601e",
+    "replay210.py": "6d37919643f49684601b9dbfbc6d04c94d79ec3b3339688ee9aa0de34407c5b9",
+    "results.md": "0147703dc1a850817e1afe0e4204f28e68e4c60c467ed515517078ba58145ab9",
+    "verification_scope.json": "58eb8ff4c5a22832a97765c9c609e526c69f2de586fa1400ad4d25f8a7c6376a",
+    "verification_sources.zip": "2c6614daf19654a3109a424a2066ffc6f60f56d771a29be9ec104d90561c9f0c",
+    "verify_global210.py": "511b9f922a4cace316afaee96865fac7e176e321b0fa5162fdeeee4421d4ce2c"
+  },
+  "original_bundle_sha256": "43e53c59840430a1dba11bd31892b96a9dc9542f7581f5e8c14220dab86838a2",
+  "original_sources": {
+    "audit210.py": {
+      "changes": [],
+      "original_sha256": "1789554b023579fd026453642ff6c3ccf50b5c7b65a729d7571296d96fab25b1",
+      "portable_LF_sha256": "1789554b023579fd026453642ff6c3ccf50b5c7b65a729d7571296d96fab25b1"
+    },
+    "capacity210.py": {
+      "changes": [],
+      "original_sha256": "1c0faf2a7a3abf2a607f795d1cc6667c881d80731b7095dfca1eb8c91f5a94ac",
+      "portable_LF_sha256": "1c0faf2a7a3abf2a607f795d1cc6667c881d80731b7095dfca1eb8c91f5a94ac"
+    },
+    "catalog210.py": {
+      "changes": [],
+      "original_sha256": "c9dcfab16a0e1a20db1a377d576db350cd278f02428502c63914e03eebdc3478",
+      "portable_LF_sha256": "c9dcfab16a0e1a20db1a377d576db350cd278f02428502c63914e03eebdc3478"
+    },
+    "feature210.py": {
+      "changes": [],
+      "original_sha256": "a4f78eacdb520926a761ddb57ecfb73cafaadd2550e02d4de86a51ec0faccbaf",
+      "portable_LF_sha256": "a4f78eacdb520926a761ddb57ecfb73cafaadd2550e02d4de86a51ec0faccbaf"
+    },
+    "field210.py": {
+      "changes": [
+        "Use public study209 independent helpers"
+      ],
+      "original_sha256": "5fb071e733a252f1b2c3771b86b7e1cada3e3f727d29e6908366c2764d0da71d",
+      "portable_LF_sha256": "e9ab01b91c8fd8ef048f9fd55c831e57fc12a7e276dc3015b6be40e4dfcce612"
+    },
+    "fit210.py": {
+      "changes": [],
+      "original_sha256": "5f994776ce677239cc871f2c23e6f8c9b321be6e4e0e6cec2e9eb0d6dc000b6a",
+      "portable_LF_sha256": "5f994776ce677239cc871f2c23e6f8c9b321be6e4e0e6cec2e9eb0d6dc000b6a"
+    },
+    "global210.py": {
+      "changes": [],
+      "original_sha256": "153c8ac9e99a06c12aad3d1c0f2919f215fdcb8c155a01be1cc7c7163e08baaa",
+      "portable_LF_sha256": "153c8ac9e99a06c12aad3d1c0f2919f215fdcb8c155a01be1cc7c7163e08baaa"
+    },
+    "labels210.py": {
+      "changes": [
+        "Use public study203 GT-pin helper"
+      ],
+      "original_sha256": "7fc4b8f82544f31a4e34e4fe577d20345bdcf5495269330556701aa508ca2a0e",
+      "portable_LF_sha256": "56061866e137d69a9f00d65cf9c273f4d8e5b575964a7a5fbd980e6b35926ebe"
+    },
+    "pack210.py": {
+      "changes": [],
+      "original_sha256": "b52a654dd06c597df74d05b16b4f27b3b9acf7bced071b28a2fe27ec2b04aa47",
+      "portable_LF_sha256": "b52a654dd06c597df74d05b16b4f27b3b9acf7bced071b28a2fe27ec2b04aa47"
+    },
+    "physical210.py": {
+      "changes": [
+        "Use public study209 physical helper"
+      ],
+      "original_sha256": "2d5ab7d033dffebfdb42e2825b31fd0fde6845bcc1e2c0e33965634bf23d78b3",
+      "portable_LF_sha256": "441445d95af13b04eef89a4cb1b378962d17f37f29b09069b5cabc0d2b7c7889"
+    },
+    "replay210.py": {
+      "changes": [],
+      "original_sha256": "6d37919643f49684601b9dbfbc6d04c94d79ec3b3339688ee9aa0de34407c5b9",
+      "portable_LF_sha256": "6d37919643f49684601b9dbfbc6d04c94d79ec3b3339688ee9aa0de34407c5b9"
+    },
+    "verify_global210.py": {
+      "changes": [],
+      "original_sha256": "511b9f922a4cace316afaee96865fac7e176e321b0fa5162fdeeee4421d4ce2c",
+      "portable_LF_sha256": "511b9f922a4cace316afaee96865fac7e176e321b0fa5162fdeeee4421d4ce2c"
+    }
+  },
+  "physical_states": 36,
+  "privacy": {
+    "hash_coincidences": 0,
+    "integers": 0,
+    "numeric": 7,
+    "other_strings": 0,
+    "paths": 0,
+    "strings": 23206
+  },
+  "schema": "study210-release.v1",
+  "shared_public_LF_sha256": {
+    "tools/study203/owners203.py": "989af68a65e95946d1fd106c92b34c9a618fece80a4c238a9c54fbeeb1cd61b9",
+    "tools/study208/physical208.py": "a5014c629bb4aa38e1e3ca4fdb4c46c254c1bab243b8cd63a857c229c8972358",
+    "tools/study209/physical209.py": "44757fff70cb9518f46cfcbf88e36b0e359dce09f303ab1239e675dab6653dbc",
+    "tools/study209/replay209.py": "2d5b08a44b764eb05da6b30722c6f198cd7796ebf4697006ea43a4038115678b",
+    "tools/study209/replay_release209.py": "ae7baf4f943f80bca0413cf37a4010f4abe8b02427f0ad4b469c5f4bc904cf19"
+  },
+  "verification": {
+    "global_receipt_sha256": "76311ecf6d0cb28f9f90ce75e6480368620037c247a174d7964b7f7de962c4ad",
+    "global_summary_sha256": "dae877a367db59d2615a1af45403786e8410a94ce73b17b214d452391c93abe5",
+    "main_independent_sha256": "e99b58ed1985db903860487057c6627b0dc84d0f3719a774475022996eee7193",
+    "scope": "Main36 full physical rows/events/dualIoU graphs/windows independently checked with prior ordered-raw geometry cache; reused208 reliable weak owners. Supplement: both head minimum original-raw count witnesses, no new F1. Public numeric does not rebuild brackets from raw boxes or assign GT owners."
+  },
+  "zero_missing_class_corrections": 4
+}
