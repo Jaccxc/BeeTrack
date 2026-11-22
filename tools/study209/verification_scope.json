@@ -1,0 +1,6 @@
+{
+  "exact_minimum_receipt_sha256": "72142107b5c3d571c0c6eb7cd3906e36944598184b3138a27a7ff2847294e3c6",
+  "exact_minimum_summary_sha256": "5f8ab26dd235c6b831ab008c4214513c3ec114adc9bb807a5ff20a5587f18a02",
+  "main_independent_sha256": "98e8471ab4e5339f86d4d3aa20d307927687147d45f199d5a075b6b5c056be33",
+  "scope": "All36 main states native matching; five fresh image/LK pairs and remaining trace checks. Supplement independent raw physical check: both head minima, count only, no F1."
+}

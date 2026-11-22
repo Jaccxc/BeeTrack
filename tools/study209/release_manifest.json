@@ -1,0 +1,143 @@
+{
+  "files": {
+    "README.md": "d066fc8fc9f7d5f517bd00f0ff7820616d2e4eb24ec0a25247a624f20272ed1c",
+    "attainable209.py": "c8f709108ae93a6b03e8a6ffac9532e445fba7d8e31be68ba02e416a8af94b24",
+    "audit209.py": "0d447f91a3569ad3c4457b80b8651265a00ae8f02f96890236b628ae153ad131",
+    "bound209.py": "fa66784816c67fc4512ec3284e5f82cc2c6094ab81d1aa1dac6161758eda1fe9",
+    "catalog209.py": "d5f14f7e8d13c8eeaceeebd525649b317431de2c3f2d76c1f24913546de8c70a",
+    "evidence.json.gz": "e39c7756008259cf6f7da7da19c8856082299f8f1db78bcd6aa5e4581f2d22ab",
+    "exact209.py": "b64bd83da0ffbe5a955013fef8534b010824a829217e1566a4c96f922bf2dd00",
+    "feature209_stage.py": "2c96ea81702cc1016a873a18922d23a144f02c336aee54f260a3bf9cab4a066e",
+    "features209.py": "fa3c38c6630259d1a70ced8607093c26ab3247f6d250c3aa3110f1e91e8b34a2",
+    "fit209.py": "fad86253576c251190b805934bab73558607f07e3003c40a66fe1e2a87aef3f2",
+    "labels209.py": "a0eec649224c51b41554b5a7ed2ad91ac3809ceb5dcf864e2cc954fa93411dd4",
+    "pack_replay209.py": "9bd93d761e9d41d6fa5472368e763d923ee8ee0b14a0734ca6825e7b4276a881",
+    "physical209.py": "44757fff70cb9518f46cfcbf88e36b0e359dce09f303ab1239e675dab6653dbc",
+    "project_support209.py": "a04dfa0d80784548d14e94a1e62a2d80fdcd032567d94b26e4eb39a6fb950dba",
+    "replay209.py": "2d5b08a44b764eb05da6b30722c6f198cd7796ebf4697006ea43a4038115678b",
+    "replay_release209.py": "ae7baf4f943f80bca0413cf37a4010f4abe8b02427f0ad4b469c5f4bc904cf19",
+    "replay_support209.py": "e604d35abd85d4d6ae9d25c244b5b7ea12358cbd45b0a0570a4e25f28e3b71ad",
+    "replay_weak209.py": "e93dc1b554e5b9c4a6357e8b0c894ba4dd525c9187d2b009b858551d2dae645b",
+    "results.md": "acd064498f61c914b61076656cb7974ab7f8a4f85978fabe6ba482be00fb55ee",
+    "verification_scope.json": "d1b7628ed3e9d5430928c92fb76f36dd3059ffcc7be249719cacb7e12a640b11",
+    "verification_sources.zip": "842b3d84830dffceec58524db424e24d6b87d68f851ed7edd3f46d57ad8eabac",
+    "verify209.py": "9e94859034e579b3e4a4664a3be5e0dd64dfc5a7b12d1551701c45918a5cee74",
+    "verify_support209.py": "a95487472826761f67bd74369d1349d1e1dd38196dc8e6126c1103885552d1b8",
+    "window_support.json": "e480dc538d09772e8b5fb8ad920376fe3a21ae73b1dcfa4a10e89181582d9f6f"
+  },
+  "main_physical_states": 36,
+  "original_bundle_sha256": "e8d7846a223308d6a3b82f54a3232edd2f1750e2fc3d34dbbafe7102f32a8a20",
+  "original_sources": {
+    "attainable209.py": {
+      "changes": [],
+      "original_sha256": "c8f709108ae93a6b03e8a6ffac9532e445fba7d8e31be68ba02e416a8af94b24",
+      "portable_sha256": "c8f709108ae93a6b03e8a6ffac9532e445fba7d8e31be68ba02e416a8af94b24"
+    },
+    "audit209.py": {
+      "changes": [],
+      "original_sha256": "0d447f91a3569ad3c4457b80b8651265a00ae8f02f96890236b628ae153ad131",
+      "portable_sha256": "0d447f91a3569ad3c4457b80b8651265a00ae8f02f96890236b628ae153ad131"
+    },
+    "bound209.py": {
+      "changes": [],
+      "original_sha256": "fa66784816c67fc4512ec3284e5f82cc2c6094ab81d1aa1dac6161758eda1fe9",
+      "portable_sha256": "fa66784816c67fc4512ec3284e5f82cc2c6094ab81d1aa1dac6161758eda1fe9"
+    },
+    "catalog209.py": {
+      "changes": [],
+      "original_sha256": "d5f14f7e8d13c8eeaceeebd525649b317431de2c3f2d76c1f24913546de8c70a",
+      "portable_sha256": "d5f14f7e8d13c8eeaceeebd525649b317431de2c3f2d76c1f24913546de8c70a"
+    },
+    "exact209.py": {
+      "changes": [],
+      "original_sha256": "b64bd83da0ffbe5a955013fef8534b010824a829217e1566a4c96f922bf2dd00",
+      "portable_sha256": "b64bd83da0ffbe5a955013fef8534b010824a829217e1566a4c96f922bf2dd00"
+    },
+    "feature209_stage.py": {
+      "changes": [],
+      "original_sha256": "2c96ea81702cc1016a873a18922d23a144f02c336aee54f260a3bf9cab4a066e",
+      "portable_sha256": "2c96ea81702cc1016a873a18922d23a144f02c336aee54f260a3bf9cab4a066e"
+    },
+    "features209.py": {
+      "changes": [],
+      "original_sha256": "fa3c38c6630259d1a70ced8607093c26ab3247f6d250c3aa3110f1e91e8b34a2",
+      "portable_sha256": "fa3c38c6630259d1a70ced8607093c26ab3247f6d250c3aa3110f1e91e8b34a2"
+    },
+    "fit209.py": {
+      "changes": [],
+      "original_sha256": "fad86253576c251190b805934bab73558607f07e3003c40a66fe1e2a87aef3f2",
+      "portable_sha256": "fad86253576c251190b805934bab73558607f07e3003c40a66fe1e2a87aef3f2"
+    },
+    "labels209.py": {
+      "changes": [
+        "Use existing public study203 GT-pin helper"
+      ],
+      "original_sha256": "4f2176fc6937373aa143b1c3f4c223e98ac7795d33c39e5e26bf8a97eacdb2e3",
+      "portable_sha256": "a0eec649224c51b41554b5a7ed2ad91ac3809ceb5dcf864e2cc954fa93411dd4"
+    },
+    "pack_replay209.py": {
+      "changes": [],
+      "original_sha256": "9bd93d761e9d41d6fa5472368e763d923ee8ee0b14a0734ca6825e7b4276a881",
+      "portable_sha256": "9bd93d761e9d41d6fa5472368e763d923ee8ee0b14a0734ca6825e7b4276a881"
+    },
+    "physical209.py": {
+      "changes": [
+        "Use existing public study208 materialization helper"
+      ],
+      "original_sha256": "7848f69abb6688f7aaa350a3b75a111d346cf17af5c5452766cf110125694f11",
+      "portable_sha256": "44757fff70cb9518f46cfcbf88e36b0e359dce09f303ab1239e675dab6653dbc"
+    },
+    "project_support209.py": {
+      "changes": [],
+      "original_sha256": "a04dfa0d80784548d14e94a1e62a2d80fdcd032567d94b26e4eb39a6fb950dba",
+      "portable_sha256": "a04dfa0d80784548d14e94a1e62a2d80fdcd032567d94b26e4eb39a6fb950dba"
+    },
+    "replay209.py": {
+      "changes": [],
+      "original_sha256": "2d5b08a44b764eb05da6b30722c6f198cd7796ebf4697006ea43a4038115678b",
+      "portable_sha256": "2d5b08a44b764eb05da6b30722c6f198cd7796ebf4697006ea43a4038115678b"
+    },
+    "replay_release209.py": {
+      "changes": [],
+      "original_sha256": "ae7baf4f943f80bca0413cf37a4010f4abe8b02427f0ad4b469c5f4bc904cf19",
+      "portable_sha256": "ae7baf4f943f80bca0413cf37a4010f4abe8b02427f0ad4b469c5f4bc904cf19"
+    },
+    "replay_support209.py": {
+      "changes": [],
+      "original_sha256": "e604d35abd85d4d6ae9d25c244b5b7ea12358cbd45b0a0570a4e25f28e3b71ad",
+      "portable_sha256": "e604d35abd85d4d6ae9d25c244b5b7ea12358cbd45b0a0570a4e25f28e3b71ad"
+    },
+    "replay_weak209.py": {
+      "changes": [],
+      "original_sha256": "e93dc1b554e5b9c4a6357e8b0c894ba4dd525c9187d2b009b858551d2dae645b",
+      "portable_sha256": "e93dc1b554e5b9c4a6357e8b0c894ba4dd525c9187d2b009b858551d2dae645b"
+    },
+    "verify209.py": {
+      "changes": [],
+      "original_sha256": "9e94859034e579b3e4a4664a3be5e0dd64dfc5a7b12d1551701c45918a5cee74",
+      "portable_sha256": "9e94859034e579b3e4a4664a3be5e0dd64dfc5a7b12d1551701c45918a5cee74"
+    },
+    "verify_support209.py": {
+      "changes": [],
+      "original_sha256": "a95487472826761f67bd74369d1349d1e1dd38196dc8e6126c1103885552d1b8",
+      "portable_sha256": "a95487472826761f67bd74369d1349d1e1dd38196dc8e6126c1103885552d1b8"
+    }
+  },
+  "privacy": {
+    "hash_coincidences": 0,
+    "integers": 0,
+    "numeric": 9,
+    "other_strings": 0,
+    "paths": 0,
+    "strings": 37612
+  },
+  "private_native_reconstruction_rerun": false,
+  "schema": "study209-release-v1",
+  "source_logistic_refits": 12,
+  "upstream_verification": {
+    "exact_minimum_receipt_sha256": "72142107b5c3d571c0c6eb7cd3906e36944598184b3138a27a7ff2847294e3c6",
+    "exact_minimum_summary_sha256": "5f8ab26dd235c6b831ab008c4214513c3ec114adc9bb807a5ff20a5587f18a02",
+    "main_independent_sha256": "98e8471ab4e5339f86d4d3aa20d307927687147d45f199d5a075b6b5c056be33",
+    "scope": "All36 main states native matching; five fresh image/LK pairs and remaining trace checks. Supplement independent raw physical check: both head minima, count only, no F1."
+  }
+}
