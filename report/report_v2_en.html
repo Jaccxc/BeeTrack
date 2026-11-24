@@ -237,14 +237,14 @@ table.split tr { break-inside: avoid; }
 <li><b>The paper's tracker.</b> TOPICTrack, the tracker released with BEE24 [16], on our detections. Its ReID loading had to be fixed. With its shipped parameters it gives 47.65% on val + dev; we therefore also choose a setting for it on the unseen-hive proxy, the same data we used for our own choices: setting A (threshold 0.2, min_hits 3). It is report-only on test.</li>
 </ul>
 <p>A COCO model without fine-tuning cannot serve as a baseline because COCO has no bee class.</p>
-<p><b>Detector training and detection quality.</b> Table 6 will list the training length and detection quality of the three detectors. We did not carry these numbers into the v2 results summary, so they are left open here rather than copied from older runs.</p>
+<p><b>Detector training and detection quality.</b> Table 6 lists the training length and detection quality of the three detectors. Each was trained for at most 50 epochs and stopped early once validation mAP@0.5:0.95 had not improved for 15 epochs; the weights of the best epoch are kept. The validation columns were recomputed from those weights on the 840 validation images at 640 pixels. The test columns are filled only after the test protocol is locked; they are reported, not used to choose anything.</p>
 <p class="tcap"><b>Table 6.</b> Detection quality of the three P0 detectors (Ultralytics validation).</p>
 <table>
 <thead><tr><th class="l">Detector</th><th>Best / last epoch</th><th>Val mAP@0.5</th><th>Val mAP@0.5:0.95</th><th>Test mAP@0.5</th><th>Test mAP@0.5:0.95</th></tr></thead>
 <tbody>
-<tr><td class="l"><code>y11s_640</code></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr><td class="l"><code>y11s4_s1</code></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr><td class="l"><code>y11s4_s2</code></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l"><code>y11s_640</code></td><td>7 / 22</td><td>0.946</td><td>0.513</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l"><code>y11s4_s1</code></td><td>4 / 19</td><td>0.939</td><td>0.513</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l"><code>y11s4_s2</code></td><td>8 / 23</td><td>0.945</td><td>0.504</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
 </tbody>
 </table>
 <p>A warning from our own results: detection quality and counting do not move together. Training with vertical flips raised validation mAP in 6 of 6 runs while the counting error on new hives got worse (Section 12.4).</p>

@@ -237,14 +237,14 @@ table.split tr { break-inside: avoid; }
 <li><b>論文的追蹤器。</b>隨 BEE24 [16] 發表的追蹤器 TOPICTrack，接在我們的偵測結果上。它載入 ReID 的部分必須先修正。使用它附帶的參數時，在 val + dev 上是 47.65%；所以我們也在沒看過蜂箱的代理上替它選了一組設定，用的是我們替自己做選擇時的同一批資料：設定 A（門檻 0.2，min_hits 3）。它在測試集上只報告。</li>
 </ul>
 <p>沒有微調的 COCO 模型不能當基準，因為 COCO 沒有蜜蜂這個類別。</p>
-<p><b>偵測器訓練與偵測品質。</b>表 6 將列出三個偵測器的訓練長度與偵測品質。這些數字還沒有整理進 v2 的結果摘要，所以這裡先留空，不從舊的執行結果抄過來。</p>
+<p><b>偵測器訓練與偵測品質。</b>表 6 列出三個偵測器的訓練長度與偵測品質。每個最多訓練 50 個 epoch，驗證 mAP@0.5:0.95 連續 15 個 epoch 沒有進步就提前停止，留下最好那一輪的權重。驗證欄是用留下的權重，在 840 張驗證影像上以 640 解析度重新算的。測試欄要等測試規則鎖定後才算，只報告，不拿來選任何設定。</p>
 <p class="tcap"><b>表 6.</b> P0 三個偵測器的偵測品質（Ultralytics validation）。</p>
 <table>
 <thead><tr><th class="l">偵測器</th><th>最佳 / 最後 epoch</th><th>驗證 mAP@0.5</th><th>驗證 mAP@0.5:0.95</th><th>測試 mAP@0.5</th><th>測試 mAP@0.5:0.95</th></tr></thead>
 <tbody>
-<tr><td class="l"><code>y11s_640</code></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr><td class="l"><code>y11s4_s1</code></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr><td class="l"><code>y11s4_s2</code></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[TODO detection metrics]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l"><code>y11s_640</code></td><td>7 / 22</td><td>0.946</td><td>0.513</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l"><code>y11s4_s1</code></td><td>4 / 19</td><td>0.939</td><td>0.513</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l"><code>y11s4_s2</code></td><td>8 / 23</td><td>0.945</td><td>0.504</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
 </tbody>
 </table>
 <p>我們自己的結果給了一個警告：偵測品質和計數不會一起變好。訓練時加入垂直翻轉，6 次執行中 6 次的驗證 mAP 都上升，新蜂箱上的計數誤差卻變差（第 12.4 節）。</p>
