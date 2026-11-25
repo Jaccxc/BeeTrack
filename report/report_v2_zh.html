@@ -34,7 +34,7 @@ table.split tr { break-inside: avoid; }
 <!-- ============================================================ 1 -->
 <h2>摘要</h2>
 <div class="abstract">
-<p>巢口流量，也就是離開和回到蜂箱的蜜蜂數量，能直接反映蜂群的活動，但靠人眼計數沒辦法大量進行。BeeTrack 在蜂巢口影片中找出每一隻蜜蜂，隨時間追蹤牠，並計算有多少蜜蜂進出。蜜蜂由在 BEE24 資料集上微調的 YOLO11-s 偵測器找出。嚴格的第一階段追蹤器只把幾乎完全重疊的框接起來，所以每一段短的小軌跡很可能只屬於一隻蜜蜂。接著由只看幾何資訊的小型網路 TrackletLink 離線決定哪一段小軌跡接續哪一段。一條軌跡從巢口區域外開始、在區域內結束，算一次進；反過來算一次出。我們主要用 <i>30 秒窗計數誤差</i>評估系統：每 30 秒比較一次預測與真實的進、出次數，把差值加總，再除以真實事件的總數。在偵測器訓練時看過的蜂箱上（val + dev，486 次事件），主流程 P0 的窗誤差是 18.46%（三個偵測器的平均），計數經過校正的 ByteTrack 是 34.82%，預設 ByteTrack 是 40.18%。在偵測器沒看過的蜂箱上，結果比較差。在留一蜂箱測試中，P0 在兩個留出的蜂箱上分別是 22.18% 與 23.90%，在兩個片段很短的留出場景上是 33.97% 與 36.60%。把多個偵測器、多種輸入尺度或翻轉後影片的窗計數取平均，在部分折上降低了誤差，但沒有任何事先寫下的規則在兩折上都明顯勝過 P0。有一條規則通過了兩折，但它是看過這些結果之後才設計的，之後在四個新的檢查中也只有兩個得到確認。因此主系統仍是 P0，做平均的各臂只當附帶結果。在五支官方測試影片上（405 次事件，鎖定設定只跑一次），P0 的窗誤差是 <span class="todo">[test]</span>，校正 ByteTrack 是 <span class="todo">[test]</span>。</p>
+<p>巢口流量，也就是離開和回到蜂箱的蜜蜂數量，能直接反映蜂群的活動，但靠人眼計數沒辦法大量進行。BeeTrack 在蜂巢口影片中找出每一隻蜜蜂，隨時間追蹤牠，並計算有多少蜜蜂進出。蜜蜂由在 BEE24 資料集上微調的 YOLO11-s 偵測器找出。嚴格的第一階段追蹤器只把幾乎完全重疊的框接起來，所以每一段短的小軌跡很可能只屬於一隻蜜蜂。接著由只看幾何資訊的小型網路 TrackletLink 離線決定哪一段小軌跡接續哪一段。一條軌跡從巢口區域外開始、在區域內結束，算一次進；反過來算一次出。我們主要用 <i>30 秒窗計數誤差</i>評估系統：每 30 秒比較一次預測與真實的進、出次數，把差值加總，再除以真實事件的總數。在偵測器訓練時看過的蜂箱上（val + dev，486 次事件），主流程 P0 的窗誤差是 18.46%（三個偵測器的平均），計數經過校正的 ByteTrack 是 34.82%，預設 ByteTrack 是 40.18%。在偵測器沒看過的蜂箱上，結果比較差。在留一蜂箱測試中，P0 在兩個留出的蜂箱上分別是 22.18% 與 23.90%，在兩個片段很短的留出場景上是 33.97% 與 36.60%。把多個偵測器、多種輸入尺度或翻轉後影片的窗計數取平均，在部分折上降低了誤差，但沒有任何事先寫下的規則在兩折上都明顯勝過 P0。有一條規則通過了兩折，但它是看過這些結果之後才設計的，之後在四個新的檢查中也只有兩個得到確認。因此主系統仍是 P0，做平均的各臂只當附帶結果。在五支官方測試影片上（405 次事件，鎖定設定只跑一次），P0 的窗誤差是 37.69%，校正 ByteTrack 是 35.60%。P0 仍明顯低於預設 ByteTrack（46.21%），但沒有比校正 ByteTrack 準。</p>
 <p class="keywords"><b>關鍵詞：</b>多目標追蹤、小軌跡連結、蜜蜂監測、YOLO11、ByteTrack、巢口計數、領域偏移、留一蜂箱</p>
 </div>
 
@@ -242,9 +242,9 @@ table.split tr { break-inside: avoid; }
 <table>
 <thead><tr><th class="l">偵測器</th><th>最佳 / 最後 epoch</th><th>驗證 mAP@0.5</th><th>驗證 mAP@0.5:0.95</th><th>測試 mAP@0.5</th><th>測試 mAP@0.5:0.95</th></tr></thead>
 <tbody>
-<tr><td class="l"><code>y11s_640</code></td><td>7 / 22</td><td>0.946</td><td>0.513</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr><td class="l"><code>y11s4_s1</code></td><td>4 / 19</td><td>0.939</td><td>0.513</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr><td class="l"><code>y11s4_s2</code></td><td>8 / 23</td><td>0.945</td><td>0.504</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l"><code>y11s_640</code></td><td>7 / 22</td><td>0.946</td><td>0.513</td><td>0.905</td><td>0.472</td></tr>
+<tr><td class="l"><code>y11s4_s1</code></td><td>4 / 19</td><td>0.939</td><td>0.513</td><td>0.875</td><td>0.449</td></tr>
+<tr><td class="l"><code>y11s4_s2</code></td><td>8 / 23</td><td>0.945</td><td>0.504</td><td>0.882</td><td>0.451</td></tr>
 </tbody>
 </table>
 <p>我們自己的結果給了一個警告：偵測品質和計數不會一起變好。訓練時加入垂直翻轉，6 次執行中 6 次的驗證 mAP 都上升，新蜂箱上的計數誤差卻變差（第 12.4 節）。</p>
@@ -300,7 +300,7 @@ table.split tr { break-inside: avoid; }
 <li><b>擁擠程度</b>：擁擠的蜂箱 33 對照稀疏的蜂箱 35，以及逐支影片的結果。</li>
 <li><b>新蜂箱</b>：上述的留一蜂箱代理。</li>
 </ul>
-<p>影像劣化與掉幀都在 val + dev 上、用三個看過蜂箱的偵測器執行，比較 P0、校正 ByteTrack（用乾淨資料擬合的 <i>k</i>）與預設 ByteTrack。開發期間測試集保持鎖定；同樣的條件已登記為唯一一次測試執行中只報告的項目。乾淨條件必須重現表 7 的數字（18.46 / 34.82 / 40.18%）。</p>
+<p>影像劣化與掉幀都在 val + dev 上、用三個看過蜂箱的偵測器執行，比較 P0、校正 ByteTrack（用乾淨資料擬合的 <i>k</i>）與預設 ByteTrack。開發期間測試集保持鎖定；同樣的條件在唯一一次測試執行中跑過，只報告。乾淨條件必須重現表 7 的數字（18.46 / 34.82 / 40.18%）。</p>
 
 <!-- ============================================================ 11 -->
 <h2>量化結果</h2>
@@ -326,52 +326,52 @@ table.split tr { break-inside: avoid; }
 <p><b>解讀。</b>在偵測器認得的蜂箱上，P0 的窗誤差不到預設 ByteTrack 的一半，比校正 ByteTrack 與論文追蹤器的一半略多。每一個差距都大於偵測器之間的差異，而且每個偵測器上都是 P0 比較低。事件 F1 也是同樣的結論（0.740 對 0.545 與 0.592；IoU 0.3 時，P0 為 0.750，預設 ByteTrack 為 0.557）。校正在兩個偵測器上對 ByteTrack 有幫助，但 12.51 個百分點的全距顯示，一個固定的係數沒辦法適用每個偵測器。所有附加臂都守住看過蜂箱的門檻（平均 ≤ 18.46%）。做平均的臂全都比 P0 低，含 F8 的降得最多；例如 E3×P1↓×F8 低了 2.72 個百分點。P1 也比較低，但差距小於偵測器的全距。成功標準 (a) 達成。</p>
 
 <h3>測試集</h3>
-<p>測試只執行一次，在本草稿之後，使用上述設定。表 8 依照鎖定的格式。</p>
-<p class="tcap"><b>表 8.</b> 測試集（5 支官方影片，405 次真值事件），30 s 窗誤差（%）。判讀欄：依第 10.4 節規則給出的說法。</p>
+<p>測試在 2026-11-25 用上述鎖定的設定執行了一次。表 8 依照鎖定的格式。</p>
+<p class="tcap"><b>表 8.</b> 測試集（5 支官方影片，405 次真值事件），30 s 窗誤差（%）。判讀欄：依第 10.4 節規則給出的說法。校正 ByteTrack 只把計數乘上倍率，沒有事件，所以沒有事件 F1（–）。</p>
 <table class="wide split">
 <thead><tr><th class="l">臂</th><th><code>y11s_640</code></th><th><code>y11s4_s1</code></th><th><code>y11s4_s2</code></th><th>平均</th><th>全距</th><th>事件 F1@0.5</th><th class="l">判讀</th></tr></thead>
 <tbody>
-<tr class="best"><td class="l">P0</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td class="l">–</td></tr>
-<tr><td class="l">校正 ByteTrack</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td class="l"><span class="todo">[test]</span></td></tr>
-<tr><td class="l">預設 ByteTrack</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td class="l"><span class="todo">[test]</span></td></tr>
-<tr><td class="l">論文的追蹤器 A（只報告）</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td class="l"><span class="todo">[test]</span></td></tr>
-<tr class="sep"><td class="l">P1（只報告）</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td class="l"><span class="todo">[test]</span></td></tr>
-<tr><td class="l">F8（只報告）</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
-<tr class="sep"><td class="l">E3（只報告）</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0 的</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
-<tr><td class="l">E3×F8（只報告）</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0 的</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
-<tr><td class="l">E3×P1（只報告）</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0 的</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
-<tr><td class="l">E3×P1↓×F8（只報告）</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0 的</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
-<tr class="sep"><td class="l">F（只報告）</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0 的</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
-<tr><td class="l">E3 加 0.50 框門檻（只報告）</td><td colspan="3"><span class="todo">[test]</span></td><td>–</td><td>P0 的</td><td>n/a</td><td class="l"><span class="todo">[test]</span></td></tr>
+<tr class="best"><td class="l">P0</td><td>36.48</td><td>37.61</td><td>38.98</td><td>37.69</td><td>2.50</td><td>0.629</td><td class="l">–</td></tr>
+<tr><td class="l">校正 ByteTrack</td><td>35.28</td><td>36.02</td><td>35.51</td><td>35.60</td><td>0.73</td><td>–</td><td class="l">+2.09</td></tr>
+<tr><td class="l">預設 ByteTrack</td><td>48.00</td><td>44.59</td><td>46.04</td><td>46.21</td><td>3.41</td><td>0.414</td><td class="l">在測試集上較準確</td></tr>
+<tr><td class="l">論文的追蹤器 A（只報告）</td><td>43.19</td><td>40.94</td><td>47.44</td><td>43.86</td><td>6.50</td><td>0.472</td><td class="l">較低，但在偵測器之間的差異範圍內</td></tr>
+<tr class="sep"><td class="l">P1（只報告）</td><td>38.96</td><td>64.48</td><td>41.60</td><td>48.35</td><td>25.51</td><td>0.564</td><td class="l">+10.66</td></tr>
+<tr><td class="l">F8（只報告）</td><td>36.94</td><td>36.96</td><td>39.26</td><td>37.72</td><td>2.31</td><td>n/a</td><td class="l">+0.03</td></tr>
+<tr class="sep"><td class="l">E3（只報告）</td><td colspan="3">36.81</td><td>–</td><td>P0 的</td><td>n/a</td><td class="l">較低，但在偵測器之間的差異範圍內</td></tr>
+<tr><td class="l">E3×F8（只報告）</td><td colspan="3">37.24</td><td>–</td><td>P0 的</td><td>n/a</td><td class="l">較低，但在偵測器之間的差異範圍內</td></tr>
+<tr><td class="l">E3×P1（只報告）</td><td colspan="3">47.00</td><td>–</td><td>P0 的</td><td>n/a</td><td class="l">+9.31</td></tr>
+<tr><td class="l">E3×P1↓×F8（只報告）</td><td colspan="3">37.31</td><td>–</td><td>P0 的</td><td>n/a</td><td class="l">較低，但在偵測器之間的差異範圍內</td></tr>
+<tr class="sep"><td class="l">F（只報告）</td><td colspan="3">46.60</td><td>–</td><td>P0 的</td><td>n/a</td><td class="l">+8.91</td></tr>
+<tr><td class="l">E3 加 0.50 框門檻（只報告）</td><td colspan="3">39.51</td><td>–</td><td>P0 的</td><td>n/a</td><td class="l">+1.82</td></tr>
 </tbody>
 </table>
-<p>F 與 0.50 門檻的 E3 也會分開列出三支短影片 BEE24-12、13、16（<span class="todo">[test]</span>）和長影片 BEE24-34、36（<span class="todo">[test]</span>）。F 的計畫原本把這三支短影片歸為看過的蜂箱；鎖定前我們發現 BEE24-12 的畫面大小（810 × 430）沒有出現在任何訓練影片，13、16 則和兩個訓練蜂箱同樣是 950 × 600，所以只稱它們為短影片。F 減 0.50 門檻的 E3：<span class="todo">[test]</span>。F 減 E3，只列數字：<span class="todo">[test]</span>。</p>
+<p>F 與 0.50 門檻的 E3 也分開列出三支短影片 BEE24-12、13、16（F 31.99%，0.50 門檻的 E3 33.94%）和長影片 BEE24-34、36（F 50.65%，0.50 門檻的 E3 41.06%）。F 的計畫原本把這三支短影片歸為看過的蜂箱；鎖定前我們發現 BEE24-12 的畫面大小（810 × 430）沒有出現在任何訓練影片，13、16 則和兩個訓練蜂箱同樣是 950 × 600，所以只稱它們為短影片。F 減 0.50 門檻的 E3：+7.08。只看三支短影片是 −1.94，大於同一組影片上 P0 的全距（1.29），照事先定的讀法，蒸餾在這三支影片上較準；不過這三支只有 88 個真實事件，F 在這裡也還比 P0 高 2.35（31.99 對 29.65）。只看長影片是 +9.59。F 減 E3，只列數字：+9.78。</p>
 <p class="tcap"><b>表 9.</b> P0 在測試集上的逐支影片結果（偵測器 <code>y11s_640</code>；另外兩個偵測器的結果見紀錄）。偏差 = 預測 − 真值事件數。</p>
 <table class="wide">
 <thead><tr><th class="l">影片</th><th>真值 進 / 出</th><th>P0 進 / 出</th><th>窗誤差</th><th>事件 F1@0.5（配對 / 錯誤 / 漏掉）</th><th>事件 F1@0.3</th><th>偏差</th></tr></thead>
 <tbody>
-<tr><td class="l">BEE24-12</td><td>1 / 3</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr><td class="l">BEE24-13</td><td>10 / 11</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr><td class="l">BEE24-16</td><td>26 / 37</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr><td class="l">BEE24-34</td><td>84 / 88</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr><td class="l">BEE24-36</td><td>91 / 54</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
-<tr class="sep"><td class="l"><b>合計</b></td><td>405</td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td><td><span class="todo">[test]</span></td></tr>
+<tr><td class="l">BEE24-12</td><td>1 / 3</td><td>1 / 4</td><td>31.67</td><td>0.667 (3 / 2 / 1)</td><td>0.667</td><td>+1</td></tr>
+<tr><td class="l">BEE24-13</td><td>10 / 11</td><td>6 / 10</td><td>24.76</td><td>0.811 (15 / 1 / 6)</td><td>0.811</td><td>−5</td></tr>
+<tr><td class="l">BEE24-16</td><td>26 / 37</td><td>15 / 29</td><td>30.26</td><td>0.748 (40 / 4 / 23)</td><td>0.748</td><td>−19</td></tr>
+<tr><td class="l">BEE24-34</td><td>84 / 88</td><td>105 / 124</td><td>35.19</td><td>0.608 (122 / 107 / 50)</td><td>0.618</td><td>+57</td></tr>
+<tr><td class="l">BEE24-36</td><td>91 / 54</td><td>62 / 27</td><td>42.53</td><td>0.598 (70 / 19 / 75)</td><td>0.624</td><td>−56</td></tr>
+<tr class="sep"><td class="l"><b>合計</b></td><td>405</td><td>189 / 194</td><td>36.48</td><td>0.635 (250 / 133 / 155)</td><td>0.647</td><td>−22</td></tr>
 </tbody>
 </table>
-<p>我們也會列出 P1 對 3 個偵測器 × 5 支影片各選了哪個尺度（<span class="todo">[test]</span>）。如果每次選的都是 640 以上，測試集上的 E3×P1↓×F8 就等於 E3×F8，到時會註明。</p>
-<p><b>執行前的預期。</b>我們在測試執行前寫下猜測，避免事後重新詮釋結果。這些只是我們自己的猜測。平均低於 P0 的機率：F8 70%、E3×F8 75%、E3×P1 70%、E3×P1↓×F8 70%。差距也大於 P0 全距的機率：E3×F8 35%、E3×P1 30%、E3×P1↓×F8 35%。F8 被判讀為「較低，但在偵測器之間的差異範圍內」：55%。E3×P1↓×F8 低於 E3×F8：45%。F：低於 P0 平均 60%；低於 E3 55%；差距大於 P0 全距 30%；只看 BEE24-34、36 時低於 E3 60%；低於 0.50 門檻的 E3 60%；同樣的比較只看 34、36 時 65%，只看 12、13、16 時 45%。結果：<span class="todo">[test]</span>。</p>
-<p><b>解讀。</b><span class="todo">[test]</span>（只依第 10.4 節的判讀規則撰寫）。</p>
+<p>P1 對 3 個偵測器 × 5 支影片各選的尺度（y11s_640：640*、640*、640*、352、448；y11s4_s1：640*、640*、640*、1600、960；y11s4_s2：640*、640*、640*、352、352（依序為 BEE24-12、BEE24-13、BEE24-16、BEE24-34、BEE24-36；* 不到 1000 幀的短片，規則固定 640））。有 4 次選到 352 或 448，所以測試集上的 E3×P1↓×F8 和 E3×F8 不同（37.31 對 37.24）。y11s4_s1 在 BEE24-34 選了 1600，這一格的 P1 窗誤差是 103.88%，P1 的平均變高主要來自這裡。</p>
+<p><b>執行前的預期。</b>我們在測試執行前寫下猜測，避免事後重新詮釋結果。這些只是我們自己的猜測。平均低於 P0 的機率：F8 70%、E3×F8 75%、E3×P1 70%、E3×P1↓×F8 70%。差距也大於 P0 全距的機率：E3×F8 35%、E3×P1 30%、E3×P1↓×F8 35%。F8 被判讀為「較低，但在偵測器之間的差異範圍內」：55%。E3×P1↓×F8 低於 E3×F8：45%。F：低於 P0 平均 60%；低於 E3 55%；差距大於 P0 全距 30%；只看 BEE24-34、36 時低於 E3 60%；低於 0.50 門檻的 E3 60%；同樣的比較只看 34、36 時 65%，只看 12、13、16 時 45%。結果：這 16 個預測成真 3 個：E3×F8 和 E3×P1↓×F8 的平均低於 P0（37.24、37.31 對 37.69），以及只看 12、13、16 時 F 低於 0.50 門檻的 E3（31.99 對 33.94）。沒有一個臂比 P0 低超過 P0 的全距；F8 比 P0 高 0.03；F 不論看全部、還是只看 34、36，都比 E3 和 0.50 門檻的 E3 高。Brier 分數是 0.261，比每題都猜 50% 的 0.250 還差。</p>
+<p><b>解讀。</b>依第 10.4 節的規則：P0 對預設 ByteTrack 是「在測試集上較準確」（平均低 8.52 點，大於全距 3.41），事件 F1@0.5 是 0.629 對 0.414。P0 比校正 ByteTrack 高 2.09 點，小於兩者較大的全距 2.50，規則沒有對應的說法，只能照數字寫：在測試集上，P0 沒有比校正 ByteTrack 準。對論文的追蹤器 A 是「較低，但在偵測器之間的差異範圍內」（低 6.17 點，全距 6.50）。只報告的臂都不改變主設定：E3、E3×F8、E3×P1↓×F8 比 P0 低不到 1 點，都在全距內；P1 高 10.66 點，主要是 y11s4_s1 在 BEE24-34 選了 1600；F 高 8.91 點，主要在 BEE24-34（F 56.46 對 E3 36.71）。所以在測試集上，P0 是會輸出事件的追蹤器裡誤差最低的，但只把計數乘上倍率的校正 ByteTrack 在 30 秒窗上還是稍低。</p>
 
 <h3>追蹤指標</h3>
-<p>Project 1 要求以身分為基礎的追蹤指標。P0 會輸出每個框及其 ID，所以 TrackEval 可以像評估其他追蹤器一樣評估它。這些數字還沒有整理進我們的 v2 結果，所以表格先留空。</p>
+<p>Project 1 要求以身分為基礎的追蹤指標。P0 會輸出每個框及其 ID，所以 TrackEval 可以像評估其他追蹤器一樣評估它。表 10 是結果。val + dev 的 P0 是三個交叉擬合連結模型的平均（同表 7），測試集的 P0 用 <code>m_dev_strict</code>，和表 8 相同。兩個切分上，P0 和預設 ByteTrack 的 HOTA 都只差 1 點左右（val + dev 51.7 對 50.5，測試 40.8 對 40.2），P0 的 ID 切換反而比較多。我們的解釋是：身分指標算的是畫面上的每一個框，計數只看進出巢口區域的那些軌跡，所以計數誤差差很多，身分指標卻差不多。</p>
 <p class="tcap"><b>表 10.</b> 以官方 TrackEval 真值計算的追蹤指標（偵測器 <code>y11s_640</code>）。</p>
 <table class="wide">
 <thead><tr><th class="l">切分</th><th class="l">追蹤器</th><th>HOTA</th><th>DetA</th><th>AssA</th><th>IDF1</th><th>MOTA</th><th>IDSW</th></tr></thead>
 <tbody>
-<tr><td class="l">val + dev</td><td class="l">預設 ByteTrack</td><td colspan="6"><span class="todo">[TODO tracking metrics]</span></td></tr>
-<tr><td class="l">val + dev</td><td class="l">P0</td><td colspan="6"><span class="todo">[TODO tracking metrics]</span></td></tr>
-<tr class="sep"><td class="l">測試</td><td class="l">預設 ByteTrack</td><td colspan="6"><span class="todo">[test]</span></td></tr>
-<tr><td class="l">測試</td><td class="l">P0</td><td colspan="6"><span class="todo">[test]</span></td></tr>
+<tr><td class="l">val + dev</td><td class="l">預設 ByteTrack</td><td>50.5</td><td>58.6</td><td>43.8</td><td>64.1</td><td>73.6</td><td>2,043</td></tr>
+<tr><td class="l">val + dev</td><td class="l">P0</td><td>51.7</td><td>59.8</td><td>45.0</td><td>64.2</td><td>73.9</td><td>2,435</td></tr>
+<tr class="sep"><td class="l">測試</td><td class="l">預設 ByteTrack</td><td>40.2</td><td>39.0</td><td>41.9</td><td>48.1</td><td>15.0</td><td>2,186</td></tr>
+<tr><td class="l">測試</td><td class="l">P0</td><td>40.8</td><td>38.5</td><td>43.9</td><td>49.2</td><td>11.1</td><td>2,462</td></tr>
 </tbody>
 </table>
 <p>之後判讀時要注意一點：P0 保留每個框，包括低分框，而被捨棄的短軌跡會從輸出移除。這兩個選擇都是為了計數，可能會讓 MOTA 變差。</p>
@@ -579,7 +579,7 @@ table.split tr { break-inside: avoid; }
 <!-- ============================================================ 13 -->
 <h2>穩健性與失敗分析</h2>
 <h3>影像劣化</h3>
-<p>表 17 是第 10.5 節的劣化實驗。它的乾淨欄完全重現表 7，P0 在乾淨條件下的軌跡也和存檔的逐位元組相同，所以這次執行有效。測試集上的同樣條件已登記為只報告，會和鎖定的測試執行一起跑一次：<span class="todo">[test]</span>。</p>
+<p>表 17 是第 10.5 節的劣化實驗。它的乾淨欄完全重現表 7，P0 在乾淨條件下的軌跡也和存檔的逐位元組相同，所以這次執行有效。測試集上的同樣條件登記為只報告，和鎖定的測試執行一起跑了一次：P0 乾淨 37.69 (2.50)、變暗 37.36 (5.10)、變亮 43.75 (4.49)、模糊 38.83 (5.61)、雜訊 52.44 (4.51)；校正 ByteTrack 乾淨 35.60 (0.73)、變暗 35.89 (6.68)、變亮 45.76 (11.09)、模糊 40.84 (12.96)、雜訊 50.71 (8.84)；預設 ByteTrack 乾淨 46.21 (3.41)、變暗 48.82 (2.63)、變亮 53.36 (4.86)、模糊 49.94 (3.62)、雜訊 55.06 (5.14)；P0 事件 F1@0.5 乾淨 0.629、變暗 0.625、變亮 0.593、模糊 0.623、雜訊 0.502（格式同表 17）。</p>
 <p class="tcap"><b>表 17.</b> 人工影像劣化下的 val + dev（3 個偵測器，不重新訓練）。格內：平均窗誤差（%）（偵測器間的全距）；最後一列是 P0 的事件 F1@0.5。每格的偏差記在實驗紀錄中。</p>
 <table class="wide">
 <thead><tr><th class="l">臂</th><th>乾淨</th><th>變暗（× 0.4）</th><th>變亮（× 1.6 + 20）</th><th>模糊（1 × 9）</th><th>雜訊（σ = 15）</th></tr></thead>
@@ -602,13 +602,13 @@ table.split tr { break-inside: avoid; }
 <tr><td class="l">預設 ByteTrack</td><td>40.18 (3.24)</td><td>51.56 (2.18)</td><td>60.06 (3.55)</td><td>63.84 (2.51)</td></tr>
 </tbody>
 </table>
-<p><b>判讀。</b>掉幀是 P0 最弱的條件。只保留每隔一格的影格，就已經增加 4.35 個百分點；在 5 fps 時誤差是 47.47%。大部分來自少算：偏差從完整幀率的 −30.0 次事件（共 486 次），在 <i>k</i> = 2、3、5 時變成 −87.4、−153.3 與 −223.9。P0 在每個 <i>k</i> 下仍低於校正 ByteTrack，但領先幅度從 16.4 個百分點縮小到 13.2、10.2 與 6.8。我們的解釋如下，但沒有另外量測：第一階段只接緩衝 IoU 至少 0.7 的框，軌跡漏掉 2 格就會被忘掉；所以當蜜蜂在兩個保留的影格之間移動得更遠時，牠的軌跡會斷成短片段，而少於 3 個框的片段會被捨棄。實務上這套流程需要 25 fps 的影片。還有一點要記得：連結器是在 25 fps 下擬合的。掉幀時，它的中斷與跳躍特徵代表的意義不一樣，所以 P0 在這裡本來就處於劣勢。我們維持這樣的設定，因為實際部署的系統不會為每一種幀率重新擬合。</p>
+<p><b>判讀。</b>掉幀是 P0 最弱的條件。只保留每隔一格的影格，就已經增加 4.35 個百分點；在 5 fps 時誤差是 47.47%。大部分來自少算：偏差從完整幀率的 −30.0 次事件（共 486 次），在 <i>k</i> = 2、3、5 時變成 −87.4、−153.3 與 −223.9。P0 在每個 <i>k</i> 下仍低於校正 ByteTrack，但領先幅度從 16.4 個百分點縮小到 13.2、10.2 與 6.8。我們的解釋如下，但沒有另外量測：第一階段只接緩衝 IoU 至少 0.7 的框，軌跡漏掉 2 格就會被忘掉；所以當蜜蜂在兩個保留的影格之間移動得更遠時，牠的軌跡會斷成短片段，而少於 3 個框的片段會被捨棄。實務上這套流程需要 25 fps 的影片。還有一點要記得：連結器是在 25 fps 下擬合的。掉幀時，它的中斷與跳躍特徵代表的意義不一樣，所以 P0 在這裡本來就處於劣勢。我們維持這樣的設定，因為實際部署的系統不會為每一種幀率重新擬合。測試集上（只報告，和鎖定的測試一起跑，格式同表 18）：P0 在 <i>k</i> = 1、2、3、5 是 37.69 (2.50)、40.87 (2.40)、51.49 (4.79)、61.89 (4.89)；校正 ByteTrack 是 35.60 (0.73)、47.45 (5.53)、57.29 (4.91)、70.80 (4.69)；預設 ByteTrack 是 46.21 (3.41)、62.53 (7.93)、68.59 (3.29)、78.06 (1.76)。乾淨時 P0 比校正 ByteTrack 高 2.09 點，掉幀時反而比較低（<i>k</i> = 2、3、5 低 6.58、5.80、8.91 點）。</p>
 
 <h3>擁擠程度</h3>
 <p>兩個沒看過蜂箱的折同時也是擁擠程度的對照：蜂箱 33 很擁擠（尾段平均每格 37.3 隻蜜蜂），蜂箱 35 很稀疏（9.8 隻）。表 11–15 的模式一致：在稀疏的蜂箱上，動到偵測的改變（選尺度、凍結特徵）會讓誤差大幅變動，大多是下降；在擁擠的蜂箱上，幾乎沒有任何改變能讓 P0 的變動超過種子雜訊，事件 F1 也降到 0.324。第 13.5 節的上界說明了原因：在擁擠的前段上，即使框完全正確，誤差仍有 29.17%。依擁擠程度排序，val + dev 上乾淨條件下逐支影片的誤差只分成兩群。蜂箱 33 的兩段每格有 37.3 與 40.2 隻蜜蜂，P0 在這兩段是 21.10% 與 19.48%（校正 ByteTrack 是 27.83% 與 32.27%）。其他六支影片每格有 9.8 到 13.5 隻。其中蜂箱 35 最容易（12.61% 與 8.83%），四段短影片（75 到 250 格、5 到 56 次事件，每段都比一個窗短）則從 21.48% 到 56.30%。所以在我們的資料中，擁擠程度和蜂箱分不開：「擁擠」其實就是蜂箱 33。逐支影片的數字只報告乾淨條件。</p>
 
 <h3>新蜂箱</h3>
-<p>實驗 1–3 的留一蜂箱結果是我們主要的穩健性結果。簡單說：P0 仍領先所有追蹤器基準，但在偵測器沒看過的蜂箱上比較不準（22.18% 與 23.90%，看過的蜂箱是 18.46%），而且它在新蜂箱上的誤差很受偵測器種子影響。在測試集上，五支影片也都是新蜂箱：<span class="todo">[test]</span>。</p>
+<p>實驗 1–3 的留一蜂箱結果是我們主要的穩健性結果。簡單說：P0 仍領先所有追蹤器基準，但在偵測器沒看過的蜂箱上比較不準（22.18% 與 23.90%，看過的蜂箱是 18.46%），而且它在新蜂箱上的誤差很受偵測器種子影響。在測試集上，五支影片也都是新蜂箱：P0 為 37.69%（三個偵測器的全距 2.50）。</p>
 
 <h3>誤差從哪裡來</h3>
 <p>為了看出該怪流程的哪一部分，我們在兩段沒看過蜂箱的前段上，把部分元件換成完美版本（表 19）。</p>
@@ -660,7 +660,7 @@ table.split tr { break-inside: avoid; }
 <li><b>校正修的是總數，不是短窗。</b>在 val + dev 上，10 秒窗的校正 ByteTrack 比預設 ByteTrack 差（47.95% 對 44.29%），30 秒以上才比較好。倍率把總數修對，也把每個短窗的雜訊一起放大。</li>
 <li><b>在新蜂箱上，長窗剩下的主要是偏差。</b>L35 的每個種子都多算，P0 的整段誤差（19.38%）正好等於平均多算的 25 次事件除以 129。這一折和預設 ByteTrack 的差距（2.84 點）遠小於 P0 的種子全距（37.98），長窗下兩者分不出來。L33 的差距隨窗長變大，從 10 秒的 7.95 點到整段的 15.71 點。</li>
 </ul>
-<p>測試集上同樣的窗長：<span class="todo">[test]</span>。</p>
+<p>測試集上同樣的窗長（用同一批鎖定的追蹤輸出，只報告；3 個偵測器的平均 [全距]，依序為 10 秒、30 秒、60 秒、120 秒、整段）：P0 42.78 [4.05]、37.69 [2.50]、35.20 [1.51]、34.27 [1.81]、33.50 [1.73]；校正 ByteTrack 48.96 [5.44]、35.60 [0.73]、31.39 [2.42]、28.59 [5.45]、25.03 [6.35]；預設 ByteTrack 50.72 [1.14]、46.21 [3.41]、45.31 [3.84]、44.94 [3.98]、44.53 [4.20]。和 val + dev 不同，測試集上的排名會隨窗長改變：P0 只在 10 秒窗低於校正 ByteTrack，30 秒以上都是校正 ByteTrack 比較低，整段差 8.47 點。y11s_640 的 P0 總共只少算 22 次事件，但這是 BEE24-34 多算 57 次、BEE24-36 少算 56 次相抵的結果（表 9）；窗誤差是每支影片各自算的，所以這兩種錯都留著。</p>
 
 <h3>失敗模式</h3>
 <ul>
@@ -693,7 +693,7 @@ table.split tr { break-inside: avoid; }
 
 <!-- ============================================================ 16 -->
 <h2>結論</h2>
-<p>BeeTrack 把蜂巢口影片轉成蜜蜂軌跡，以及每 30 秒的進出次數。主要設定 P0 包括：640 px 的 YOLO11-s、把影片切成乾淨小軌跡的嚴格第一階段、以門檻 0.15 離線接起小軌跡的 TrackletLink、移除只有一兩個框的軌跡，以及區域事件規則。在偵測器認得的蜂箱上（val + dev，486 次事件），P0 的窗誤差是 18.46%，每個偵測器上都遠低於預設 ByteTrack（40.18%）、校正 ByteTrack（34.82%）與論文的追蹤器（35.25%）。在偵測器沒看過的蜂箱上，P0 仍領先所有追蹤器基準，但誤差上升到 22.18% 與 23.90%（留出的白板、灰板場景是 33.97% 與 36.60%）。對偵測器、尺度與翻轉影片的窗計數取平均，在部分折上有幫助，但沒有任何事先登記的規則在兩折上都乾淨地勝過 P0；唯一通過兩段前段的事後規則，在四個新的檢查（兩段尾段與兩個留出場景）中也只有兩個得到確認。因此 P0 仍是主要設定，做平均的臂只報告。誠實地總結：兩階段追蹤器在已知蜂箱上明顯改善了追蹤，但新蜂箱上的計數仍受限於偵測器，我們還沒找到可靠的解法。唯一一次鎖定的測試執行將會顯示 <span class="todo">[test]</span>。</p>
+<p>BeeTrack 把蜂巢口影片轉成蜜蜂軌跡，以及每 30 秒的進出次數。主要設定 P0 包括：640 px 的 YOLO11-s、把影片切成乾淨小軌跡的嚴格第一階段、以門檻 0.15 離線接起小軌跡的 TrackletLink、移除只有一兩個框的軌跡，以及區域事件規則。在偵測器認得的蜂箱上（val + dev，486 次事件），P0 的窗誤差是 18.46%，每個偵測器上都遠低於預設 ByteTrack（40.18%）、校正 ByteTrack（34.82%）與論文的追蹤器（35.25%）。在偵測器沒看過的蜂箱上，P0 仍領先所有追蹤器基準，但誤差上升到 22.18% 與 23.90%（留出的白板、灰板場景是 33.97% 與 36.60%）。對偵測器、尺度與翻轉影片的窗計數取平均，在部分折上有幫助，但沒有任何事先登記的規則在兩折上都乾淨地勝過 P0；唯一通過兩段前段的事後規則，在四個新的檢查（兩段尾段與兩個留出場景）中也只有兩個得到確認。因此 P0 仍是主要設定，做平均的臂只報告。誠實地總結：兩階段追蹤器在已知蜂箱上明顯改善了追蹤，但新蜂箱上的計數仍受限於偵測器，我們還沒找到可靠的解法。唯一一次鎖定的測試執行（五支官方影片，405 次事件）的結果是：P0 的窗誤差 37.69%，明顯低於預設 ByteTrack（46.21%），也低於論文的追蹤器（43.86%，但在偵測器之間的差異範圍內），事件 F1@0.5 是 0.629；校正 ByteTrack 是 35.60%，P0 沒有比它準。做平均的臂和蒸餾學生 F 在測試集上也都沒有比 P0 好。</p>
 
 <!-- ============================================================ disclosure / contributions -->
 <h2 class="nonum">外部模型、資料集與 AI 使用聲明</h2>

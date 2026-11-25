@@ -2,7 +2,7 @@
 
 Status: draft. This file is the number source for the final report under the v2 protocol. Every number is copied from `docs/experiment_log.md`; the section is in brackets, like (§95). `TODO(§N)` means the number was not found in the log.
 
-- The test column (Table D) stays empty ("—") until the single locked test run (§125). Nothing in this file was measured on test.
+- Table D holds the single locked test run (2026-11-25, §125; results §230). Nothing else in this file was measured on test, and no setting was changed after it.
 - The numbers in `RESULTS.md` (the "/341" ones) belong to the old protocol. They are replaced, not mixed in (§2, §125).
 - All tables use the 30-second window counting error unless said otherwise. Lower is better.
 
@@ -281,22 +281,54 @@ Cells are 30 s window error in %, 5 test videos pooled over 405 GT events (§125
 
 | Arm | y11s_640 | y11s4_s1 | y11s4_s2 | Mean | Range | Event F1 |
 |---|---|---|---|---|---|---|
-| P0 | — | — | — | — | — | — |
-| P1 | — | — | — | — | — | — |
-| Calibrated ByteTrack | — | — | — | — | — | — |
-| Default ByteTrack | — | — | — | — | — | — |
-| Paper's tracker A (report only) | — | — | — | — | — | — |
-| E3 (report only) | one number | one number | one number | — | P0 range is the threshold | — |
-| F8 (report only) | — | — | — | — | — | — |
-| E3 x F8 (report only) | one number | one number | one number | — | P0 range is the threshold | — |
-| E3 x P1 (report only) | one number | one number | one number | — | P0 range is the threshold | — |
-| E3 x P1↓ x F8 (report only) | one number | one number | one number | — | P0 range is the threshold | — |
-| F (report only) | one number | one number | one number | — | P0 range is the threshold | — |
-| E3 with the 0.50 box cut (report only) | one number | one number | one number | — | P0 range is the threshold | — |
+| P0 | 36.48 | 37.61 | 38.98 | 37.69 | 2.50 | 0.629 |
+| P1 | 38.96 | 64.48 | 41.60 | 48.35 | 25.51 | 0.564 |
+| Calibrated ByteTrack | 35.28 | 36.02 | 35.51 | 35.60 | 0.73 | – (scaled counts, no events) |
+| Default ByteTrack | 48.00 | 44.59 | 46.04 | 46.21 | 3.41 | 0.414 |
+| Paper's tracker A (report only) | 43.19 | 40.94 | 47.44 | 43.86 | 6.50 | 0.472 |
+| E3 (report only) | one number | one number | one number | 36.81 | P0's 2.50 is the threshold | – |
+| F8 (report only) | 36.94 | 36.96 | 39.26 | 37.72 | 2.31 | – (not computed) |
+| E3 x F8 (report only) | one number | one number | one number | 37.24 | P0's 2.50 is the threshold | – |
+| E3 x P1 (report only) | one number | one number | one number | 47.00 | P0's 2.50 is the threshold | – |
+| E3 x P1↓ x F8 (report only) | one number | one number | one number | 37.31 | P0's 2.50 is the threshold | – |
+| F (report only) | one number | one number | one number | 46.60 | P0's 2.50 is the threshold | – |
+| E3 with the 0.50 box cut (report only) | one number | one number | one number | 39.51 | P0's 2.50 is the threshold | – |
 
 Per video and total, report also: event F1 at IoU 0.5 and 0.3 (matched / false / missed) and bias = predicted events minus GT events (§125). The bias is report-only, not judged (§125). Also report which scale P1 picks for each of 3 detectors x 5 videos; if all picks are 640 or above, E3 x P1↓ x F8 equals E3 x F8 and this is stated (§125, addendum for §151).
 
-F and E3₅₀ are also reported separately for the short videos BEE24-12, 13, 16 and the long videos BEE24-34, 36 (the addendum first called them seen and unseen; corrected before the lock: 12 has a frame size no training video has, 13 and 16 share the 950 x 600 size of training hives, so they may or may not be seen hives): F on 12 / 13 / 16 —, F on 34 / 36 —, E3₅₀ on 12 / 13 / 16 —, E3₅₀ on 34 / 36 —. Also print F − E3₅₀ (—) and F − E3 (—) (§125 addendum, 2026-11-23).
+F and E3₅₀ are also reported separately for the short videos BEE24-12, 13, 16 and the long videos BEE24-34, 36 (the addendum first called them seen and unseen; corrected before the lock: 12 has a frame size no training video has, 13 and 16 share the 950 x 600 size of training hives, so they may or may not be seen hives): F on 12 / 13 / 16 31.99, F on 34 / 36 50.65, E3₅₀ on 12 / 13 / 16 33.94, E3₅₀ on 34 / 36 41.06. Also print F − E3₅₀ (+7.08) and F − E3 (+9.78) (§125 addendum, 2026-11-23).
+
+Readings and details of the run (§230; rules in 5.1):
+- P0 vs calibrated ByteTrack: +2.09; larger range 2.50; the numbers as they are. P0 is not more accurate than calibrated ByteTrack on test.
+- P0 vs default ByteTrack: −8.52; larger range 3.41; more accurate on test.
+- P0 vs the paper's tracker A (report only): −6.17; larger range 6.50; lower, but within the differences between detectors.
+- P1 vs P0 (report only): +10.66; range 25.51; the numbers as they are. y11s4_s1 picks 1600 on BEE24-34, where it scores 103.88%.
+- F8 vs P0: +0.03; the numbers as they are. E3 −0.88, E3 x F8 −0.45, E3 x P1↓ x F8 −0.38: lower, but within the differences between detectors (P0's 2.50). E3 x P1 +9.31, F +8.91, E3₅₀ +1.82: the numbers as they are.
+- F − E3₅₀ with P0's range on the same videos: all five +7.08 (2.50), the numbers as they are; short videos −1.94 (1.29), more accurate on those three videos, which hold only 88 GT events and where F is still 2.35 above P0 (31.99 vs 29.65); long videos +9.59 (2.84), the numbers as they are.
+- P1 picks (BEE24-12 / 13 / 16 / 34 / 36; the short videos are 640 by rule): y11s_640 640 / 640 / 640 / 352 / 448; y11s4_s1 640 / 640 / 640 / 1600 / 960; y11s4_s2 640 / 640 / 640 / 352 / 352. Not all picks are 640 or above, so E3 x P1↓ x F8 differs from E3 x F8 (37.31 vs 37.24).
+- Bias, mean over the 3 detectors: P0 −19.0, P1 +23.3, calibrated ByteTrack −43.9, default ByteTrack −179.7, tracker A −147.7. P0 on y11s_640 per video: +1 / −5 / −19 / +57 / −56. Event F1 at IoU 0.3: P0 0.636, P1 0.581, default ByteTrack 0.451, tracker A 0.489.
+- F's members (own-video students, boxes ≥ 0.50): 46.14 / 45.43 / 49.94, mean 47.17, range 4.51, event F1 0.633.
+- Detector test mAP50 / mAP50-95 (Table 6, report only): y11s_640 0.9054 / 0.4724, y11s4_s1 0.8752 / 0.4488, y11s4_s2 0.8818 / 0.4512.
+- Per video numbers: `D:/beetrack_runs/test125/test125.txt`, `arms125x/arms125x.txt`, `ftest/ftest.txt`.
+
+Table D2: hard conditions on test (report only, §153 conditions; 30 s window error %, mean over the 3 detectors [range]).
+
+| Condition | P0 | Calibrated ByteTrack | Default ByteTrack | P0 − calibrated ByteTrack, reading |
+|---|---|---|---|---|
+| clean | 37.69 [2.50] | 35.60 [0.73] | 46.21 [3.41] | +2.09, the numbers as they are |
+| dark | 37.36 [5.10] | 35.89 [6.68] | 48.82 [2.63] | +1.47, the numbers as they are |
+| bright | 43.75 [4.49] | 45.76 [11.09] | 53.36 [4.86] | −2.01, lower, but within |
+| blur | 38.83 [5.61] | 40.84 [12.96] | 49.94 [3.62] | −2.01, lower, but within |
+| noise | 52.44 [4.51] | 50.71 [8.84] | 55.06 [5.14] | +1.74, the numbers as they are |
+| frames dropped, k = 2 | 40.87 [2.40] | 47.45 [5.53] | 62.53 [7.93] | −6.58, more accurate |
+| k = 3 | 51.49 [4.79] | 57.29 [4.91] | 68.59 [3.29] | −5.80, more accurate |
+| k = 5 | 61.89 [4.89] | 70.80 [4.69] | 78.06 [1.76] | −8.91, more accurate |
+
+- P0 against default ByteTrack: more accurate under every condition except noise (−2.62, within 5.14).
+
+After the run, report only (§230; from the saved test tracks, no new detection or tracking, `post125.py`):
+- Window length (log §154), mean over the 3 detectors [range]: P0 42.78 [4.05] / 37.69 [2.50] / 35.20 [1.51] / 34.27 [1.81] / 33.50 [1.73] at 10 / 30 / 60 / 120 s / whole video; calibrated ByteTrack 48.96 [5.44] / 35.60 [0.73] / 31.39 [2.42] / 28.59 [5.45] / 25.03 [6.35]; default ByteTrack 50.72 [1.14] / 46.21 [3.41] / 45.31 [3.84] / 44.94 [3.98] / 44.53 [4.20]. P0 is lowest only at 10 s.
+- TrackEval on y11s_640, test: P0 HOTA 40.8, DetA 38.5, AssA 43.9, IDF1 49.2, MOTA 11.1, IDSW 2462; default ByteTrack 40.2 / 39.0 / 41.9 / 48.1 / 15.0 / 2186.
 
 ### 5.1 Reading rules (set before test, §125)
 
@@ -321,35 +353,35 @@ F and E3₅₀ are also reported separately for the short videos BEE24-12, 13, 1
 
 ### 5.2 Expectations written before test (§125 and its addenda)
 
-Probabilities are the main controller's own guesses, written before test.
+Probabilities are the main controller's own guesses, written before test. On test (§230): 6 of these 22 came true; with the 5 on hard conditions, 9 of 27, Brier 0.270 (0.250 for writing 50% everywhere). "Difference larger than P0's range" is read as lower than P0 by more than the range, which is what the probabilities imply; read as an absolute gap, E3 x P1 and F would count as true (11 of 27, Brier 0.299).
 
-| Arm | Expectation | Probability | Source |
-|---|---|---:|---|
-| F8 | mean over the 3 detectors lower than P0 | 70% | §125 addendum (§144) |
-| F8 | difference between −1 and −3 points | 50% | same |
-| F8 | read as "lower, but within the differences between detectors" | 55% | same |
-| E3 x F8 | lower than P0 mean | 75% | §125 addendum (§147) |
-| E3 x F8 | lower than F8 mean | 60% | same |
-| E3 x F8 | lower than E3 | 60% | same |
-| E3 x F8 | difference larger than P0's range | 35% | same |
-| E3 x P1 | lower than P0 mean | 70% | §125 addendum (§148) |
-| E3 x P1 | lower than P1 mean | 60% | same |
-| E3 x P1 | lower than E3 | 50% | same |
-| E3 x P1 | difference larger than P0's range | 30% | same |
-| E3 x P1↓ x F8 | lower than P0 mean | 70% | §125 addendum (§151) |
-| E3 x P1↓ x F8 | lower than E3 x F8 | 45% | same |
-| E3 x P1↓ x F8 | lower than E3 x P1 | 55% | same |
-| E3 x P1↓ x F8 | difference larger than P0's range | 35% | same |
-| F | lower than the P0 mean of the 3 detectors | 60% | §125 addendum (2026-11-23) |
-| F | lower than E3 | 55% | same |
-| F | difference larger than P0's range | 30% | same |
-| F | on 34 and 36 only, lower than E3 | 60% | same |
-| F | lower than E3₅₀ | 60% | same, method details |
-| F | on 34 and 36 only, lower than E3₅₀ | 65% | same, method details |
-| F | on 12, 13 and 16 only, lower than E3₅₀ | 45% | same, method details |
+| Arm | Expectation | Probability | Source | On test |
+|---|---|---:|---|---|
+| F8 | mean over the 3 detectors lower than P0 | 70% | §125 addendum (§144) | no (37.72 vs 37.69) |
+| F8 | difference between −1 and −3 points | 50% | same | no (+0.03) |
+| F8 | read as "lower, but within the differences between detectors" | 55% | same | no |
+| E3 x F8 | lower than P0 mean | 75% | §125 addendum (§147) | yes (37.24 vs 37.69) |
+| E3 x F8 | lower than F8 mean | 60% | same | yes (37.24 vs 37.72) |
+| E3 x F8 | lower than E3 | 60% | same | no (37.24 vs 36.81) |
+| E3 x F8 | difference larger than P0's range | 35% | same | no (−0.45) |
+| E3 x P1 | lower than P0 mean | 70% | §125 addendum (§148) | no (47.00) |
+| E3 x P1 | lower than P1 mean | 60% | same | yes (47.00 vs 48.35) |
+| E3 x P1 | lower than E3 | 50% | same | no |
+| E3 x P1 | difference larger than P0's range | 30% | same | no as lower by more (+9.31: higher by more) |
+| E3 x P1↓ x F8 | lower than P0 mean | 70% | §125 addendum (§151) | yes (37.31) |
+| E3 x P1↓ x F8 | lower than E3 x F8 | 45% | same | no (37.31 vs 37.24) |
+| E3 x P1↓ x F8 | lower than E3 x P1 | 55% | same | yes |
+| E3 x P1↓ x F8 | difference larger than P0's range | 35% | same | no (−0.38) |
+| F | lower than the P0 mean of the 3 detectors | 60% | §125 addendum (2026-11-23) | no (46.60) |
+| F | lower than E3 | 55% | same | no |
+| F | difference larger than P0's range | 30% | same | no as lower by more (+8.91: higher by more) |
+| F | on 34 and 36 only, lower than E3 | 60% | same | no (50.65 vs 38.82) |
+| F | lower than E3₅₀ | 60% | same, method details | no (46.60 vs 39.51) |
+| F | on 34 and 36 only, lower than E3₅₀ | 65% | same, method details | no (50.65 vs 41.06) |
+| F | on 12, 13 and 16 only, lower than E3₅₀ | 45% | same, method details | yes (31.99 vs 33.94) |
 
 - Tooling for F (§125 addendum, method details): `score_ftest.py`. Rerun on val + dev, it gives P0 (`m_dev_strict.json`) 19.53 / 19.71 / 19.42 and E3 18.40, and F on groups 2-5 4.34 (35-head) and 19.07 (33-head); it matches `ana.py` to under 1e-9.
-- Schedule (§125 addendum, 2026-11-23): the §125 lock moved to 11/25 23:59; the test runs once on 11/26-27.
+- Schedule (§125 addendum, 2026-11-23): the §125 lock moved to 11/25 23:59; the test runs once on 11/26-27. What happened: the lock came early, at 02:41 on 2026-11-25 (the lock text says 02:45, the time planned beforehand), and the test ran once the same day, 02:43 to 08:52; every step worked on the first try (§230).
 - Tooling (§125, last addendum): `t152/arms125x.py` computes F8, E3 x F8, E3 x P1, E3 x P1↓ x F8 and prints P0 and E3 as reference. The self-check on val + dev matched the logged values to under 1e−9 (§125).
 - The paper's tracker A only runs on test as report-only; its wrapper reproduced the 35.25 on val + dev bit for bit (§125, clarification 2 and the note after it).
 - Planned GPU: P1 scales about 4 hours, 7 extra symmetries at 640 about 4.7 hours, extra symmetries at 352 / 448 up to about 3.8 hours (§125).
