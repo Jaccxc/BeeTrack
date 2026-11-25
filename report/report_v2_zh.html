@@ -677,7 +677,7 @@ table.split tr { break-inside: avoid; }
 <p><code>uv run python -m beetrack.demo --source &lt;frame folder&gt; --tracker ours --zone &lt;camera&gt;</code></p>
 <p><b>demo 還沒有呈現的部分。</b>demo 執行的是第一份報告的線上追蹤器（<code>ours</code>）或 ByteTrack，不執行 P0，因為 TrackletLink 是離線的：它要看過後面的影格才決定連結。離線路徑（<code>track.py</code> 搭配第一階段與連結器，再計數）會產生 P0 對整支影片的軌跡與計數。即時版的 P0 需要至少 25 格的滑動窗，大約一秒的延遲；我們還沒有做。</p>
 <p><b>P0 展示影片。</b>唯一一次鎖定的測試執行之後，我們用 <code>tools/demo_p0.py</code> 從存下的 P0 軌跡畫出標註影片：每條軌跡的框、ID 和最近 25 格的尾巴、入口區域，以及 P0 和真值的累計與目前 30 s 窗的進出次數。窗的起點固定在 0 s，所以這些數字和取 30 個起點平均的分數不完全一樣。圖 5 是 BEE24-36 第 30 秒的畫面。這支影片的前 60 秒，P0 算到進 25、出 14，真值是進 39、出 30，和表 9 裡 BEE24-36 少算的情形一致。</p>
-<p><code>uv run python tools/demo_p0.py --video BEE24-36 --tracks &lt;P0 軌跡的 MOT 檔&gt; --out demo.mp4 --start 1 --end 1500</code></p>
+<p><code>uv run python tools/demo_p0.py --video BEE24-36 --tracks &lt;P0 軌跡的 MOT 檔&gt; --out demo.mp4 --end 1500</code></p>
 <figure><img src="fig_v2/demo_p0_bee24-36.jpg" alt="BEE24-36 上 P0 的標註畫面" style="max-height:60mm"><figcaption><b>圖 5.</b> BEE24-36 第 750 格（30 s）的 P0 展示畫面。白色多邊形是入口區域，左上角是 P0 和真值的累計與目前 30 s 窗的進出次數。</figcaption></figure>
 <p>環境由 <code>uv.lock</code> 鎖定，每位組員都能用 <code>uv sync</code> 重現。</p>
 
@@ -688,9 +688,8 @@ table.split tr { break-inside: avoid; }
 <li><b>代理的折不多。</b>兩個留出的蜂箱，一個稀疏、一個擁擠，數量並不多。尾段增加的是新片段，不是新蜂箱。第三、四折留出的是場景（白板、灰板），但片段都很短（13 段都不到 15 秒；16 段每段 3 秒），而且白板上大部分誤差來自一段擁擠的片段。而且代理只對偵測器留出蜂箱：追蹤器設定與連結器都是在 val + dev 上選的，其中包含這兩個蜂箱的影格。</li>
 <li><b>測試集以前看過。</b>早期版本的流程曾在舊協定下用測試集評分。在那之後我們沒有根據測試集設計任何東西，但測試集並不是完全沒被我們碰過。</li>
 <li><b>可重現性的缺口。</b>窗誤差的計分程式、交叉擬合的連結器、測試用連結器與實驗執行腳本都不在 <code>beetrack</code> 套件內，而套件自己的連結器模型是另一次擬合的結果。這些應該在最終繳交前移進 repository。</li>
-<li><b>離線方法。</b>P0 需要往後看；demo 展示的是較舊的線上追蹤器。</li>
+<li><b>離線方法。</b>P0 需要往後看。即時的 demo 程式用的是較舊的線上追蹤器；P0 的展示影片是事後用存下的軌跡畫的。</li>
 <li><b>計數協定。</b>次數來自真值軌跡與手繪區域，不是來自真實進巢的標註。這個協定適合比較追蹤器，不適合當作蜂群的絕對統計。</li>
-<li><b>尚未完成的量測。</b>目前偵測器的偵測 mAP、P0 的追蹤指標與 P0 的速度都還沒有量（表 6 與表 10、第 11.4 節）。</li>
 </ul>
 <p>未來工作：在擁擠時不讓軌跡跳格的第一階段，或能合併交錯小軌跡的連結器；針對新蜂箱的偏差，找出來自該蜂箱本身的訊號，因為平均無法消除偏差；更多留出的蜂箱；可即時使用的滑動窗版連結器；以及來自真實新場地的少量標註短片。</p>
 
