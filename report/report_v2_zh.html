@@ -377,7 +377,7 @@ table.split tr { break-inside: avoid; }
 <p>之後判讀時要注意一點：P0 保留每個框，包括低分框，而被捨棄的短軌跡會從輸出移除。這兩個選擇都是為了計數，可能會讓 MOTA 變差。</p>
 
 <h3>速度</h3>
-<p>偵測器與第一階段是逐格執行的。TrackletLink 需要整支影片（或至少往後看 25 格），所以目前形式的 P0 是離線系統。在 RTX 4060 Laptop GPU 上，640 px 的偵測器每格需要 <span class="todo">[TODO speed]</span> ms，第一階段 <span class="todo">[TODO speed]</span> ms，連結、過濾與計數則是每格影片 <span class="todo">[TODO speed]</span> ms，端到端為 <span class="todo">[TODO speed]</span> FPS。</p>
+<p>偵測器與第一階段是逐格執行的。TrackletLink 需要整支影片（或至少往後看 25 格），所以目前形式的 P0 是離線系統。在 RTX 4060 Laptop GPU 上，640 px 的偵測器每格需要 12.3 ms，第一階段 0.85 ms，連結、過濾與計數則是每格影片 0.12 ms，端到端為 75 FPS。這是在一支驗證影片（BEE24-35-tail，1,000 格）上用 <code>tools/speed_p0.py</code> 量的：偵測器的時間包含讀取 JPEG 與 NMS，前 10 格暖機不計；第一階段之後的時間在 CPU 上。</p>
 
 <!-- ============================================================ 12 -->
 <h2>對照實驗</h2>

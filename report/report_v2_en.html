@@ -377,7 +377,7 @@ table.split tr { break-inside: avoid; }
 <p>One caution for reading them later: P0 keeps every box, including weak ones, and the dropped short tracks are removed. Both choices were made for counting and may cost MOTA.</p>
 
 <h3>Speed</h3>
-<p>The detector and the first stage run frame by frame. TrackletLink needs the whole video (or at least 25 frames of look-ahead), so P0 is an offline system in its current form. On the RTX 4060 Laptop GPU the detector at 640 px takes <span class="todo">[TODO speed]</span> ms per frame, the first stage <span class="todo">[TODO speed]</span> ms, and linking, filtering and counting <span class="todo">[TODO speed]</span> ms per frame of video, which gives <span class="todo">[TODO speed]</span> FPS end to end.</p>
+<p>The detector and the first stage run frame by frame. TrackletLink needs the whole video (or at least 25 frames of look-ahead), so P0 is an offline system in its current form. On the RTX 4060 Laptop GPU the detector at 640 px takes 12.3 ms per frame, the first stage 0.85 ms, and linking, filtering and counting 0.12 ms per frame of video, which gives 75 FPS end to end. We measured this with <code>tools/speed_p0.py</code> on one validation video (BEE24-35-tail, 1,000 frames): the detector time includes reading the JPEG and NMS, the first 10 warm-up frames are not counted, and everything after the detector runs on the CPU.</p>
 
 <!-- ============================================================ 12 -->
 <h2>Controlled Experiments</h2>
