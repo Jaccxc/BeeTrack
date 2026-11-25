@@ -455,6 +455,7 @@ Grouped by the four research issues. "Not adopted" means the registered rule sai
 - Remove only the extra boxes on real bees (D2) and add perfect linking: 4.24% on 留 35, the only arm under the 5.05% bar; D2 with the normal linker gives 16.24%, perfect linking on raw boxes 21.58% (§135).
 - A3 detector with a refitted linker (optimistic, after the sweep): lowest 留 35 is 6.87%; on 留 33 nothing beats P0's own swept 21.87% (§137).
 - With all links correct, the base detector plus scale pick still has 18.6% on 33-head (three seeds): missed bees cannot be counted (§72, §81).
+- Detector boxes under perfect identity (each GT bee takes its best-IoU box and its GT id; 3-member mean, groups 2-5): the CS boxes F uses (>= 0.50) give 14.72 on 33-head and 0.65 on 35-head (F 19.07 / 4.34). Detectors trained on the 33-head frames themselves give 7.3-7.5. Of 43 families with >= 3 seeds that never saw 33-head labels none is confirmed better: best first group 11.29, CS's own groups 11.38-19.30. On 33-head both identity and boxes are wrong; on 35-head almost all is identity (§218, §232).
 - The thresholds used for these bounds: 留 35 needs a mean below 5.05% and 留 33 below 20.95% (§122, §123).
 - Window error of a flat "true total spread over the windows" reference: 留 35 23.29%, 留 33 22.04%, val + dev 18.28% (§94).
 
