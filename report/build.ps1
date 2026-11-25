@@ -3,7 +3,8 @@
 # run: powershell -ExecutionPolicy Bypass -File report\build.ps1
 param(
   [string]$Edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-  [string]$Team = "$PSScriptRoot\..\proposal\team.json"
+  [string]$Team = "$PSScriptRoot\..\proposal\team.json",
+  [string[]]$Langs = @("en", "zh", "en_s", "zh_s", "v2_en", "v2_zh")   # v2_* = report_v2_*.html -> BeeTrack_Report_V2_*.pdf
 )
 $ErrorActionPreference = "Stop"
 $here = $PSScriptRoot
@@ -14,7 +15,7 @@ $members = [IO.File]::ReadAllText((Resolve-Path $Team), $utf8) | ConvertFrom-Jso
 if ($members.Count -ne 4) { throw "team.json must list 4 members, found $($members.Count)" }
 
 $edgeProfile = Join-Path $env:TEMP "beetrack_edge_profile"   # separate profile so a running Edge does not swallow the job
-foreach ($lang in "en", "zh", "en_s", "zh_s") {   # *_s = simplified edition (report_*_s.html -> BeeTrack_Report_*_S.pdf)
+foreach ($lang in $Langs) {   # *_s = simplified edition (report_*_s.html -> BeeTrack_Report_*_S.pdf)
   $html = [IO.File]::ReadAllText("$here\report_$lang.html", $utf8)
   for ($i = 0; $i -lt 4; $i++) {
     $html = $html.Replace("{{NAME$($i + 1)}}", [Net.WebUtility]::HtmlEncode($members[$i][0]))
