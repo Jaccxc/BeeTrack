@@ -305,15 +305,15 @@ table.split tr { break-inside: avoid; }
 <!-- ============================================================ 11 -->
 <h2>量化結果</h2>
 <h3>看過的蜂箱</h3>
-<p class="tcap"><b>表 7.</b> val + dev（看過的蜂箱，486 次真值事件），30 s 窗誤差（%）。單偵測器的臂：每個偵測器一欄，各為 3 個交叉擬合連結器的平均。E3 類的臂把 3 個偵測器混成一個數字，所以它們的三欄是三個連結器；只能拿它們的平均和其他列比較。</p>
+<p class="tcap"><b>表 7.</b> val + dev（看過的蜂箱，486 次真值事件），30 s 窗誤差（%）。單偵測器的臂：每個偵測器一欄，各為 3 個交叉擬合連結器的平均。E3 類的臂把 3 個偵測器混成一個數字，所以它們的三欄是三個連結器；只能拿它們的平均和其他列比較。F8 和 E3 類的臂平均的是窗計數，沒有單一事件，所以事件 F1 是 n/a。校正 ByteTrack 只把計數乘上倍率，沒有事件，所以沒有事件 F1（–）。</p>
 <table class="wide split">
 <thead><tr><th class="l">臂</th><th><code>y11s_640</code></th><th><code>y11s4_s1</code></th><th><code>y11s4_s2</code></th><th>平均 ↓</th><th>全距</th><th>事件 F1@0.5 ↑</th></tr></thead>
 <tbody>
 <tr class="best"><td class="l">P0</td><td>18.89</td><td>17.34</td><td>19.15</td><td>18.46</td><td>1.81</td><td>0.740</td></tr>
 <tr><td class="l">P1</td><td>18.82</td><td>16.24</td><td>18.90</td><td>17.99</td><td>2.66</td><td>0.741</td></tr>
-<tr><td class="l">F8</td><td>15.81</td><td>15.51</td><td>16.83</td><td>16.05</td><td>1.32</td><td><span class="todo">[TODO §144]</span></td></tr>
+<tr><td class="l">F8</td><td>15.81</td><td>15.51</td><td>16.83</td><td>16.05</td><td>1.32</td><td>n/a</td></tr>
 <tr class="sep"><td class="l">預設 ByteTrack</td><td>41.37</td><td>38.13</td><td>41.04</td><td>40.18</td><td>3.24</td><td>0.545</td></tr>
-<tr><td class="l">校正 ByteTrack</td><td>33.78</td><td>29.09</td><td>41.60</td><td>34.82</td><td>12.51</td><td><span class="todo">[TODO §93]</span></td></tr>
+<tr><td class="l">校正 ByteTrack</td><td>33.78</td><td>29.09</td><td>41.60</td><td>34.82</td><td>12.51</td><td>–</td></tr>
 <tr><td class="l">論文的追蹤器，設定 A</td><td>36.63</td><td>34.02</td><td>35.10</td><td>35.25</td><td>2.61</td><td>0.592</td></tr>
 <tr class="sep"><td class="l">E3（單一數字）</td><td colspan="3">–</td><td>17.07</td><td>–</td><td>n/a</td></tr>
 <tr><td class="l">E3×F8（連結器 1 / 2 / 3）</td><td>15.48</td><td>15.40</td><td>15.72</td><td>15.53</td><td>–</td><td>n/a</td></tr>
