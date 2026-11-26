@@ -17258,8 +17258,120 @@ P1 的選擇 (只用閃爍;短片照規則一律 640):
 
 **判準 (b) 的狀態** 不變:35-head F + PairPrior 5.31 (seed 33–44),門檻 5.05。已知的方法這幾類在 33-head 都還不夠:委員會格式 F − TrackletLink 在 seed 21–32 是 −0.57 (標準誤 1.32)、seed 33–44 是 −0.18 (1.29),門檻 −2.0;3 個 seed 的規則要 −12.56 (§229)。
 
-## 243. 下一步
+## 243. OrderLink + PairPrior:照另一個 head 學的順序接 TrackletLink 自己的候選,在封存的偵測器 seed 45–56 上事先登記確認 (CPU,只用 dev,2026-11-26,issue #2、#4)
 
+**動機** (§242)
+- 35-head 加了 PairPrior 之後 (H1),剩下最大的一類漏算是連結器把兩隻蜂接在同一條軌跡上。OrderLink 不改 TrackletLink 的候選和貪婪規則,只改接的順序:seed 15–44 上 B1 3.94、B2 4.89 (H1 4.24 / 5.31),每個成員多 1.2 個對的事件。
+- 33-head 上同一個臂變差 0.5–0.6,可是連結變好。所以這節的主要讀法放在 35-head,33-head 照實報告。
+
+**作法**
+- 資料:偵測器 seed 45–56 = 第 16–19 組 (第 g 組 = seed 3g−3 … 3g−1),`D:/beetrack_runs/t242/job242a.sh` (`loho_no35_s<k>`、`loho_no33_s<k>`) 和 `job242b.sh` (每組的 CS 學生 `cs35_s<k>`、`cs33_s<k>`),配方和 job238a/b 一樣。兩個 dev head:35-head (129 個 GT 事件)、33-head (184 個)。沒有 test。
+- 指標:30 秒窗誤差 (§204)。委員會 = 成員窗計數的平均;E6 = 4 組裡 6 個兩組委員會的平均。
+- OrderLink:第一階段和 F 一樣;TrackletLink 自己的候選 (p ≥ 0.15) 和它的貪婪規則;候選照 1 + q 的順序接,不照 p。q 是 33 欄的嶺邏輯迴歸 (TrackletLink 的 25 個特徵、它的 logit、同一端點 / 起點的競爭者數、和最好競爭者的 logit 差距、兩個框在區域的哪一邊),用「另一個 head」的成員擬合 (擬合 A:15 20 25 30 35 40;擬合 B:16 21 26 31 36 41)。之後 drop_short (< 3 個框)、凍結的 PairPrior、正式規則。35-head 的臂不吃任何 35-head 的標註 (33-head 也一樣)。
+
+| # | 臂 | 角色 |
+|---|---|---|
+| 1 | F:CS 學生、框 ≥ 0.50、P.stage1、TrackletLink `m_dev_strict`、drop_short、正式規則 | 基準 (= §239 的臂 1) |
+| 2 | H1 = F + PairPrior (凍結的 `t239/model/pairprior_<h>.npz`,每個成員自己做 EM) | 比較對象 (= §239 的臂 2) |
+| 3 | **OL = OrderLink 擬合 A + PairPrior** | **主要** |
+| 4 | OrderLink 擬合 B + PairPrior | 只報告;擬合 B 過了不算過 |
+| 5 | 同樣的候選、隨機順序 (`np.random.default_rng(1000 + k)`) + PairPrior | 只報告,對照 |
+| 6 | OrderLink 擬合 A,不加 PairPrior | 只報告 |
+| 7 | 開關版:H1 有合併 ≥ 1 對的成員用臂 3,否則用臂 1 | 只報告 (看過 33-head 的結果才加的) |
+| 8 | TrackletLink (640 `loho_no<h>_s<k>`、全部框) | 目標的基準 |
+| 9 | 校正 ByteTrack (§95) | 目標的基準 |
+| 10 | 數量對照:H1 的窗計數,每個成員、每個方向縮放到臂 3 的事件總數 (v2 加的) | 只報告,對照 |
+
+- 凍結的檔案 (SHA-256,登記時重算過):
+  - `D:/beetrack_runs/t243/model/orderlink_35_A.npz` 0430369eb2afb4d592709feebcdacd980cef4e682ac62ee5784d6a24bce4ef56
+  - `D:/beetrack_runs/t243/model/orderlink_33_A.npz` abdaa84bc06784a1d21819f1ff9cfb82b442aa22646d5b5b4ff2ebdad94cf1cd
+  - `D:/beetrack_runs/t243/model/orderlink_35_B.npz` b720a9d925aceb378937b433b111d4ea091a1c8b1033cfef3c622f8645f42c9c
+  - `D:/beetrack_runs/t243/model/orderlink_33_B.npz` 896a23b94425d0b34487df7e5cf977661c12c9e263e2297dbab71a55543fbfa2
+  - `D:/beetrack_runs/t239/model/pairprior_35.npz` 38fa801538cbee12d749ebf70e81f65eef0c9102db9745d2d6e2dab0da0b21f7
+  - `D:/beetrack_runs/t239/model/pairprior_33.npz` 6284d2b31519913ead1f83bd97765045b6e00785eaf870b3b373db15424dc321
+  - 接起來的 GT (33-head,只做敏感度):`D:/beetrack_runs/t243/gt_joined_33.npz` 6f18831a6193d43b7bb5ba3620941cf4f497b22fce8103b1c9cdf5cdbb235a6c (由 `gt_joined.py` 3915568b… 寫,在看任何 seed 45–56 的輸出之前)
+- 設計 `D:/beetrack_runs/t243/design243.md` (v2)。
+
+**反方審查** (全新的 Fable,只給設計草稿和資料,不給主控的預測;`D:/beetrack_runs/t243/rev/review.md`,14 點)
+1. 第一版的讀法 (D < 0 且 4 組至少 3 組 D_g < 0) 太寬:把每個成員的 OL 和 H1 計數隨機交換 (沒有效果),它還是 39% 會過;有效果時 78%。12 個成員看得到的大小:沒有效果時 D 的標準差 0.316,看到的效果約 −0.34,大約一個標準差。
+2. 一半的好處是事件數量,B2 全部是:H1 在兩批都少算,多加事件就會降誤差,不管順序知不知道什麼。數量對照在 B1 是 4.21、B2 是 4.74 (OrderLink 4.89)。主控另寫 `D:/beetrack_runs/t242/verifyA/volcheck.py` 從存下的窗計數重算,一樣 (B1 4.21、B2 4.74;擬合 B 4.20 / 4.79)。
+3. H1 自己在 30 個成員的抽樣裡 83% 已經 ≤ 5.05,「E_OL ≤ 5.05」分不出 OrderLink 和 H1。
+4. 好處集中在第 2250–2999 格這一窗。
+5. 新 seed 只重抽偵測器,不重抽影片;這個臂的形式是看 seed 15–44 的 35-head 標註挑的 (四個不用標註的第一階段做法裡贏的那個,前面還有約十個變體)。要寫死範圍。
+6. 參數沒有洩漏,但檔名寫的是目標 head,檔案裡的 `head` 欄位是擬合的 head;載入錯一個檔就會把 35-head 的標註放進主要的臂,不會報錯。
+7. 封存清單要寫進登記。
+8. 隨機順序在 35-head 不是對照:每個成員拿掉 389 個真的連結、加 84 個錯的,是 OrderLink 改動的 30 倍。
+9. 開關版在 33-head 等於 F,印在 −2.0 旁邊就是 F − TrackletLink 的運氣。
+10. D33 要拆成 (OL − F) + (F − TrackletLink)。
+11. 接起來的 GT 有兩種,檔案要先凍結。
+12. 算分程式的檢查 (不准換別的偵測器、模型檔的 head 欄位、OrderLink 用 p 當分數要和 F 逐位元相同、不看標註的路徑、平手數等)。
+13. 要寫每種讀法會改變什麼。
+14. 擬合 B 只報告。
+- 採用:1、2、3、5、6、7、9、10、11、12、13、14 (改動寫在下面)。4 部分採用:印 12 個成員一個委員會在偏移 0 時每一窗的變化,和 30 個偏移裡 OL 比 H1 好的比例;每組的分窗和「最常被修好的 6 隻蜂」的比例沒有做。8 部分採用:加了數量對照 (臂 10);抖動對照 (同樣多的改動、隨機的方向) 沒有做,因為「改動的連結是不是比較好」由 R1、R2 直接用標註回答,窗誤差裡不屬於數量的部分只當數字報。
+
+**算分** (`D:/beetrack_runs/t243/score243.py`,SHA-256 22f49caba7a27962bc6e8f4063062ab15babf51d17f66ea7baa306c4e78fc8f5,Opus 代理寫,主控讀過 arms()、交換和符號翻轉的檢定、讀法那段,並自己重跑自檢)
+- 自檢 (`--selfcheck`,seed 33–44 = 第 12–15 組,這些標註都已經用過,只是檢查程式,不是證據):
+  - 臂 1、2、8、9 的每個成員窗計數和 `t239/cache_full`、`score239_full.json` 相同 (到 1e-9);臂 3、4、6 和 ideaA 的 `o8_35_<k>.pkl` (35-head 12 個成員)、`ana8_33_part.pkl` (33-head s33–s38) 相同。
+  - 數量對照 4.74 (= volcheck.py 的 B2);D = 4.8880 − 5.3144 = −0.4264。接起來的 GT 重現 ideaB 的 frag.txt:1 個身長 F − TrackletLink +1.03,2 個身長 +1.82。
+  - 不看標註的路徑在 35-head s34、33-head s36 從頭重算 11 種軌跡;路徑裡開 GT 的函式都會被拒絕。OrderLink 用 p 當分數時和臂 1 逐位元相同。候選的 1 + q 平手數 0。
+  - 模型檔載入時檢查 `head == 68 − h` 和擬合用的 seed。缺任何一個 `cs` 或 `loho` 檔、沒有「=== JOB242B DONE」、或有 FAILED 行就拒絕;不准用別的偵測器替代成員。開關、CS pick 解析、拒絕的情況都用玩具記錄測過。
+  - 讀法程式在 seed 33–44 給讀法 A (p3 0.047、p2 0.002、p1 0.0002)。這批 seed 正是挑這個臂的資料的一部分,所以不算數。
+- 第一段 `--labelfree` (不開 GT):每個成員的候選數、TrackletLink 和 OrderLink 的連結數、不同的選擇數、PairPrior 合併數和 EM 比例、開關狀態、CS 尺度、每種臂最後軌跡的 SHA-256。先寫進檔案,記 SHA,才開 GT。
+- 第二段 `--full`:雜湊相同才算分。
+- 封存 (照 §239):`D:/beetrack_runs/t242/job242a.out`、暫存區的 eval 和 train 記錄 (`eval_loho_`、`train_loho_`)、`runs/trackers/dev/` 和 `runs/dets/` 裡 seed 45–56 的輸出,在這節提交之前沒有人看過。`job242a.log`、`job242b.log` 只 grep START、DONE、CS pick 這幾種行。ideaA 的代理自己記了一次失誤:讀過一次 `job242a.log` 的結尾 (只有 START 行)。`--full` 要等 job242b 做完,而且主控在這節提交之後才建 `D:/beetrack_runs/t243/GO`。
+
+**判讀** (登記;35-head 是主要;p 值都是 12 個成員的精確單邊檢定,4096 種組合)
+- R1 (機制旗標):每個成員第一階段錯的連結 OL − H1,符號翻轉 p1 ≤ 0.01。
+- R2:每個成員對的事件 (正式 match_events,IoU 0.5) OL − H1,符號翻轉 p2 ≤ 0.05。
+- R3:D = E6(OL) − E6(H1),成員交換 (每個成員的 OL 和 H1 計數對調) p3 ≤ 0.10。
+- 讀法 A = R2 且 R3,寫「在 35-head 這段影片沒用過的偵測器 seed 上,對的事件更多、委員會誤差也更低」。讀法 B = 只有 R2,寫「連結和事件重現;委員會窗誤差在 seed 的差異內 (D = x,p3 = y)」。讀法 C = R2 不過,寫「沒有重現」。R1 不過時另外寫「學到的順序沒有減少錯的連結」。
+- 檢定力 (如果封存的 seed 和 seed 15–44 一樣;審查的 `nullpower.txt`、`eventpower.txt`):R2 約 0.93,R3 約 0.3–0.44。沒有效果時讀法 A 低於 0.05。所以讀法 B 是最可能的結果,R3 沒過要讀成「在 seed 的差異內」,不是「被推翻」。
+- 數字,不掛讀法:
+  - E_OL 和 E_H1 並列,旁邊印 5.05 (§94 的 35-head 門檻)。E_H1 ≤ 5.05 時寫「H1 自己在這些 seed 上就低於 5.05,門檻分不出 OrderLink 和 H1」。4 組的 D_g。
+  - D 拆成 (E_vol − E_H1) + (E_OL − E_vol),寫「D 裡面 x 是事件數量 (跟著 H1 在這些 seed 上少算多少),y 是位置」。兩個方法每個成員的事件減 GT。
+  - 擬合 B、隨機順序、沒有 PairPrior 的 OrderLink、TrackletLink、校正 ByteTrack;兩個 head 的事件 F1 (IoU 0.5 和 0.3)。
+- 33-head:D33 = E6(OL) − E6(TrackletLink) 印成 (OL − F) + (F − TrackletLink)。只有 OL − F < 0 而且成員交換 p ≤ 0.10,D33 才算 OrderLink 的。OL − F 在 seed 33–44 (+0.32,已經看過) 和 45–56 並列,也報兩批合併的平均;≤ 0 但 p > 0.10 時不寫「不傷 33-head」。照 §242 的規則,旁邊報隨機順序減 F 和事件 F1。接起來的 GT 以 1 個身長為主、2 個身長為第二,只是敏感度,沒有門檻也沒有讀法,隨機順序一起列。
+- 判準 (b) 那一行只用臂 3 的兩個 head 的數字。開關版只寫一行:「看過 33-head 的結果才加的兩個 dev 蜂箱之間的開關,不是方法;35-head n / 12、33-head m / 12 個成員打開」,不和 TrackletLink 比,也不放門檻。紀錄不寫「判準 (b) 過了」;委員會格式怎麼讀由使用者決定。
+- 範圍 (不管哪種讀法都抄進結論):只有兩個蜂箱,每個 170 秒一段;這個臂的形式是看 seed 15–44 的 35-head 標註挑的;35-head 的好處大多在第 2250–2999 格這一窗;新 seed 只重抽偵測器,不重抽影片;在 33-head 上同一個臂讓窗誤差變差 x。讀法 A 寫「在 35-head 這段影片沒用過的偵測器 seed 上」,不寫「在沒看過的蜂箱上」。
+
+**結果會改變什麼** (登記)
+- 讀法 A:報告把 OrderLink + PairPrior 列成只在 35-head 的 dev 加項,放在 F + PairPrior 旁邊,附範圍那段。
+- 讀法 B:報告只寫事件層的好處 (每個成員多幾個對的事件、少幾個錯的連結),不寫計數的好處。
+- 讀法 C:OrderLink 收尾,連結順序這一家收尾。
+- 三種讀法下判準 (b) 都還沒達成:33-head 那邊要比 TrackletLink 低 2.0,OL 在那裡比 F 差。test 不再跑。
+- 不管 OrderLink 怎樣,E_H1 都回答「PairPrior 在第三批 seed 上是否低於 5.05」(B1 4.24、B2 5.31)。
+
+**預測** (主控,在看到任何 seed 45–56 的輸出之前;第一版寫在 2026-11-26 約 12:45,審查和自檢之後改了機率和 33-head 的 OL − F,自檢用的都是已經用過的 seed)
+
+| 預測 | 值或機率 |
+|---|---|
+| 35-head E6:F | 5.9 (4.9–6.9) |
+| 35-head E6:H1 | 4.9 (4.0–5.8) |
+| 35-head E6:OL (擬合 B 和擬合 A 差 0.15 以內) | 4.6 (3.7–5.5) |
+| D = OL − H1 | −0.30 (−0.8 到 +0.2) |
+| D 的數量部分 / 位置部分 | 各約 −0.15 (各 −0.6 到 +0.3) |
+| R1 過 | 95% |
+| R2 過 (每個成員多 +0.5 到 +2.0 個對的事件) | 85% |
+| R3 過 | 35% |
+| 讀法 A / B / C | 30% / 55% / 15% |
+| E_H1 ≤ 5.05 | 55% |
+| E_OL ≤ 5.05 | 70% |
+| 35-head 隨機順序 + PairPrior | 7.3 (6.0–8.6) |
+| 35-head OrderLink 不加 PairPrior | F − 0.2 (± 0.5) |
+| 35-head TrackletLink / 校正 ByteTrack | 22 (16–28) / 43 (35–51) |
+| 35-head 事件減 GT:OL 比 H1 多 | 0.5–2.5 |
+| 33-head E6:F (= H1,不合併) / TrackletLink | 20.3 (18.8–21.8) / 20.5 (18.5–22.5) |
+| 33-head OL − F | +0.45 (−0.4 到 +1.3) |
+| 33-head OL − F < 0 而且 p ≤ 0.10 | 5% |
+| 33-head 隨機順序 − F | −1.8 (−3.5 到 −0.3) |
+| 33-head D33 ≤ −2.0 | 3% |
+| 33-head 12 個成員至少 10 個錯的連結變少 | 90% |
+| 33-head 事件 F1:OL ≥ F | 75% |
+| 33-head 接起來的 GT (1 個身長):F − TrackletLink 往上移 | 1.0–2.0 |
+
+## 244. 下一步
+
+- §243 登記 (2026-11-26):OrderLink + PairPrior 在封存的 seed 45–56 上確認。審查後改用精確檢定:R1 錯的連結、R2 對的事件 (p ≤ 0.05)、R3 窗誤差 (成員交換 p ≤ 0.10);加了數量對照 (seed 33–44 上數量對照 4.74 比 OrderLink 4.89 還低)。預測讀法 A / B / C 30% / 55% / 15%。job242b 做完、這節提交之後才建 GO,先跑 `--labelfree`。
 - §242 外層檢討 (2026-11-26):35-head 加深連結的順序。OrderLink (TrackletLink 自己的候選,照另一個 head 學的順序接) 加 PairPrior,seed 15–44 是 3.94 / 4.89 (H1 4.24 / 5.31),33-head 變差 0.5–0.6 (連結變好、窗誤差變差;隨機順序反而 18.12)。下一節事先登記,在新 seed 45–56 確認 (GPU 09:49 開始訓練,約 20 小時)。33-head 在這段影片上軌跡和計數收尾:兩輪發想都空了,GT 飛行標註的切法就讓 F − TrackletLink 移動 1.2–2.0。
 - §239 做完 (2026-11-26):讀法 A。seed 33–44 上 PairPrior 比隨機配對低 1.03 (標準誤 0.20,4 組都低),選的配對重現;35-head 委員會 F 5.87 → 5.31 (−0.56,這批 F 多算得少;第 6–15 組合併 −1.08),仍高於 5.05;33-head 12 個成員都不合併,F − TrackletLink −0.18。報告把 F + PairPrior 當 dev 上的加項並列,附範圍;test 不再跑。§233 之後第 5 節,接著做外層檢討。
 - §239 不看標註的那段 (2026-11-26,開 seed 33–44 的 GT 之前提交):35-head 12 個成員都有合併 (平均每個 101.2 對,EM 估的比例 0.20–0.59);33-head 被打開 (EM 比例 > 0.001) 的 1 個 (s44,0.0016,合併 0 對),少於 3 個。檔案 `D:/beetrack_runs/t239/labelfree_full.txt` (SHA-256 前 16 碼 8e2698a739e2fe38)。接著跑 `--full`。
