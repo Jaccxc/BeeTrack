@@ -187,6 +187,25 @@ Reading notes.
 - Error left in F (E12, all 12 members of groups 8-11): 35-head 5.01, two thirds of it over-counts, mostly exits; 33-head 19.70, nearly nine tenths under-counts (§204).
 - Seeds 21-32 count as seen from §204 on. No new seeds are trained for the committee (§204).
 
+### 3.3 Table B3: F plus PairPrior on unused seeds 33-44 (§239)
+
+PairPrior merges two F tracks that carry one bee at the same time. The pair model is fitted on the other head's pairs of seeds 3-32 and frozen; each member sets its own same-bee share with EM on its unlabelled pairs and merges pairs with an adjusted probability >= 0.5. The EM step was chosen after looking at labels of seeds 3-32, so the run was registered before seeds 33-44 (groups 12-15) were trained or read, and run once (§239). It is a dev add-on beside F; test is closed and was not rerun.
+
+| Row (groups 12-15, mean of the 6 committees, jackknife SE) | 35-head | 33-head |
+|---|---:|---:|
+| F (CS students, boxes >= 0.50) | 5.87 (1.09) | 20.35 (0.95) |
+| F + PairPrior | 5.31 (0.55) | 20.35 (0.95) |
+| F + as many random pairs (control, 20 draws) | 6.34 (0.61) | 20.35 (0.95) |
+| TrackletLink | 22.03 (3.17) | 20.53 (0.91) |
+| Calibrated ByteTrack | 42.98 (2.87) | 32.88 (1.32) |
+
+Reading notes.
+- Main reading (registered): PairPrior − random control = −1.03 (SE 0.20), lower in 4 of 4 groups -> "the pairs PairPrior picks reproduce on unused seeds". Merged pairs are the same bee in 0.70 of cases (random 0.40).
+- PairPrior − F = −0.56 (SE 0.75); per group +0.47 / −2.24 / −1.40 / +0.05, following F's over-count (F members' events minus GT +1.25 here, +3.2 on seeds 15-32). Pooled over groups 6-15: −1.08 (SE 0.37).
+- 35-head committee 5.31 against the bar 5.05: above. The log never writes "criterion (b) passed".
+- 33-head: no member merges (1 of 12 switched on by EM, 0 merges); F − TrackletLink −0.18 (SE 1.29), within seed differences.
+- Scope: two hives, one 170 s segment each; on 35-head most of the gain sits in one 30 s window (frames 1500-2249) and a few bees (6 bees hold 53% of the removed events); PairPrior is claimed for F's tracks only (on TrackletLink's 33-head tracks: 20.53 -> 53.31).
+
 ## 4. Table C: unseen-hive tails (§152 result)
 
 Tails are the 1000 frames after each head (GT 37 events on 35-tail, 50 on 33-tail). The rules were registered before the run and not changed (§152). Cells are groups 0-2 / 3-5 / 6-8.
